@@ -29,7 +29,7 @@ async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
-    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text] =
+    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css] =
         await Promise.allSettled([
             fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
@@ -37,6 +37,8 @@ async function main() {
             fetch(chrome.runtime.getURL("/files/bundle.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/files/bundle.css")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/files/twitter-text.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/xlr.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/xlr.css")).then(r => r.text()),
         ]);
     if (!localStorage.getItem("OTDalwaysUseLocalFiles")) {
         const [
@@ -149,6 +151,9 @@ async function main() {
     bundle_css_style.innerHTML = bundle_css.value;
     document.head.appendChild(bundle_css_style);
 
+    // Expose jQuery globally (remove noGlobal flag) so additional scripts can use $
+    vendor_js.value = vendor_js.value.replace('i(r, !0)', 'i(r)');
+
     let vendor_js_script = document.createElement("script");
     vendor_js_script.innerHTML = vendor_js.value;
     document.head.appendChild(vendor_js_script);
@@ -160,6 +165,17 @@ async function main() {
     let twitter_text_script = document.createElement("script");
     twitter_text_script.innerHTML = twitter_text.value;
     document.head.appendChild(twitter_text_script);
+
+    if (xlr_css.value) {
+        let xlr_css_style = document.createElement("style");
+        xlr_css_style.textContent = xlr_css.value;
+        document.head.appendChild(xlr_css_style);
+    }
+    if (xlr_js.value) {
+        let xlr_js_script = document.createElement("script");
+        xlr_js_script.textContent = xlr_js.value;
+        document.head.appendChild(xlr_js_script);
+    }
 
     (async () => {
         try {
