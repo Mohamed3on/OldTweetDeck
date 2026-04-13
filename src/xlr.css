@@ -1,18 +1,18 @@
 /* Convert float action bar to flexbox */
-ul.tweet-actions:has(.xlr-add-btn),
-ul.tweet-detail-actions:has(.xlr-add-btn) {
+ul.tweet-actions:has(.xlr-user-search-btn),
+ul.tweet-detail-actions:has(.xlr-user-search-btn) {
   display: flex !important;
   float: none !important;
   align-items: center !important;
   justify-content: space-between !important;
 }
-ul.tweet-actions:has(.xlr-add-btn) > li,
-ul.tweet-detail-actions:has(.xlr-add-btn) > li {
+ul.tweet-actions:has(.xlr-user-search-btn) > li,
+ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   float: none !important;
   margin: 0 !important;
 }
 
-.xlr-remove-btn, .xlr-add-btn, .xlr-mute-btn, .xlr-filter-btn {
+.xlr-remove-btn, .xlr-add-btn, .xlr-mute-btn, .xlr-filter-btn, .xlr-user-search-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -57,6 +57,12 @@ ul.tweet-detail-actions:has(.xlr-add-btn) > li {
     transform: scale(1.1);
   }
 
+  &.xlr-user-search-btn:hover {
+    background-color: color-mix(in srgb, rgb(0, 184, 216) 10%, transparent);
+    color: rgb(0, 184, 216);
+    transform: scale(1.1);
+  }
+
   &.xlr-mute-btn {
     &:hover {
       background-color: color-mix(in srgb, rgb(255, 152, 0) 10%, transparent);
@@ -95,6 +101,9 @@ ul.tweet-detail-actions:has(.xlr-add-btn) > li {
     &.xlr-remove-btn:hover { color: rgb(244, 33, 46) !important; }
     &.xlr-mute-btn:hover { color: rgb(255, 152, 0) !important; }
     &.xlr-filter-btn:hover { color: rgb(120, 86, 255) !important; }
+    &.xlr-user-search-btn:hover { color: rgb(0, 184, 216) !important; }
+    &.xlr-filter-btn.xlr-active { color: rgb(120, 86, 255) !important; }
+    &.xlr-user-search-btn.xlr-active { color: rgb(0, 184, 216) !important; }
     &.xlr-done { color: rgb(0, 186, 124) !important; }
   }
 }

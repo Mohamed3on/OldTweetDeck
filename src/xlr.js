@@ -145,6 +145,16 @@
     if (cache) { added ? cache.add(listId) : cache.delete(listId); }
   }
 
+  const EDIT_BOX = '.column-title-edit-box';
+  const AT_RE = /^@(\S+)/;
+  const FROM_RE = /from:(\S+)/;
+  const FROM_TOKEN_RE = /from:\S+\s*/;
+
+  const setFilterInput = (input, newValue) => {
+    if (newValue === input.value) return;
+    $(input).val(newValue).trigger('uiInputSubmit');
+  };
+
   const getUsername = (article) => {
     const detailLink = article.querySelector('.account-summary .account-link');
     if (detailLink) return detailLink.getAttribute('href')?.match(/\/([^/]+)$/)?.[1] || null;
@@ -158,7 +168,7 @@
       const heading = col.querySelector('.column-heading');
       if (heading) return listsByName?.[heading.textContent.trim().toLowerCase()] || null;
     }
-    const input = col.querySelector('.column-title-edit-box');
+    const input = col.querySelector(EDIT_BOX);
     const match = input?.value?.match(/list:(\d+)/);
     return match ? match[1] : null;
   }
@@ -175,12 +185,11 @@
   const addListSvg = mkSvg('M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z');
   const muteSvg = mkSvg('M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z');
   const filterSvg = mkSvg('M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z');
+  const userSearchSvg = mkSvg('M17.863 13.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H3.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46C7.627 11.85 9.648 11 12 11s4.373.85 5.863 2.44zM5.887 19h12.226c-.283-1.737-.944-3.06-1.928-4.11C14.965 13.73 13.615 13 12 13s-2.965.73-4.185 1.89c-.984 1.05-1.645 2.373-1.928 4.11zM12 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0-2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z');
 
   const clearFromFilter = (article) => {
-    const input = article.closest('.column-panel')?.querySelector('.column-title-edit-box');
-    if (!input) return;
-    const newVal = input.value.replace(/from:\S+\s*/, '').trim();
-    if (newVal !== input.value) $(input).val(newVal).trigger('uiInputSubmit');
+    const input = article.closest('.column-panel')?.querySelector(EDIT_BOX);
+    if (input) setFilterInput(input, input.value.replace(FROM_TOKEN_RE, '').trim());
   };
 
   const markDone = (btn, title, article) => {
@@ -344,40 +353,62 @@
       appendToBar(btn);
     }
 
-    if (col?.querySelector('.column-title-edit-box')) {
+    const userLower = username.toLowerCase();
+
+    if (listId && col?.querySelector(EDIT_BOX)) {
       const filterBtn = document.createElement('button');
       filterBtn.className = 'xlr-filter-btn';
+      filterBtn.dataset.xlrUsername = userLower;
       filterBtn.title = `Filter by @${username}`;
       filterBtn.appendChild(filterSvg.cloneNode(true));
       filterBtn.onclick = (e) => {
         e.preventDefault(); e.stopPropagation();
-        // Look up input fresh each click — TweetDeck may re-render the header
-        const input = col.querySelector('.column-title-edit-box');
+        // Re-query: TweetDeck may re-render the header between clicks
+        const input = col.querySelector(EDIT_BOX);
         if (!input) return;
         const current = input.value.trim();
+        const fromMatch = current.match(FROM_RE);
         let newValue;
-        const fromMatch = current.match(/from:\S+/);
-        if (fromMatch && fromMatch[0] === `from:${username}`) {
-          newValue = current.replace(/from:\S+\s*/, '').trim();
+        if (fromMatch?.[1].toLowerCase() === userLower) {
+          newValue = current.replace(FROM_TOKEN_RE, '').trim();
         } else if (fromMatch) {
-          newValue = current.replace(/from:\S+/, `from:${username}`);
+          newValue = current.replace(FROM_RE, `from:${username}`);
         } else {
           newValue = `from:${username} ${current}`;
         }
-        if (newValue === current) return;
-        $(input).val(newValue).trigger('uiInputSubmit');
+        setFilterInput(input, newValue);
       };
       appendToBar(filterBtn);
     }
 
-    const addBtn = document.createElement('button');
-    addBtn.className = 'xlr-add-btn';
-    addBtn.title = 'Add to list';
-    addBtn.appendChild(addListSvg.cloneNode(true));
-    addBtn.onmouseenter = () => fetchMembership(username);
-    addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
-    addBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (!addBtn._wasOpen) showPopover(addBtn, username); };
-    appendToBar(addBtn);
+    const userSearchBtn = document.createElement('button');
+    userSearchBtn.className = 'xlr-user-search-btn';
+    userSearchBtn.dataset.xlrUsername = userLower;
+    userSearchBtn.title = `Search @${username} in user column`;
+    userSearchBtn.appendChild(userSearchSvg.cloneNode(true));
+    userSearchBtn.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      for (const input of document.querySelectorAll(EDIT_BOX)) {
+        const val = input.value.trim();
+        const m = val.match(AT_RE);
+        if (!m) continue;
+        if (m[1].toLowerCase() === userLower) return;
+        setFilterInput(input, val.replace(AT_RE, `@${username}`));
+        return;
+      }
+    };
+    appendToBar(userSearchBtn);
+
+    if (!listId) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'xlr-add-btn';
+      addBtn.title = 'Add to list';
+      addBtn.appendChild(addListSvg.cloneNode(true));
+      addBtn.onmouseenter = () => fetchMembership(username);
+      addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
+      addBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (!addBtn._wasOpen) showPopover(addBtn, username); };
+      appendToBar(addBtn);
+    }
 
     const moreItem = actionBar.querySelector('[rel="actionsMenu"]')?.closest('li');
     if (moreItem) {
@@ -387,14 +418,35 @@
     }
   }
 
+  function updateButtonStates() {
+    let atUser = null;
+    for (const col of document.querySelectorAll('.column-panel')) {
+      const val = col.querySelector(EDIT_BOX)?.value;
+      if (!val) continue;
+      if (atUser == null) atUser = val.trim().match(AT_RE)?.[1].toLowerCase() ?? null;
+      const fromUser = val.match(FROM_RE)?.[1].toLowerCase() ?? null;
+      for (const btn of col.querySelectorAll('.xlr-filter-btn')) {
+        btn.classList.toggle('xlr-active', btn.dataset.xlrUsername === fromUser);
+      }
+    }
+    for (const btn of document.querySelectorAll('.xlr-user-search-btn')) {
+      btn.classList.toggle('xlr-active', btn.dataset.xlrUsername === atUser);
+    }
+  }
+
   let scanQueued = false;
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach(process);
+    updateButtonStates();
     scanQueued = false;
   };
 
   const observer = new MutationObserver(() => {
     if (!scanQueued) { scanQueued = true; requestAnimationFrame(scan); }
+  });
+
+  document.addEventListener('input', (e) => {
+    if (e.target.matches?.(EDIT_BOX)) updateButtonStates();
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
