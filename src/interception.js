@@ -318,7 +318,7 @@ function parseTweet(res) {
                 }
             }
             tweet.retweeted_status = result.legacy;
-            if (tweet.retweeted_status && result.core.user_results.result.legacy) {
+            if (tweet.retweeted_status && result.core?.user_results?.result?.legacy) {
                 let user_result = result?.core?.user_results?.result;
                 tweet.retweeted_status.text = tweet.retweeted_status.full_text;
                 tweet.retweeted_status.id = +tweet.retweeted_status.id_str;
@@ -403,7 +403,7 @@ function parseTweet(res) {
                 }
                 result = result.tweet;
             }
-            if(result && result.legacy) {
+            if(result && result.legacy && result.core?.user_results?.result?.legacy) {
                 tweet.quoted_status = result.legacy;
                 tweet.quoted_status.id = +tweet.quoted_status.id_str;
                 tweet.quoted_status.conversation_id = +tweet.quoted_status.conversation_id_str;
@@ -491,8 +491,8 @@ function parseTweet(res) {
     
         return tweet;
     } catch (e) {
-        console.error('error parsing tweet', e, res);
-        throw new Error('error parsing tweet');
+        console.error('error parsing tweet', e.message, 'stack:', e.stack, 'res:', JSON.stringify(res, null, 2)?.slice(0, 2000));
+        return;
     }
 }
 
