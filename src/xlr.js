@@ -54,23 +54,20 @@
     });
 
   let lists = null, listsByName = null;
+  const buildByName = (ls) => Object.fromEntries(ls.map(l => [l.name.toLowerCase(), l.id]));
 
   function parseLists(data) {
     const insts = data.data?.viewer?.list_management_timeline?.timeline?.instructions
       || data.data?.user?.result?.timeline?.timeline?.instructions || [];
     lists = [];
-    listsByName = {};
     for (const i of insts) {
       if (i.type !== 'TimelineAddEntries') continue;
       for (const e of i.entries) {
         const l = e?.content?.itemContent?.list || e?.content?.itemContent?.list_results?.result;
-        if (l?.name) {
-          const id = l.id_str || l.rest_id;
-          lists.push({ name: l.name, id });
-          listsByName[l.name.toLowerCase()] = id;
-        }
+        if (l?.name) lists.push({ name: l.name, id: l.id_str || l.rest_id });
       }
     }
+    listsByName = buildByName(lists);
   }
 
   const LIST_CACHE_TTL = 1000 * 60 * 60 * 24;
@@ -81,8 +78,7 @@
       const cached = JSON.parse(localStorage.getItem('xlrLists'));
       if (cached && Date.now() - cached.ts < LIST_CACHE_TTL) {
         lists = cached.lists;
-        listsByName = {};
-        for (const { name, id } of lists) listsByName[name.toLowerCase()] = id;
+        listsByName = buildByName(lists);
         return;
       }
     } catch {}
@@ -140,10 +136,10 @@
     return membershipInflight[username];
   }
 
-  function updateMembership(username, listId, added) {
+  const updateMembership = (username, listId, added) => {
     const cache = membershipCache[username];
-    if (cache) { added ? cache.add(listId) : cache.delete(listId); }
-  }
+    if (cache) added ? cache.add(listId) : cache.delete(listId);
+  };
 
   const EDIT_BOX = '.column-title-edit-box';
   const AT_RE = /^@(\S+)/;
@@ -156,9 +152,7 @@
   };
 
   const getUsername = (article) => {
-    const detailLink = article.querySelector('.account-summary .account-link');
-    if (detailLink) return detailLink.getAttribute('href')?.match(/\/([^/]+)$/)?.[1] || null;
-    const link = article.querySelector('.tweet-header .account-link');
+    const link = article.querySelector('.account-summary .account-link, .tweet-header .account-link');
     return link?.getAttribute('href')?.match(/\/([^/]+)$/)?.[1] || null;
   };
 
@@ -168,9 +162,7 @@
       const heading = col.querySelector('.column-heading');
       if (heading) return listsByName?.[heading.textContent.trim().toLowerCase()] || null;
     }
-    const input = col.querySelector(EDIT_BOX);
-    const match = input?.value?.match(/list:(\d+)/);
-    return match ? match[1] : null;
+    return col.querySelector(EDIT_BOX)?.value?.match(/list:(\d+)/)?.[1] || null;
   }
 
   const mkSvg = (d) => {
@@ -186,6 +178,21 @@
   const muteSvg = mkSvg('M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z');
   const filterSvg = mkSvg('M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z');
   const userSearchSvg = mkSvg('M17.863 13.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H3.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46C7.627 11.85 9.648 11 12 11s4.373.85 5.863 2.44zM5.887 19h12.226c-.283-1.737-.944-3.06-1.928-4.11C14.965 13.73 13.615 13 12 13s-2.965.73-4.185 1.89c-.984 1.05-1.645 2.373-1.928 4.11zM12 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0-2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z');
+
+  const mkBtn = (cls, title, svg) => {
+    const btn = document.createElement('button');
+    btn.className = cls;
+    btn.title = title;
+    btn.appendChild(svg.cloneNode(true));
+    return btn;
+  };
+
+  const withBusy = (btn, cls, fn) => async (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (btn.classList.contains(cls)) return;
+    btn.classList.add(cls);
+    try { await fn(); } finally { btn.classList.remove(cls); }
+  };
 
   const clearFromFilter = (article) => {
     const input = article.closest('.column-panel')?.querySelector(EDIT_BOX);
@@ -237,28 +244,18 @@
     const item = document.createElement('button');
     item.className = 'xlr-dropdown-item';
     item.textContent = name;
-
-    item.onclick = async (ev) => {
-      ev.preventDefault(); ev.stopPropagation();
-      if (item.classList.contains('xlr-inflight')) return;
-
+    item.onclick = withBusy(item, 'xlr-inflight', async () => {
       const removing = item.classList.contains('xlr-dropdown-done');
-      item.classList.add('xlr-inflight');
       setItemState(item, name, !removing);
-
       const userId = await resolveUser(username);
-      const r = removing
-        ? await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId: id, userId })
-        : await gqlPost(QID.LIST_ADD_MEMBER, 'ListAddMember', { listId: id, userId });
-
-      item.classList.remove('xlr-inflight');
-      if (r.ok) {
-        updateMembership(username, id, !removing);
-      } else {
-        setItemState(item, name, removing);
-      }
-    };
-
+      const r = await gqlPost(
+        removing ? QID.LIST_REMOVE_MEMBER : QID.LIST_ADD_MEMBER,
+        removing ? 'ListRemoveMember' : 'ListAddMember',
+        { listId: id, userId },
+      );
+      if (r.ok) updateMembership(username, id, !removing);
+      else setItemState(item, name, removing);
+    });
     return item;
   }
 
@@ -277,11 +274,13 @@
     });
 
     const rect = addBtn.getBoundingClientRect();
-    popover.style.position = 'fixed';
-    popover.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-    popover.style.right = (window.innerWidth - rect.right) + 'px';
-    popover.style.top = 'auto';
-    popover.style.left = 'auto';
+    Object.assign(popover.style, {
+      position: 'fixed',
+      bottom: (window.innerHeight - rect.top + 4) + 'px',
+      right: (window.innerWidth - rect.right) + 'px',
+      top: 'auto',
+      left: 'auto',
+    });
     popover.showPopover();
 
     const memberOf = await fetchMembership(username);
@@ -294,98 +293,32 @@
     if (seen.has(article) || !lists) return;
     seen.add(article);
 
-    const actionBar = article.querySelector('ul.tweet-actions') || article.querySelector('ul.tweet-detail-actions');
+    const actionBar = article.querySelector('ul.tweet-actions, ul.tweet-detail-actions');
     if (!actionBar) return;
     const username = getUsername(article);
     if (!username) return;
 
+    const col = article.closest('.column-panel');
+    const listId = getListId(col);
+    if (listId && article.querySelector('.tweet-context .icon-retweet-filled')) {
+      article.style.display = 'none';
+      return;
+    }
+
     const isDetail = actionBar.classList.contains('tweet-detail-actions');
+    const moreItem = actionBar.querySelector('[rel="actionsMenu"]')?.closest('li');
     const appendToBar = (btn) => {
       const li = document.createElement('li');
       li.className = isDetail ? 'tweet-detail-action-item' : 'tweet-action-item pull-left margin-r--10';
       li.appendChild(btn);
-      const moreItem = actionBar.querySelector('[rel="actionsMenu"]')?.closest('li');
       if (moreItem) actionBar.insertBefore(li, moreItem);
       else actionBar.appendChild(li);
     };
 
-    const muteBtn = document.createElement('button');
-    muteBtn.className = 'xlr-mute-btn';
-    muteBtn.title = 'Mute & remove from lists';
-    muteBtn.appendChild(muteSvg.cloneNode(true));
-    muteBtn.onclick = async (e) => {
-      e.preventDefault(); e.stopPropagation();
-      if (muteBtn.classList.contains('xlr-removing')) return;
-      muteBtn.classList.add('xlr-removing');
-      const ok = await muteUser(username);
-      if (ok) markDone(muteBtn, `Muted @${username}`, article);
-      muteBtn.classList.remove('xlr-removing');
-    };
-
-    const col = article.closest('.column-panel');
-    const listId = getListId(col);
-    if (listId) {
-      const isRetweet = !!article.querySelector('.tweet-context .icon-retweet-filled');
-      if (isRetweet) {
-        article.style.display = 'none';
-        return;
-      }
-
-      const btn = document.createElement('button');
-      btn.className = 'xlr-remove-btn';
-      btn.title = 'Remove from list';
-      btn.appendChild(removeSvg.cloneNode(true));
-
-      btn.onclick = async (e) => {
-        e.preventDefault(); e.stopPropagation();
-        if (btn.classList.contains('xlr-removing')) return;
-        btn.classList.add('xlr-removing');
-        const userId = await resolveUser(username);
-        if (!userId) { btn.classList.remove('xlr-removing'); return; }
-        const r = await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId });
-        if (r.ok) {
-          markDone(btn, `Removed @${username}`, article);
-          updateMembership(username, listId, false);
-        }
-        btn.classList.remove('xlr-removing');
-      };
-
-      appendToBar(btn);
-    }
-
     const userLower = username.toLowerCase();
 
-    if (listId && col?.querySelector(EDIT_BOX)) {
-      const filterBtn = document.createElement('button');
-      filterBtn.className = 'xlr-filter-btn';
-      filterBtn.dataset.xlrUsername = userLower;
-      filterBtn.title = `Filter by @${username}`;
-      filterBtn.appendChild(filterSvg.cloneNode(true));
-      filterBtn.onclick = (e) => {
-        e.preventDefault(); e.stopPropagation();
-        // Re-query: TweetDeck may re-render the header between clicks
-        const input = col.querySelector(EDIT_BOX);
-        if (!input) return;
-        const current = input.value.trim();
-        const fromMatch = current.match(FROM_RE);
-        let newValue;
-        if (fromMatch?.[1].toLowerCase() === userLower) {
-          newValue = current.replace(FROM_TOKEN_RE, '').trim();
-        } else if (fromMatch) {
-          newValue = current.replace(FROM_RE, `from:${username}`);
-        } else {
-          newValue = `from:${username} ${current}`;
-        }
-        setFilterInput(input, newValue);
-      };
-      appendToBar(filterBtn);
-    }
-
-    const userSearchBtn = document.createElement('button');
-    userSearchBtn.className = 'xlr-user-search-btn';
+    const userSearchBtn = mkBtn('xlr-user-search-btn', `Search @${username} in user column`, userSearchSvg);
     userSearchBtn.dataset.xlrUsername = userLower;
-    userSearchBtn.title = `Search @${username} in user column`;
-    userSearchBtn.appendChild(userSearchSvg.cloneNode(true));
     userSearchBtn.onclick = (e) => {
       e.preventDefault(); e.stopPropagation();
       for (const input of document.querySelectorAll(EDIT_BOX)) {
@@ -399,23 +332,55 @@
     };
     appendToBar(userSearchBtn);
 
-    if (!listId) {
-      const addBtn = document.createElement('button');
-      addBtn.className = 'xlr-add-btn';
-      addBtn.title = 'Add to list';
-      addBtn.appendChild(addListSvg.cloneNode(true));
+    if (listId && col?.querySelector(EDIT_BOX)) {
+      const filterBtn = mkBtn('xlr-filter-btn', `Filter by @${username}`, filterSvg);
+      filterBtn.dataset.xlrUsername = userLower;
+      filterBtn.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        // Re-query: TweetDeck may re-render the header between clicks
+        const input = col.querySelector(EDIT_BOX);
+        if (!input) return;
+        const current = input.value.trim();
+        const fromMatch = current.match(FROM_RE);
+        let newValue;
+        if (fromMatch?.[1].toLowerCase() === userLower) newValue = current.replace(FROM_TOKEN_RE, '').trim();
+        else if (fromMatch) newValue = current.replace(FROM_RE, `from:${username}`);
+        else newValue = `from:${username} ${current}`;
+        setFilterInput(input, newValue);
+      };
+      appendToBar(filterBtn);
+    }
+
+    if (listId) {
+      const removeBtn = mkBtn('xlr-remove-btn', 'Remove from list', removeSvg);
+      removeBtn.onclick = withBusy(removeBtn, 'xlr-removing', async () => {
+        const userId = await resolveUser(username);
+        if (!userId) return;
+        const r = await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId });
+        if (r.ok) {
+          markDone(removeBtn, `Removed @${username}`, article);
+          updateMembership(username, listId, false);
+        }
+      });
+      appendToBar(removeBtn);
+    } else {
+      const addBtn = mkBtn('xlr-add-btn', 'Add to list', addListSvg);
       addBtn.onmouseenter = () => fetchMembership(username);
       addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
-      addBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (!addBtn._wasOpen) showPopover(addBtn, username); };
+      addBtn.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!addBtn._wasOpen) showPopover(addBtn, username);
+      };
       appendToBar(addBtn);
     }
 
-    const moreItem = actionBar.querySelector('[rel="actionsMenu"]')?.closest('li');
-    if (moreItem) {
-      moreItem.replaceChildren(muteBtn);
-    } else {
-      appendToBar(muteBtn);
-    }
+    const muteBtn = mkBtn('xlr-mute-btn', 'Mute & remove from lists', muteSvg);
+    muteBtn.onclick = withBusy(muteBtn, 'xlr-removing', async () => {
+      const ok = await muteUser(username);
+      if (ok) markDone(muteBtn, `Muted @${username}`, article);
+    });
+    if (moreItem) moreItem.replaceChildren(muteBtn);
+    else appendToBar(muteBtn);
   }
 
   function updateButtonStates() {
