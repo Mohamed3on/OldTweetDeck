@@ -196,3 +196,26 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   0%, 100% { transform: scale(1); opacity: 0.4; }
   50% { transform: scale(1.5); opacity: 1; }
 }
+
+.otd-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translate(-50%, 20px);
+  background: rgb(244, 33, 46);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 999999;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  max-width: 90vw;
+}
+.otd-toast.otd-toast-show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

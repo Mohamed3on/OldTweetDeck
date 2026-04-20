@@ -55,6 +55,23 @@ let timings = {
 }
 let refreshInterval = localStorage.OTDrefreshInterval ? parseInt(localStorage.OTDrefreshInterval) : 35000;
 
+let lastToastAt = 0;
+function showToast(message, { dedupeMs = 3000 } = {}) {
+    const now = Date.now();
+    if (now - lastToastAt < dedupeMs) return;
+    lastToastAt = now;
+    if (!document.body) return;
+    const el = document.createElement("div");
+    el.className = "otd-toast";
+    el.textContent = message;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("otd-toast-show"));
+    setTimeout(() => {
+        el.classList.remove("otd-toast-show");
+        setTimeout(() => el.remove(), 300);
+    }, 4000);
+}
+
 function exportState() {
 	const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify({
@@ -202,10 +219,11 @@ function parseTweet(res) {
         if (!res.legacy && res.tweet) res = res.tweet;
         let tweet = res.legacy;
         if (!res.core || !tweet) return;
+        let result = res.core.user_results?.result;
+        if (!result?.legacy) return;
         if(!tweet.id) {
             tweet.id = +tweet.id_str;
         }
-        let result = res.core.user_results.result;
         tweet.conversation_id = +tweet.conversation_id_str;
         tweet.text = tweet.full_text;
         tweet.user = result.legacy;
@@ -1798,23 +1816,24 @@ const proxyRoutes = [
             delete xhr.modReqHeaders["X-Twitter-Client-Version"];
         },
         afterRequest: (xhr) => {
+            const empty = { metadata: { cursor: null, refresh_interval_in_sec: 30 }, modules: [] };
             if(xhr.storage.cancelled) {
-                return [];
+                return empty;
             }
             let data;
             try {
                 data = JSON.parse(xhr.responseText);
             } catch (e) {
-                console.error(e);
-                return [];
+                console.warn("Search response unparseable", { status: xhr.status, body: xhr.responseText?.slice(0, 200) }, e);
+                return empty;
             }
             // if (data.errors && data.errors[0]) {
-            //     return [];
+            //     return empty;
             // }
             let instructions = data?.data?.search_by_raw_query?.search_timeline?.timeline?.instructions;
             let entries = instructions?.find((i) => i.entries);
             if (!entries) {
-                return [];
+                return empty;
             }
             entries = entries.entries;
             let res = [];
@@ -1920,7 +1939,7 @@ const proxyRoutes = [
             try {
                 data = JSON.parse(xhr.responseText);
             } catch (e) {
-                console.error(e);
+                console.warn("User search response unparseable", { status: xhr.status, body: xhr.responseText?.slice(0, 200) }, e);
                 return [];
             }
             if (data.errors && data.errors[0]) {
@@ -2852,6 +2871,9 @@ XMLHttpRequest = function () {
             return value;
         },
         interceptResponseText(xhr) {
+            if (xhr.status === 429) {
+                showToast("Twitter rate limit hit — slow down or try again in a bit.");
+            }
             if (xhr.proxyRoute && xhr.proxyRoute.afterRequest) {
                 let out = xhr.proxyRoute.afterRequest(xhr);
                 if (typeof out === "object") {

@@ -1,7 +1,6 @@
 (() => {
   const BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
   const QID = {
-    COMBINED_LISTS: 'nMnGz4LNdB660Pr6s3jyBQ',
     USER_BY_SCREEN_NAME: 'NimuplG1OB7Fd2btCLdBOw',
     LIST_OWNERSHIPS: 'BBLgNbbUu6HXAX11lV_1Qw',
     LIST_ADD_MEMBER: 'vWPi0CTMoPFsjsL6W4IynQ',
@@ -56,35 +55,26 @@
   let lists = null, listsByName = null;
   const buildByName = (ls) => Object.fromEntries(ls.map(l => [l.name.toLowerCase(), l.id]));
 
-  function parseLists(data) {
-    const insts = data.data?.viewer?.list_management_timeline?.timeline?.instructions
-      || data.data?.user?.result?.timeline?.timeline?.instructions || [];
-    lists = [];
-    for (const i of insts) {
-      if (i.type !== 'TimelineAddEntries') continue;
-      for (const e of i.entries) {
-        const l = e?.content?.itemContent?.list || e?.content?.itemContent?.list_results?.result;
-        if (l?.name) lists.push({ name: l.name, id: l.id_str || l.rest_id });
-      }
-    }
-    listsByName = buildByName(lists);
-  }
-
   const LIST_CACHE_TTL = 1000 * 60 * 60 * 24;
   let userIds = {};
 
   const listsReady = (async () => {
     try {
-      const cached = JSON.parse(localStorage.getItem('xlrLists'));
+      const cached = JSON.parse(localStorage.getItem('xlrLists_v2'));
       if (cached && Date.now() - cached.ts < LIST_CACHE_TTL) {
         lists = cached.lists;
         listsByName = buildByName(lists);
         return;
       }
     } catch {}
-    const data = await gql(QID.COMBINED_LISTS, 'CombinedLists', { userId: myId(), count: 100 });
-    parseLists(data);
-    localStorage.setItem('xlrLists', JSON.stringify({ lists, ts: Date.now() }));
+    const res = await fetch(
+      `https://api.${location.hostname}/1.1/lists/ownerships.json?count=1000`,
+      { headers: hdrs(), credentials: 'include' },
+    );
+    const data = await res.json();
+    lists = (data.lists || []).map(l => ({ name: l.name, id: l.id_str }));
+    listsByName = buildByName(lists);
+    if (lists.length) localStorage.setItem('xlrLists_v2', JSON.stringify({ lists, ts: Date.now() }));
   })();
 
   try { userIds = JSON.parse(localStorage.getItem('xlrUserIds')) || {}; } catch {}
@@ -142,7 +132,7 @@
   };
 
   const EDIT_BOX = '.column-title-edit-box';
-  const AT_RE = /^@(\S+)/;
+  const AT_RE = /(?:^|\s)@(\S+)/;
   const FROM_RE = /from:(\S+)/;
   const FROM_TOKEN_RE = /from:\S+\s*/;
 
@@ -326,7 +316,8 @@
         const m = val.match(AT_RE);
         if (!m) continue;
         if (m[1].toLowerCase() === userLower) return;
-        setFilterInput(input, val.replace(AT_RE, `@${username}`));
+        const rest = val.replace(AT_RE, '').trim();
+        setFilterInput(input, rest ? `${rest} @${username}` : `@${username}`);
         return;
       }
     };
