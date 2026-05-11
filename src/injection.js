@@ -26,6 +26,8 @@ window.postMessage('cookie', '*');
 window.postMessage('getotdtoken', '*');
 
 async function main() {
+    localStorage.OTDenableAutoExpand ??= "1";
+
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
@@ -40,7 +42,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/xlr.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/xlr.css")).then(r => r.text()),
         ]);
-    if (!localStorage.getItem("OTDalwaysUseLocalFiles")) {
+    if (localStorage.OTDalwaysUseLocalFiles === "0") {
         const [
             remote_challenge_js_req,
             remote_interception_js_req,

@@ -1848,6 +1848,7 @@ const proxyRoutes = [
                     if (!tweet) {
                         continue;
                     }
+                    if (tweet.user.blocking || tweet.user.muting) continue;
                     res.push(tweet);
                 }
             }
