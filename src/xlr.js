@@ -23,7 +23,7 @@
     subscriptions_verification_info_is_identity_verified_enabled: true, highlights_tweets_tab_ui_enabled: true,
     responsive_web_graphql_exclude_directive_enabled: true, hidden_profile_subscriptions_enabled: true,
     responsive_web_grok_analysis_button_from_backend: true, tweet_awards_web_tipping_enabled: false,
-    responsive_web_grok_show_grok_translated_post: false, responsive_web_jetfuel_frame: true,
+    responsive_web_grok_show_grok_translated_post: true, responsive_web_jetfuel_frame: true,
     rweb_tipjar_consumption_enabled: false, responsive_web_grok_community_note_auto_translation_is_enabled: false,
     premium_content_api_read_enabled: false, responsive_web_profile_redirect_enabled: false,
     responsive_web_grok_analyze_button_fetch_trends_enabled: false, post_ctas_fetch_enabled: true,
