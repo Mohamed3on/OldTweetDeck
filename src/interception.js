@@ -201,7 +201,7 @@ function applyGrokTranslation(result, legacy) {
     if (result?.tweet) result = result.tweet; // some routes wrap the result in a `.tweet`
     if (!result || !legacy) return;
     let translation = result.grok_translated_post_with_availability?.data?.translation;
-    if (!translation || typeof legacy.full_text !== "string") return;
+    if (typeof translation !== "string" || !translation || typeof legacy.full_text !== "string") return;
     legacy.full_text = translation;
     legacy.text = translation;
     legacy.display_text_range = undefined;
@@ -1155,7 +1155,8 @@ const proxyRoutes = [
                 console.error(e);
                 return [];
             }
-            let instructions = data?.data?.user?.result?.timeline_v2?.timeline?.instructions;
+            let timeline = data?.data?.user?.result?.timeline ?? data?.data?.user?.result?.timeline_v2;
+            let instructions = timeline?.timeline?.instructions;
             let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
             if (!entries) {
                 return [];
@@ -1686,7 +1687,8 @@ const proxyRoutes = [
             // if (data.errors && data.errors[0]) {
             //     return [];
             // }
-            let instructions = data?.data?.user?.result?.timeline_v2?.timeline?.instructions;
+            let timeline = data?.data?.user?.result?.timeline ?? data?.data?.user?.result?.timeline_v2;
+            let instructions = timeline?.timeline?.instructions;
             let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
             if (!entries) {
                 return [];
