@@ -160,6 +160,20 @@ async function main() {
     vendor_js_script.innerHTML = vendor_js.value;
     document.head.appendChild(vendor_js_script);
 
+    // Classic TweetDeck only renders a quote card when the tweet has no media of its
+    // own ({{^hasMedia}}); X now allows media + quote. Drop that guard so both show.
+    // Detail view already renders media above the quote, so just unwrap it there.
+    bundle_js.value = bundle_js.value.replaceAll(
+        "{{^hasMedia}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{/hasMedia}}",
+        "{{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}}"
+    );
+    // Column view renders media (tweet_media_wrapper) after the quote, so move the
+    // quote below the media wrapper too — matches x.com (own media, then the quote).
+    bundle_js.value = bundle_js.value.replaceAll(
+        '{{^hasMedia}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{#isInThread}} <div class="margin-b--5"></div> {{/isInThread}} {{/hasMedia}} {{#quotedTweetMissing}} {{>status/quoted_tweet_missing}} {{/quotedTweetMissing}} {{#translation}}{{>status/tweet_translation}}{{/translation}} {{>status/tweet_media_wrapper}}',
+        '{{^hasMedia}} {{#isInThread}} <div class="margin-b--5"></div> {{/isInThread}} {{/hasMedia}} {{#quotedTweetMissing}} {{>status/quoted_tweet_missing}} {{/quotedTweetMissing}} {{#translation}}{{>status/tweet_translation}}{{/translation}} {{>status/tweet_media_wrapper}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}}'
+    );
+
     let bundle_js_script = document.createElement("script");
     bundle_js_script.innerHTML = bundle_js.value;
     document.head.appendChild(bundle_js_script);

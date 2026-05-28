@@ -218,6 +218,37 @@ function applyGrokTranslation(result, legacy) {
     neutralize(legacy.extended_entities);
 }
 
+// When the quoted tweet is unavailable, X omits it and there's no card to render.
+// The quote link lives in the separate quoted_status_permalink field rather than
+// inline, so nothing shows. Splice the permalink in as a real URL entity so it does.
+function appendQuotePermalink(tweet) {
+    let p = tweet?.quoted_status_permalink;
+    if (!p?.url || typeof tweet.full_text !== "string") return;
+    if ((tweet.entities?.urls ?? []).some((u) => u.url === p.url)) return;
+
+    // Indices are Unicode code points, not UTF-16 units — work in a code-point array.
+    let cp = Array.from(tweet.full_text);
+    let range = tweet.display_text_range ?? [0, cp.length];
+    let at = range[1];
+    let prefix = at > 0 && cp[at - 1] !== " " ? " " : "";
+    let insert = Array.from(prefix + p.url);
+    cp.splice(at, 0, ...insert);
+    tweet.full_text = cp.join("");
+    tweet.text = tweet.full_text;
+
+    if (!tweet.entities) tweet.entities = {};
+    let bump = (arr) => {
+        for (let e of arr ?? []) if (e.indices?.[0] >= at) { e.indices[0] += insert.length; e.indices[1] += insert.length; }
+    };
+    for (let key of ["hashtags", "symbols", "urls", "user_mentions", "media"]) bump(tweet.entities[key]);
+    bump(tweet.extended_entities?.media);
+
+    let urlStart = at + prefix.length;
+    let urlEnd = urlStart + Array.from(p.url).length;
+    (tweet.entities.urls ??= []).push({ url: p.url, expanded_url: p.expanded, display_url: p.display, indices: [urlStart, urlEnd] });
+    tweet.display_text_range = [range[0], urlEnd];
+}
+
 function parseNoteTweet(result) {
     let text, entities;
     if (result.note_tweet.note_tweet_results.result) {
@@ -543,6 +574,14 @@ function parseTweet(res) {
         applyGrokTranslation(rt, tweet.retweeted_status);
         applyGrokTranslation(tweet.quoted_status_result?.result, tweet.quoted_status);
         applyGrokTranslation(rt?.quoted_status_result?.result, tweet.retweeted_status?.quoted_status);
+
+        // The quoted tweet is unavailable (suspended/deleted), so no card can render —
+        // surface the permalink so the quote isn't silently dropped.
+        for (let t of [tweet, tweet.retweeted_status]) {
+            if (t && (t.is_quote_status || t.quoted_status_id_str) && !t.quoted_status) {
+                appendQuotePermalink(t);
+            }
+        }
 
         return tweet;
     } catch (e) {
