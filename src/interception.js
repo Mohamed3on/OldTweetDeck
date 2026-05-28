@@ -53,6 +53,8 @@ if(localStorage.OTDsettings) {
         settings = null;
     }
 }
+// Snapshot the persisted layout once a day as a rolling backup (no-op if <24h since last).
+backupStateDaily();
 let seenNotifications = [];
 let seenHomeTweets = {};
 let timings = {
@@ -80,16 +82,36 @@ function showToast(message, { dedupeMs = 3000 } = {}) {
     }, 4000);
 }
 
-function exportState() {
-	const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify({
-        feeds, 
+function snapshotState() {
+    return {
+        feeds,
         columns,
         settings,
         columnIds: localStorage.OTDcolumnIds ? JSON.parse(localStorage.OTDcolumnIds) : []
-    })], {type: 'application/json'}));
+    };
+}
+
+function exportState() {
+	const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(snapshotState())], {type: 'application/json'}));
     a.download = 'OTDState.json';
     a.click();
+}
+
+// Keep one rolling backup of the layout (feeds/columns/settings/columnIds) in a separate
+// localStorage slot, refreshed at most once a day and overwriting the previous, so a reset
+// or corrupted state can be recovered from a snapshot that's never more than ~24h stale.
+// The blob matches the export format, so importState can restore it unchanged.
+function backupStateDaily() {
+    try {
+        const DAY = 24 * 60 * 60 * 1000;
+        let prev = localStorage.OTDstateBackup ? JSON.parse(localStorage.OTDstateBackup) : null;
+        if (prev && Date.now() - prev.savedAt < DAY) return;
+        if (!columns || !Object.keys(columns).length) return; // nothing worth saving yet — don't clobber a good backup
+        localStorage.OTDstateBackup = JSON.stringify({ savedAt: Date.now(), ...snapshotState() });
+    } catch (e) {
+        console.error("OTD daily state backup failed", e);
+    }
 }
 
 function importState() {
@@ -119,6 +141,36 @@ function importState() {
         reader.readAsText(file);
     };
     input.click();
+}
+
+// Restore the layout from the rolling daily backup (see backupStateDaily). Mirrors
+// importState's write-and-reload, with a confirm because it replaces the current state.
+function restoreState() {
+    let raw = localStorage.OTDstateBackup;
+    if (!raw) {
+        alert("No daily backup found yet — one is saved automatically once you've used TweetDeck.");
+        return;
+    }
+    let data;
+    try {
+        data = JSON.parse(raw);
+    } catch (e) {
+        alert("Backup is corrupted and can't be restored.");
+        return;
+    }
+    if (!data.feeds || !data.columns || !data.settings || !data.columnIds) {
+        alert("Backup is incomplete and can't be restored.");
+        return;
+    }
+    let when = data.savedAt ? new Date(data.savedAt).toLocaleString() : "an earlier session";
+    if (!confirm(`Restore your layout from the backup saved ${when}? This replaces your current columns and settings.`)) {
+        return;
+    }
+    localStorage.OTDfeeds = JSON.stringify(data.feeds);
+    localStorage.OTDcolumns = JSON.stringify(data.columns);
+    localStorage.OTDsettings = JSON.stringify(data.settings);
+    localStorage.OTDcolumnIds = JSON.stringify(data.columnIds);
+    location.reload();
 }
 
 function cleanUp() {
@@ -200,22 +252,37 @@ function updateFollows(id = getCurrentUserId()) {
 function applyGrokTranslation(result, legacy) {
     if (result?.tweet) result = result.tweet; // some routes wrap the result in a `.tweet`
     if (!result || !legacy) return;
-    let translation = result.grok_translated_post_with_availability?.data?.translation;
+    let data = result.grok_translated_post_with_availability?.data;
+    let translation = data?.translation;
     if (typeof translation !== "string" || !translation || typeof legacy.full_text !== "string") return;
+
+    // Reply-prefix mentions ("Replying to @x") sit before the display range and Grok
+    // drops them from the translation. Capture them so the reply header still renders.
+    let origStart = (legacy.display_text_range ?? [0])[0];
+    let implicit = (legacy.entities?.user_mentions ?? []).filter((m) => m.indices?.[1] <= origStart);
+
     legacy.full_text = translation;
     legacy.text = translation;
     legacy.display_text_range = undefined;
-    // Entity indices pointed into the text we just replaced — push them past the new
-    // end so TweetDeck's URL/mention substring rewrites become no-ops. Media still
-    // renders from extended_entities via the separate media-preview path.
+    // Adopt Grok's entities: their indices point into the translated text, so mentions
+    // and links linkify in place. The old entities pointed into the pre-translation text;
+    // pushing them to the end made TweetDeck append a duplicate mention link after the
+    // plain-text mention already present in the translation.
     let end = translation.length;
-    let neutralize = (entities) => {
-        for (let key of ["hashtags", "symbols", "urls", "user_mentions", "media"]) {
-            for (let e of entities?.[key] ?? []) e.indices = [end, end];
+    if (legacy.entities) {
+        for (let key of ["hashtags", "symbols", "urls", "user_mentions"]) {
+            legacy.entities[key] = data.entities?.[key] ?? [];
         }
-    };
-    neutralize(legacy.entities);
-    neutralize(legacy.extended_entities);
+        // Re-add reply-prefix mentions past the text end: the body renderer skips entities
+        // beyond the text length, but getReplyingToUsers still picks them up via the flag.
+        for (let m of implicit) {
+            legacy.entities.user_mentions.push({ ...m, indices: [end + 1, end + 1], isImplicitMention: true });
+        }
+        // Media isn't in Grok's entities and its URL is dropped from the translation, so
+        // neutralize the stale inline indices — it still renders via the media-preview path.
+        for (let m of legacy.entities.media ?? []) m.indices = [end, end];
+    }
+    for (let m of legacy.extended_entities?.media ?? []) m.indices = [end, end];
 }
 
 // When the quoted tweet is unavailable, X omits it and there's no card to render.
@@ -264,6 +331,32 @@ function parseNoteTweet(result) {
     return { text, entities };
 }
 
+// X's modern API splits user fields across user_results.result (avatar, core, privacy,
+// relationship_perspectives, verification). Fold them into the flat legacy user shape,
+// filling only the gaps the legacy payload left behind.
+function hydrateUser(user, userResult) {
+    if (!user || !userResult) return;
+    if (userResult.is_blue_verified) {
+        user.verified = true;
+        user.verified_type = "Blue";
+    }
+    if (!user.profile_image_url && userResult.avatar?.image_url) {
+        user.profile_image_url = userResult.avatar.image_url;
+        user.profile_image_url_https = user.profile_image_url.replace("http://", "https://");
+    }
+    if (!user.profile_image_url && user.profile_image_url_https) {
+        user.profile_image_url = user.profile_image_url_https.replace("https://", "http://");
+    }
+    if (!user.name && userResult.core?.name) user.name = userResult.core.name;
+    if (!user.screen_name && userResult.core?.screen_name) user.screen_name = userResult.core.screen_name;
+    if (!user.created_at && userResult.core?.created_at) user.created_at = userResult.core.created_at;
+    if (userResult.relationship_perspectives?.muting) user.muting = true;
+    if (userResult.relationship_perspectives?.blocking) user.blocking = true;
+    if (userResult.privacy?.protected) user.protected = true;
+    if (userResult.location?.location) user.location = userResult.location.location;
+    if (userResult.verification?.verified) user.verified = true;
+}
+
 function parseTweet(res) {
     try {
 
@@ -290,41 +383,7 @@ function parseTweet(res) {
         tweet.user = result.legacy;
         tweet.user.id = +tweet.user_id_str;
         tweet.user.id_str = tweet.user_id_str;
-        if (result.is_blue_verified) {
-            tweet.user.verified = true;
-            tweet.user.verified_type = "Blue";
-        }
-        if(!tweet.user.profile_image_url && result?.avatar?.image_url) {
-            tweet.user.profile_image_url = result.avatar.image_url;
-            tweet.user.profile_image_url_https = tweet.user.profile_image_url.replace("http://", "https://");
-        }
-        if(!tweet.user.profile_image_url && tweet.user.profile_image_url_https) {
-            tweet.user.profile_image_url = tweet.user.profile_image_url_https.replace("https://", "http://");
-        }
-        if(!tweet.user.name && result?.core?.name) {
-            tweet.user.name = result.core.name;
-        }
-        if(!tweet.user.screen_name && result?.core?.screen_name) {
-            tweet.user.screen_name = result.core.screen_name;
-        }
-        if(!tweet.user.created_at && result?.core?.created_at) {
-            tweet.user.created_at = result.core.created_at;
-        }
-        if(result?.relationship_perspectives?.muting) {
-            tweet.user.muting = true;
-        }
-        if(result?.relationship_perspectives?.blocking) {
-            tweet.user.blocking = true;
-        }
-        if(result?.privacy?.protected) {
-            tweet.user.protected = true;
-        }
-        if(result?.location?.location) {
-            tweet.user.location = res.core.user_results.result.location.location;
-        }
-        if(result?.verification?.verified) {
-            tweet.user.verified = true;
-        }
+        hydrateUser(tweet.user, result);
 
         if (tweet.retweeted_status_result?.result) {
             let result = tweet.retweeted_status_result.result;
@@ -356,42 +415,7 @@ function parseTweet(res) {
                     result.legacy.quoted_status.user.id_str = result.legacy.quoted_status.user_id_str;
                     result.legacy.quoted_status.user.id = +result.legacy.quoted_status.user_id_str;
                     let user_result = result?.quoted_status_result?.result?.core?.user_results?.result;
-                    if(!result.legacy.quoted_status.user.profile_image_url && user_result?.avatar?.image_url) {
-                        result.legacy.quoted_status.user.profile_image_url = user_result.avatar.image_url;
-                        result.legacy.quoted_status.user.profile_image_url_https = result.legacy.quoted_status.user.profile_image_url.replace("http://", "https://");
-                    }
-                    if(!result.legacy.quoted_status.user.profile_image_url && result.legacy.quoted_status.user.profile_image_url_https) {
-                        result.legacy.quoted_status.user.profile_image_url = result.legacy.quoted_status.user.profile_image_url_https.replace("https://", "http://");
-                    }
-                    if(!result.legacy.quoted_status.user.name && user_result?.core?.name) {
-                        result.legacy.quoted_status.user.name = user_result.core.name;
-                    }
-                    if(!result.legacy.quoted_status.user.screen_name && user_result?.core?.screen_name) {
-                        result.legacy.quoted_status.user.screen_name = user_result.core.screen_name;
-                    }
-                    if(!result.legacy.quoted_status.user.created_at && user_result?.core?.created_at) {
-                        result.legacy.quoted_status.user.created_at = user_result.core.created_at;
-                    }
-                    if(user_result?.relationship_perspectives?.muting) {
-                        result.legacy.quoted_status.user.muting = true;
-                    }
-                    if(user_result?.relationship_perspectives?.blocking) {
-                        result.legacy.quoted_status.user.blocking = true;
-                    }
-                    if(user_result?.privacy?.protected) {
-                        result.legacy.quoted_status.user.protected = true;
-                    }
-                    if(user_result?.location?.location) {
-                        result.legacy.quoted_status.user.location = user_result.location.location;
-                    }
-                    if(user_result?.verification?.verified) {
-                        result.legacy.quoted_status.user.verified = true;
-                    }
-                    
-                    if (user_result.is_blue_verified) {
-                        result.legacy.quoted_status.user.verified = true;
-                        result.legacy.quoted_status.user.verified_type = "Blue";
-                    }
+                    hydrateUser(result.legacy.quoted_status.user, user_result);
                 } else {
                     console.warn("No retweeted quoted status", result);
                 }
@@ -405,42 +429,7 @@ function parseTweet(res) {
                 tweet.retweeted_status.user = user_result.legacy;
                 tweet.retweeted_status.user.id_str = tweet.retweeted_status.user_id_str;
                 tweet.retweeted_status.user.id = +tweet.retweeted_status.user_id_str;
-                if(!tweet.retweeted_status.user.profile_image_url && user_result?.avatar?.image_url) {
-                    tweet.retweeted_status.user.profile_image_url = user_result.avatar.image_url;
-                    tweet.retweeted_status.user.profile_image_url_https = tweet.retweeted_status.user.profile_image_url.replace("http://", "https://");
-                } 
-                if(!tweet.retweeted_status.user.profile_image_url && tweet.retweeted_status.user.profile_image_url_https) {
-                    tweet.retweeted_status.user.profile_image_url = tweet.retweeted_status.user.profile_image_url_https.replace("https://", "http://");
-                }
-                if(!tweet.retweeted_status.user.name && user_result?.core?.name) {
-                    tweet.retweeted_status.user.name = user_result.core.name;
-                }
-                if(!tweet.retweeted_status.user.screen_name && user_result?.core?.screen_name) {
-                    tweet.retweeted_status.user.screen_name = user_result.core.screen_name;
-                }
-                if(!tweet.retweeted_status.user.created_at && user_result?.core?.created_at) {
-                    tweet.retweeted_status.user.created_at = user_result.core.created_at;
-                }
-                if(user_result?.relationship_perspectives?.muting) {
-                    tweet.retweeted_status.user.muting = true;
-                }
-                if(user_result?.relationship_perspectives?.blocking) {
-                    tweet.retweeted_status.user.blocking = true;
-                }
-                if(user_result?.privacy?.protected) {
-                    tweet.retweeted_status.user.protected = true;
-                }
-                if(user_result?.location?.location) {
-                    tweet.retweeted_status.user.location = result.core.user_results.result.location.location;
-                }
-                if(user_result?.verification?.verified) {
-                    tweet.retweeted_status.user.verified = true;
-                }
-
-                if (result.core.user_results.result.is_blue_verified) {
-                    tweet.retweeted_status.user.verified = true;
-                    tweet.retweeted_status.user.verified_type = "Blue";
-                }
+                hydrateUser(tweet.retweeted_status.user, user_result);
                 tweet.retweeted_status.ext = {};
                 if (result.views) {
                     tweet.retweeted_status.ext.views = { r: { ok: { count: +result.views.count } } };
@@ -495,41 +484,7 @@ function parseTweet(res) {
                         tweet.quoted_status.user.id_str = tweet.quoted_status.user_id_str;
                         tweet.quoted_status.user.id = +tweet.quoted_status.user_id_str;
                         let user_result = result?.core?.user_results?.result;
-                        if(!tweet.quoted_status.user.profile_image_url && user_result?.avatar?.image_url) {
-                            tweet.quoted_status.user.profile_image_url = user_result.avatar.image_url;
-                            tweet.quoted_status.user.profile_image_url_https = tweet.quoted_status.user.profile_image_url.replace("http://", "https://");
-                        }
-                        if(!tweet.quoted_status.user.profile_image_url && tweet.quoted_status.user.profile_image_url_https) {
-                            tweet.quoted_status.user.profile_image_url = tweet.quoted_status.user.profile_image_url_https.replace("https://", "http://");
-                        }
-                        if(!tweet.quoted_status.user.name && user_result?.core?.name) {
-                            tweet.quoted_status.user.name = user_result.core.name;
-                        }
-                        if(!tweet.quoted_status.user.screen_name && user_result?.core?.screen_name) {
-                            tweet.quoted_status.user.screen_name = user_result.core.screen_name;
-                        }
-                        if(!tweet.quoted_status.user.created_at && user_result?.core?.created_at) {
-                            tweet.quoted_status.user.created_at = user_result.core.created_at;
-                        }
-                        if(user_result?.relationship_perspectives?.muting) {
-                            tweet.quoted_status.user.muting = true;
-                        }
-                        if(user_result?.relationship_perspectives?.blocking) {
-                            tweet.quoted_status.user.blocking = true;
-                        }
-                        if(user_result?.privacy?.protected) {
-                            tweet.quoted_status.user.protected = true;
-                        }
-                        if(user_result?.location?.location) {
-                            tweet.quoted_status.user.location = user_result.location.location;
-                        }
-                        if(user_result?.verification?.verified) {
-                            tweet.quoted_status.user.verified = true;
-                        }
-                        if (user_result.is_blue_verified) {
-                            tweet.quoted_status.user.verified = true;
-                            tweet.quoted_status.user.verified_type = "Blue";
-                        }
+                        hydrateUser(tweet.quoted_status.user, user_result);
                         tweet.quoted_status.ext = {};
                         if (result.views) {
                             tweet.quoted_status.ext.views = { r: { ok: { count: +result.views.count } } };
@@ -778,6 +733,15 @@ function emulateResponse(xhr) {
 let counter = 0;
 let bookmarkTimes = {};
 const OriginalXHR = XMLHttpRequest;
+
+// Pagination cursors are timeline entries whose id carries a cursor-<dir>-/sq-cursor-<dir>-
+// prefix; return the cursor's value (undefined if absent — callers all guard on it).
+function findCursor(entries, direction) {
+    return entries.find(
+        (e) => e.entryId.startsWith(`sq-cursor-${direction}-`) || e.entryId.startsWith(`cursor-${direction}-`)
+    )?.content?.value;
+}
+
 const proxyRoutes = [
     // Home timeline
     {
@@ -948,20 +912,11 @@ const proxyRoutes = [
                 seenHomeTweets[xhr.storage.user_id].push(tweet.id_str);
             }
 
-            let bottomCursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            );
+            let bottomCursor = findCursor(entries, "bottom");
             if (bottomCursor) {
-                cursors[`home-${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] =
-                    bottomCursor.content.value;
+                cursors[`home-${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
             }
-            let topCursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-top-") ||
-                    e.entryId.startsWith("cursor-top-")
-            )?.content?.value;
+            let topCursor = findCursor(entries, "top");
             if (topCursor) {
                 if(tweets[0]) cursors[`home-${xhr.storage.user_id}-${tweets[0].id_str}-top`] = topCursor;
                 if(tweets[1]) cursors[`home-${xhr.storage.user_id}-${tweets[1].id_str}-top`] = topCursor;
@@ -1084,20 +1039,11 @@ const proxyRoutes = [
                 (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             )
 
-            let bottomCursor = list.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            );
+            let bottomCursor = findCursor(list, "bottom");
             if (bottomCursor) {
-                cursors[`list-${xhr.storage.list_id}-${tweets[tweets.length - 1].id_str}`] =
-                    bottomCursor.content.value;
+                cursors[`list-${xhr.storage.list_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
             }
-            let topCursor = list.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-top-") ||
-                    e.entryId.startsWith("cursor-top-")
-            )?.content?.value;
+            let topCursor = findCursor(list, "top");
             if (topCursor) {
                 if(tweets[0]) cursors[`list-${xhr.storage.list_id}-${tweets[0].id_str}-top`] = topCursor;
                 if(tweets[1]) cursors[`list-${xhr.storage.list_id}-${tweets[1].id_str}-top`] = topCursor;
@@ -1231,19 +1177,11 @@ const proxyRoutes = [
                 (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
 
-            let bottomCursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            ).content.value;
+            let bottomCursor = findCursor(entries, "bottom");
             if (bottomCursor) {
                 cursors[`${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
             }
-            let topCursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-top-") ||
-                    e.entryId.startsWith("cursor-top-")
-            )?.content?.value;
+            let topCursor = findCursor(entries, "top");
             if (topCursor) {
                 if(tweets[0]) cursors[`${xhr.storage.user_id}-${tweets[0].id_str}-top`] = topCursor;
                 if(tweets[1]) cursors[`${xhr.storage.user_id}-${tweets[1].id_str}-top`] = topCursor;
@@ -1378,11 +1316,7 @@ const proxyRoutes = [
                 bookmarkTimes[tweet.id_str] = tweet.receiveTime;
             }
 
-            let cursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            ).content.value;
+            let cursor = findCursor(entries, "bottom");
             if (cursor) {
                 cursors[`bookmarks-${tweets[tweets.length - 1].id_str}`] = cursor;
             }
@@ -1741,11 +1675,7 @@ const proxyRoutes = [
 
             if (tweets.length === 0) return tweets;
 
-            let cursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            ).content.value;
+            let cursor = findCursor(entries, "bottom");
             if (cursor) {
                 cursors[`${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}-likes`] = cursor;
             }
@@ -1907,14 +1837,8 @@ const proxyRoutes = [
                     res.push(tweet);
                 }
             }
-            let cursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            );
-            if (cursor) {
-                cursor = cursor.content.value;
-            } else {
+            let cursor = findCursor(entries, "bottom");
+            if (!cursor) {
                 cursor = instructions.find(
                     (e) =>
                         e.entry_id_to_replace &&
@@ -2020,14 +1944,8 @@ const proxyRoutes = [
                     res.push(user);
                 }
             }
-            let cursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-bottom-") ||
-                    e.entryId.startsWith("cursor-bottom-")
-            );
-            if (cursor) {
-                cursor = cursor.content.value;
-            } else {
+            let cursor = findCursor(entries, "bottom");
+            if (!cursor) {
                 cursor = instructions.find(
                     (e) =>
                         e.entry_id_to_replace &&

@@ -17702,6 +17702,11 @@ document.body.addEventListener("click", function (e) {
 						Export state
 					</span>
 				</button>
+				<button class="Button--primary" onclick="restoreState()">
+					<span class="label">
+						Restore backup
+					</span>
+				</button>
 				`);
     },
     function (e, t, i) {
