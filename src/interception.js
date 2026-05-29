@@ -248,6 +248,28 @@ function updateFollows(id = getCurrentUserId()) {
 // setTimeout(updateFollows, 1000);
 // setInterval(updateFollows, 1000 * 60);
 
+// Reply-prefix mentions ("Replying to @x") sit before a tweet's display range. Whenever
+// we replace a tweet's text + entities (Grok translation, note-tweet expansion) the new
+// entity set drops them, so TweetDeck's reply header (getReplyingToUsers) renders empty.
+// captureReplyMentions grabs them before a swap; attachReplyMentions re-adds them after.
+// Capture is flag-aware so chained swaps (note expansion then Grok) don't lose them.
+function captureReplyMentions(legacy) {
+    let start = (legacy?.display_text_range ?? [0])[0];
+    return (legacy?.entities?.user_mentions ?? []).filter(
+        (m) => m.isImplicitMention || m.indices?.[1] <= start
+    );
+}
+
+// Re-add captured mentions past the new text's end: the body renderer skips entities
+// beyond the text length, but getReplyingToUsers still picks them up via the flag.
+function attachReplyMentions(entities, mentions, text) {
+    if (!entities || !mentions?.length) return;
+    let end = (text?.length ?? 0) + 1;
+    for (let m of mentions) {
+        (entities.user_mentions ??= []).push({ ...m, indices: [end, end], isImplicitMention: true });
+    }
+}
+
 // Swap legacy.full_text for Twitter's pre-rendered translation when present.
 function applyGrokTranslation(result, legacy) {
     if (result?.tweet) result = result.tweet; // some routes wrap the result in a `.tweet`
@@ -256,10 +278,8 @@ function applyGrokTranslation(result, legacy) {
     let translation = data?.translation;
     if (typeof translation !== "string" || !translation || typeof legacy.full_text !== "string") return;
 
-    // Reply-prefix mentions ("Replying to @x") sit before the display range and Grok
-    // drops them from the translation. Capture them so the reply header still renders.
-    let origStart = (legacy.display_text_range ?? [0])[0];
-    let implicit = (legacy.entities?.user_mentions ?? []).filter((m) => m.indices?.[1] <= origStart);
+    // Grok drops the reply-prefix mentions from the translation; capture them first.
+    let implicit = captureReplyMentions(legacy);
 
     legacy.full_text = translation;
     legacy.text = translation;
@@ -273,11 +293,7 @@ function applyGrokTranslation(result, legacy) {
         for (let key of ["hashtags", "symbols", "urls", "user_mentions"]) {
             legacy.entities[key] = data.entities?.[key] ?? [];
         }
-        // Re-add reply-prefix mentions past the text end: the body renderer skips entities
-        // beyond the text length, but getReplyingToUsers still picks them up via the flag.
-        for (let m of implicit) {
-            legacy.entities.user_mentions.push({ ...m, indices: [end + 1, end + 1], isImplicitMention: true });
-        }
+        attachReplyMentions(legacy.entities, implicit, translation);
         // Media isn't in Grok's entities and its URL is dropped from the translation, so
         // neutralize the stale inline indices — it still renders via the media-preview path.
         for (let m of legacy.entities.media ?? []) m.indices = [end, end];
@@ -442,9 +458,11 @@ function parseTweet(res) {
             }
             if (result.note_tweet && result.note_tweet.note_tweet_results && localStorage.OTDenableAutoExpand === "1") {
                 let note = parseNoteTweet(result);
+                let implicit = captureReplyMentions(tweet.retweeted_status);
                 tweet.retweeted_status.full_text = note.text;
                 tweet.retweeted_status.entities = note.entities;
                 tweet.retweeted_status.display_text_range = undefined; // no text range for long tweets
+                attachReplyMentions(tweet.retweeted_status.entities, implicit, note.text);
             }
         }
     
@@ -453,9 +471,11 @@ function parseTweet(res) {
         }
         if (res.note_tweet && res.note_tweet.note_tweet_results) {
             let note = parseNoteTweet(res);
+            let implicit = captureReplyMentions(tweet);
             tweet.full_text = note.text;
             tweet.entities = note.entities;
             tweet.display_text_range = undefined; // no text range for long tweets
+            attachReplyMentions(tweet.entities, implicit, note.text);
         }
         if (tweet.quoted_status_result && tweet.quoted_status_result.result) {
             let result = tweet.quoted_status_result.result;
