@@ -2528,14 +2528,18 @@ const proxyRoutes = [
         openHandler: () => {},
         sendHandler: emulateResponse,
         afterRequest: (xhr) => {
+            // verifiedUser may be unset if verify_credentials raced or errored this
+            // session; fall back to the persisted account id so the state bootstrap
+            // never throws — a throw here aborts the load and wipes the saved layout.
+            const accountId = verifiedUser?.id_str ?? localStorage.twitterAccountID;
             const state = {
                 client: {
                     columns: localStorage.OTDcolumnIds ? JSON.parse(localStorage.OTDcolumnIds) : [],
                     mtime: new Date().toISOString(),
                     name: "blackbird",
                     settings: settings ?? {
-                        account_whitelist: [`twitter:${verifiedUser.id_str}`],
-                        default_account: `twitter:${verifiedUser.id_str}`,
+                        account_whitelist: [`twitter:${accountId}`],
+                        default_account: `twitter:${accountId}`,
                         recent_searches: [],
                         display_sensitive_media: false,
                         name_cache: {
