@@ -104,6 +104,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
     &.xlr-user-search-btn:hover { color: rgb(0, 184, 216) !important; }
     &.xlr-filter-btn.xlr-active { color: rgb(120, 86, 255) !important; }
     &.xlr-user-search-btn.xlr-active { color: rgb(0, 184, 216) !important; }
+    &.xlr-mute-btn.xlr-muted { color: rgb(255, 152, 0) !important; }
     &.xlr-done { color: rgb(0, 186, 124) !important; }
   }
 }
@@ -219,3 +220,25 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* Mute/block pills in the profile popup, shown next to the handle. Solid, rounded
+   chips so they stay legible over any profile banner. Hidden until the relationship
+   handler toggles .prf-muting/.prf-blocking on the username line. */
+.prf-mute-status,
+.prf-block-status {
+  display: none;
+  margin-left: 7px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1.4;
+  vertical-align: middle;
+  border-radius: 9999px;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.prf-mute-status { background-color: rgba(91, 112, 131, 0.95); }
+.prf-block-status { background-color: rgba(224, 36, 94, 0.95); }
+.prf-muting .prf-mute-status,
+.prf-blocking .prf-block-status { display: inline-block; }

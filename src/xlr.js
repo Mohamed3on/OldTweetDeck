@@ -205,16 +205,45 @@
       body: new URLSearchParams(body).toString(),
     });
 
+  // Muted state mirrors TweetDeck's own client.mutes cache (keyed by user id) — the same
+  // source its native dropdown trusts, so it's accurate even when the timeline API's
+  // user.muting flag is stale. The author is in TD.cache once their tweet has rendered,
+  // so getByScreenName resolves synchronously here.
+  const prefClient = () => { try { return TD.controller.clients.getPreferredClient('twitter'); } catch { return null; } };
+  const cachedUser = (name) => {
+    let u = null;
+    try { TD.cache.twitterUsers.getByScreenName(name).addCallback(x => { u = x; }); } catch {}
+    return u;
+  };
+  const isMuted = (name) => {
+    const c = prefClient(), u = cachedUser(name);
+    return !!(c && u && c.mutes[u.id]);
+  };
+  const setClientMute = (name, muted) => {
+    const c = prefClient(), u = cachedUser(name);
+    if (c && u) muted ? (c.mutes[u.id] = true) : (delete c.mutes[u.id]);
+  };
+
   const muteUser = async (username) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
     const r = await restPost('/1.1/mutes/users/create.json', { user_id: userId });
     if (!r.ok) return false;
+    setClientMute(username, true);
     const memberOf = await fetchMembership(username);
     await Promise.all([...memberOf].map(listId =>
       gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId })
         .then(r => { if (r.ok) updateMembership(username, listId, false); })
     ));
+    return true;
+  };
+
+  const unmuteUser = async (username) => {
+    const userId = await resolveUser(username);
+    if (!userId) return false;
+    const r = await restPost('/1.1/mutes/users/destroy.json', { user_id: userId });
+    if (!r.ok) return false;
+    setClientMute(username, false);
     return true;
   };
 
@@ -366,9 +395,18 @@
     }
 
     const muteBtn = mkBtn('xlr-mute-btn', 'Mute & remove from lists', muteSvg);
+    const syncMuteBtn = () => {
+      const muted = isMuted(username);
+      muteBtn.classList.toggle('xlr-muted', muted);
+      muteBtn.title = muted ? `Unmute @${username}` : 'Mute & remove from lists';
+    };
+    syncMuteBtn();
     muteBtn.onclick = withBusy(muteBtn, 'xlr-removing', async () => {
-      const ok = await muteUser(username);
-      if (ok) markDone(muteBtn, `Muted @${username}`, article);
+      if (isMuted(username)) {
+        if (await unmuteUser(username)) syncMuteBtn();
+      } else if (await muteUser(username)) {
+        markDone(muteBtn, `Muted @${username}`, article);
+      }
     });
     if (moreItem) moreItem.replaceChildren(muteBtn);
     else appendToBar(muteBtn);
