@@ -177,16 +177,25 @@ async function main() {
     // Surface mute/block status in the profile popup, next to the "Follows you" pill,
     // so it's visible without opening the actions dropdown. The badges (hidden by CSS
     // until toggled) sit alongside the existing follow-status badge on the username line.
+    // The whole prf-header (avatar/name/username) is wrapped in the profile-URL anchor,
+    // so badges placed next to the handle can't be clicked without navigating to x.com.
+    // Put the mute/block status on its own line right after the anchor closes (a sibling
+    // of prf-bio), where it's outside the link and free to be interactive.
     bundle_js.value = bundle_js.value.replaceAll(
-        '<span class="prf-follow-status">{{_i}}Follows @{{preferredAccount}}{{/i}}</span>',
-        '<span class="prf-follow-status">{{_i}}Follows @{{preferredAccount}}{{/i}}</span><span class="prf-mute-status">{{_i}}Muted{{/i}}</span><span class="prf-block-status">{{_i}}Blocked{{/i}}</span>'
+        '{{_i}}Follows @{{preferredAccount}}{{/i}}</span></p> </a> <p class="prf-bio">',
+        '{{_i}}Follows @{{preferredAccount}}{{/i}}</span></p> </a> <p class="prf-relationship-status"><span class="prf-mute-status" title="{{_i}}Click to unmute{{/i}}">{{_i}}Muted{{/i}}</span><span class="prf-block-status" title="{{_i}}Click to unblock{{/i}}">{{_i}}Blocked{{/i}}</span></p> <p class="prf-bio">'
     );
     // The follow-status behaviour already fetches the relationship (friendships/show)
     // and toggles .s-follows from target.following. The same payload carries
-    // source.muting/source.blocking, so reuse it to toggle the new badges' parent.
+    // source.muting/source.blocking, so reuse it to toggle .prf-muting/.prf-blocking on
+    // the header (which gates the badges via CSS). Clicking the Muted pill unmutes via
+    // the native TwitterUser.unmute (REST call, toast, client.mutes cleanup). The Blocked
+    // pill unblocks the same way, but behind a confirm() — accidental unblock is the more
+    // consequential misclick, and native unblock shows no toast, so the prompt is the only
+    // feedback. unblock(account, onSuccess) takes a callback (no deferred, unlike unmute).
     bundle_js.value = bundle_js.value.replaceAll(
         'this.$node.toggleClass(this.attr.follows, t.relationship.target.following);',
-        '(this.$node.toggleClass(this.attr.follows, t.relationship.target.following), this.$node.parent().toggleClass("prf-muting", !!t.relationship.source.muting).toggleClass("prf-blocking", !!t.relationship.source.blocking));'
+        '(this.$node.toggleClass(this.attr.follows, t.relationship.target.following), (() => { var h = this.$node.closest(".prf-header"); h.toggleClass("prf-muting", !!t.relationship.source.muting).toggleClass("prf-blocking", !!t.relationship.source.blocking); h.find(".prf-mute-status").off("click.otd").on("click.otd", (ev) => { ev.preventDefault(); ev.stopPropagation(); this.twitterUser.unmute(this.account).addCallback(() => h.removeClass("prf-muting")); }); h.find(".prf-block-status").off("click.otd").on("click.otd", (ev) => { ev.preventDefault(); ev.stopPropagation(); if (!confirm("Unblock @" + this.twitterUser.screenName + "?")) return; this.twitterUser.unblock(this.account, () => h.removeClass("prf-blocking")); }); })());'
     );
 
     let bundle_js_script = document.createElement("script");

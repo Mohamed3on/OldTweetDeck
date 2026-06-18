@@ -221,24 +221,45 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   transform: translate(-50%, 0);
 }
 
-/* Mute/block pills in the profile popup, shown next to the handle. Solid, rounded
-   chips so they stay legible over any profile banner. Hidden until the relationship
-   handler toggles .prf-muting/.prf-blocking on the username line. */
+/* Mute/block pills in the profile popup, on their own line under the username. Placed
+   outside the profile-link anchor (see injection.js) so the Muted pill is clickable —
+   clicking it unmutes. Solid, rounded chips so they stay legible over any banner. The
+   row and each pill are hidden until the relationship handler toggles .prf-muting /
+   .prf-blocking on .prf-header. */
+.prf-relationship-status {
+  display: none;
+  margin: 9px 0 2px;
+}
+.prf-muting .prf-relationship-status,
+.prf-blocking .prf-relationship-status { display: block; }
 .prf-mute-status,
 .prf-block-status {
   display: none;
-  margin-left: 7px;
-  padding: 2px 8px;
-  font-size: 11px;
+  margin-right: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
   font-weight: bold;
   line-height: 1.4;
-  vertical-align: middle;
   border-radius: 9999px;
-  color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
-.prf-mute-status { background-color: rgba(91, 112, 131, 0.95); }
-.prf-block-status { background-color: rgba(224, 36, 94, 0.95); }
+.prf-muting .prf-mute-status { display: inline-block; }
+.prf-blocking .prf-block-status { display: inline-block; }
+.prf-mute-status {
+  background-color: #ffad1f;
+  color: #14171a;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.prf-mute-status:hover { background-color: #f59c00; }
+.prf-block-status {
+  background-color: rgba(224, 36, 94, 0.95);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.prf-block-status:hover { background-color: rgba(193, 27, 79, 0.97); }
 .prf-muting .prf-mute-status,
 .prf-blocking .prf-block-status { display: inline-block; }
