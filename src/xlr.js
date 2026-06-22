@@ -131,6 +131,16 @@
     if (cache) added ? cache.add(listId) : cache.delete(listId);
   };
 
+  const listName = (id) => (lists.find(l => l.id === id) || {}).name;
+
+  const removeFromList = async (username, listId) => {
+    const userId = await resolveUser(username);
+    if (!userId) return false;
+    const r = await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId });
+    if (r.ok) updateMembership(username, listId, false);
+    return r.ok;
+  };
+
   const EDIT_BOX = '.column-title-edit-box';
   const AT_RE = /(?:^|\s)@(\S+)/;
   const FROM_RE = /from:(\S+)/;
@@ -168,6 +178,8 @@
   const muteSvg = mkSvg('M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z');
   const filterSvg = mkSvg('M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z');
   const userSearchSvg = mkSvg('M17.863 13.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H3.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46C7.627 11.85 9.648 11 12 11s4.373.85 5.863 2.44zM5.887 19h12.226c-.283-1.737-.944-3.06-1.928-4.11C14.965 13.73 13.615 13 12 13s-2.965.73-4.185 1.89c-.984 1.05-1.645 2.373-1.928 4.11zM12 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0-2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z');
+  const plusSvg = mkSvg('M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z');
+  const birdSvg = mkSvg('M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z');
 
   const mkBtn = (cls, title, svg) => {
     const btn = document.createElement('button');
@@ -224,17 +236,19 @@
     if (c && u) muted ? (c.mutes[u.id] = true) : (delete c.mutes[u.id]);
   };
 
-  const muteUser = async (username) => {
+  const muteUser = async (username, { delist = true } = {}) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
     const r = await restPost('/1.1/mutes/users/create.json', { user_id: userId });
     if (!r.ok) return false;
     setClientMute(username, true);
-    const memberOf = await fetchMembership(username);
-    await Promise.all([...memberOf].map(listId =>
-      gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId })
-        .then(r => { if (r.ok) updateMembership(username, listId, false); })
-    ));
+    if (delist) {
+      const memberOf = await fetchMembership(username);
+      await Promise.all([...memberOf].map(listId =>
+        gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId })
+          .then(r => { if (r.ok) updateMembership(username, listId, false); })
+      ));
+    }
     return true;
   };
 
@@ -245,6 +259,30 @@
     if (!r.ok) return false;
     setClientMute(username, false);
     return true;
+  };
+
+  const blockUser = async (username) => {
+    const userId = await resolveUser(username);
+    if (!userId) return false;
+    return (await restPost('/1.1/blocks/create.json', { user_id: userId })).ok;
+  };
+
+  const unblockUser = async (username) => {
+    const userId = await resolveUser(username);
+    if (!userId) return false;
+    return (await restPost('/1.1/blocks/destroy.json', { user_id: userId })).ok;
+  };
+
+  // friendships/show is the same source TweetDeck's follow-state uses; source.muting /
+  // source.blocking give authoritative mute/block state for the profile action toggles.
+  const fetchRelationship = async (username) => {
+    try {
+      const r = await fetch(
+        `${location.origin}/i/api/1.1/friendships/show.json?target_screen_name=${encodeURIComponent(username)}`,
+        { headers: hdrs(), credentials: 'include' },
+      );
+      return (await r.json())?.relationship?.source || {};
+    } catch { return {}; }
   };
 
   let popover = document.createElement('div');
@@ -259,7 +297,7 @@
     item.textContent = isMember ? `\u2713 ${name}` : name;
   }
 
-  function renderItem(name, id, username) {
+  function renderItem(name, id, username, onToggle) {
     const item = document.createElement('button');
     item.className = 'xlr-dropdown-item';
     item.textContent = name;
@@ -272,13 +310,13 @@
         removing ? 'ListRemoveMember' : 'ListAddMember',
         { listId: id, userId },
       );
-      if (r.ok) updateMembership(username, id, !removing);
+      if (r.ok) { updateMembership(username, id, !removing); onToggle?.(); }
       else setItemState(item, name, removing);
     });
     return item;
   }
 
-  async function showPopover(addBtn, username) {
+  async function showPopover(addBtn, username, onToggle) {
     if (popoverAnchor === addBtn && popover.matches(':popover-open')) {
       popover.hidePopover();
       return;
@@ -287,7 +325,7 @@
 
     popover.replaceChildren();
     const items = lists.map(({ name, id }) => {
-      const item = renderItem(name, id, username);
+      const item = renderItem(name, id, username, onToggle);
       popover.appendChild(item);
       return item;
     });
@@ -412,6 +450,111 @@
     else appendToBar(muteBtn);
   }
 
+  function makeChip(listId, username, onChange) {
+    const name = listName(listId) || 'List';
+    const chip = document.createElement('span');
+    chip.className = 'xlr-prf-chip';
+    chip.appendChild(document.createTextNode(name));
+    const x = document.createElement('button');
+    x.className = 'xlr-prf-chip-x';
+    x.textContent = '×';
+    x.title = `Remove from ${name}`;
+    x.onclick = withBusy(chip, 'xlr-inflight', async () => {
+      if (await removeFromList(username, listId)) onChange();
+    });
+    chip.appendChild(x);
+    return chip;
+  }
+
+  // Stateful pill toggle (Mute/Block): fills when active, click flips it. onToggle(active)
+  // performs the REST call for the current state and returns success; .set() syncs state
+  // once the authoritative relationship resolves.
+  function makeToggle(cls, label, onLabel, active, onToggle) {
+    const btn = document.createElement('button');
+    btn.className = `xlr-prf-toggle ${cls}`;
+    const sync = () => { btn.classList.toggle('xlr-on', active); btn.textContent = active ? onLabel : label; };
+    sync();
+    btn.onclick = withBusy(btn, 'xlr-inflight', async () => {
+      if (await onToggle(active)) { active = !active; sync(); }
+    });
+    return { btn, set: (a) => { active = a; sync(); } };
+  }
+
+  // Surface list membership directly in the profile popup (the only place .prf-actions
+  // appears), mirroring the tweet action bar: chips for the lists the user is already in
+  // (removable via the ×), plus an "Add to list" button that opens the shared popover.
+  // Also replace the native launcher grid with a compact actions row: a "View tweets"
+  // button (proxying the hidden native Tweets launcher) and Mute/Block toggles.
+  function processProfile(actions) {
+    if (seen.has(actions) || !lists) return;
+    const unameEl = actions.closest('.prf')?.querySelector('.username');
+    const username = unameEl?.firstChild?.textContent?.trim().replace(/^@/, '');
+    if (!username) return;
+    seen.add(actions);
+
+    // The numeric id is right on the actions menu, so seed the cache and skip the lookup.
+    const domId = actions.querySelector('.js-user-actions-menu[data-user-id]')?.dataset.userId;
+    if (domId && !userIds[username]) { userIds[username] = domId; persistUserIds(); }
+
+    const section = document.createElement('div');
+    section.className = 'xlr-prf-lists xlr-prf-loading';
+    const chips = document.createElement('div');
+    chips.className = 'xlr-prf-chips';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'xlr-prf-add-btn';
+    addBtn.append(plusSvg.cloneNode(true), document.createTextNode('Add to list'));
+    section.append(chips, addBtn);
+
+    const renderChips = () => {
+      const memberOf = membershipCache[username] || new Set();
+      chips.replaceChildren(...[...memberOf].map(id => makeChip(id, username, renderChips)));
+    };
+
+    addBtn.onmouseenter = () => fetchMembership(username);
+    addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
+    addBtn.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (!addBtn._wasOpen) showPopover(addBtn, username, renderChips);
+    };
+
+    const cols = actions.querySelector('.js-profile-columns');
+    const place = (el) => cols ? actions.insertBefore(el, cols) : actions.appendChild(el);
+    place(section);
+
+    // Actions row replacing the launcher grid (hidden via CSS): View tweets + Mute + Block.
+    const viewBtn = document.createElement('button');
+    viewBtn.className = 'xlr-prf-view';
+    viewBtn.append(birdSvg.cloneNode(true), document.createTextNode('View tweets'));
+    viewBtn.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      // Proxy the native Tweets launcher (still in the DOM) so TweetDeck opens the column.
+      actions.querySelector('.lst-profile li[data-type="tweets"] a')?.click();
+    };
+
+    const mute = makeToggle('xlr-prf-mute', 'Mute', 'Muted', isMuted(username),
+      (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }));
+    const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, async (active) => {
+      if (!confirm(active ? `Unblock @${username}?` : `Block @${username}?`)) return false;
+      return active ? unblockUser(username) : blockUser(username);
+    });
+    block.btn.classList.add('xlr-loading');
+
+    const row = document.createElement('div');
+    row.className = 'xlr-prf-actions';
+    row.append(viewBtn, mute.btn, block.btn);
+    place(row);
+
+    fetchMembership(username).then(() => {
+      section.classList.remove('xlr-prf-loading');
+      renderChips();
+    });
+    fetchRelationship(username).then((rel) => {
+      mute.set(!!rel.muting);
+      block.set(!!rel.blocking);
+      block.btn.classList.remove('xlr-loading');
+    });
+  }
+
   function updateButtonStates() {
     let atUser = null;
     for (const col of document.querySelectorAll('.column-panel')) {
@@ -431,6 +574,7 @@
   let scanQueued = false;
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach(process);
+    document.querySelectorAll('.prf-actions').forEach(processProfile);
     updateButtonStates();
     scanQueued = false;
   };

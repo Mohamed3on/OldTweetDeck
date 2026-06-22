@@ -221,45 +221,136 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   transform: translate(-50%, 0);
 }
 
-/* Mute/block pills in the profile popup, on their own line under the username. Placed
-   outside the profile-link anchor (see injection.js) so the Muted pill is clickable —
-   clicking it unmutes. Solid, rounded chips so they stay legible over any banner. The
-   row and each pill are hidden until the relationship handler toggles .prf-muting /
-   .prf-blocking on .prf-header. */
-.prf-relationship-status {
-  display: none;
-  margin: 9px 0 2px;
+/* List membership in the profile popup: removable chips for lists the user is already in,
+   plus an "Add to list" button that opens the shared list popover (see xlr.js). */
+.xlr-prf-lists {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  line-height: normal;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
-.prf-muting .prf-relationship-status,
-.prf-blocking .prf-relationship-status { display: block; }
-.prf-mute-status,
-.prf-block-status {
-  display: none;
-  margin-right: 6px;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: bold;
+.xlr-prf-lists.xlr-prf-loading { opacity: 0.5; }
+.xlr-prf-chips { display: contents; }
+
+/* TweetDeck's base `html.dark button` rule (specificity 0,1,2) forces white bg, blue
+   border, inline-block and 14px padding — it outranks a bare `.xlr-prf-*` class (0,1,0),
+   which is what made the × render as a native button. Scope these under .xlr-prf-lists
+   (→ 0,2,0) so the chip/× and Add button win cleanly, no !important. This also kills the
+   global `button { -webkit-appearance: button }`. */
+.xlr-prf-lists .xlr-prf-chip-x,
+.xlr-prf-lists .xlr-prf-add-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  outline: none;
+  box-shadow: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.xlr-prf-lists .xlr-prf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 7px 5px 13px;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1.4;
+  color: rgb(231, 233, 234);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.15s;
 }
-.prf-muting .prf-mute-status { display: inline-block; }
-.prf-blocking .prf-block-status { display: inline-block; }
-.prf-mute-status {
-  background-color: #ffad1f;
-  color: #14171a;
+.xlr-prf-lists .xlr-prf-chip:hover { background: rgba(255, 255, 255, 0.14); }
+.xlr-prf-lists .xlr-prf-chip.xlr-inflight { opacity: 0.5; pointer-events: none; }
+
+.xlr-prf-lists .xlr-prf-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font: 16px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: rgb(139, 152, 165);
+  border-radius: 9999px;
+  transition: background-color 0.15s, color 0.15s;
+}
+.xlr-prf-lists .xlr-prf-chip-x:hover {
+  background: color-mix(in srgb, rgb(244, 33, 46) 20%, transparent);
+  color: rgb(244, 33, 46);
+}
+
+.xlr-prf-lists .xlr-prf-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px 5px 10px;
+  font: 600 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: rgb(29, 155, 240);
+  border: 1px solid rgba(29, 155, 240, 0.45);
+  border-radius: 9999px;
+  transition: background-color 0.15s;
+}
+.xlr-prf-lists .xlr-prf-add-btn:hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
+.xlr-prf-lists .xlr-prf-add-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* Consolidated actions row that replaces the launcher grid: a primary "View tweets"
+   button (proxies the hidden native Tweets launcher) plus Mute/Block toggles that fill
+   when active. Scoped (→ 0,2,0) to beat TweetDeck's html.dark button base (0,1,2). */
+.prf-actions .js-profile-columns { display: none; }
+/* The "…" actions menu is redundant now mute/block are surfaced below. Hidden, not
+   removed — processProfile still reads the target's id from its data-user-id. */
+.prf-actions .js-user-actions-menu { display: none; }
+
+.xlr-prf-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px 14px;
+  line-height: normal;
+}
+.xlr-prf-actions .xlr-prf-view,
+.xlr-prf-actions .xlr-prf-toggle {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  outline: none;
+  box-shadow: none;
+  background: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
-.prf-mute-status:hover { background-color: #f59c00; }
-.prf-block-status {
-  background-color: rgba(224, 36, 94, 0.95);
-  color: #fff;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
+.xlr-prf-actions .xlr-prf-view {
+  flex: 1;
+  color: rgb(231, 233, 234);
+  background: rgba(255, 255, 255, 0.1);
 }
-.prf-block-status:hover { background-color: rgba(193, 27, 79, 0.97); }
-.prf-muting .prf-mute-status,
-.prf-blocking .prf-block-status { display: inline-block; }
+.xlr-prf-actions .xlr-prf-view:hover { background: rgba(255, 255, 255, 0.16); }
+.xlr-prf-actions .xlr-prf-view svg { width: 16px; height: 16px; }
+
+.xlr-prf-actions .xlr-prf-toggle.xlr-loading,
+.xlr-prf-actions .xlr-prf-toggle.xlr-inflight { opacity: 0.5; pointer-events: none; }
+
+/* Mute/Block stay quiet (grey ghost) at rest — colour signals the active state only, so
+   the resting row is calm and the one standing accent is the blue Add to list above. */
+.xlr-prf-actions .xlr-prf-toggle { color: rgb(139, 152, 165); background: rgba(255, 255, 255, 0.06); }
+.xlr-prf-actions .xlr-prf-toggle:hover { background: rgba(255, 255, 255, 0.12); color: rgb(231, 233, 234); }
+.xlr-prf-actions .xlr-prf-mute.xlr-on,
+.xlr-prf-actions .xlr-prf-mute.xlr-on:hover { background: rgb(255, 173, 31); color: #14171a; }
+.xlr-prf-actions .xlr-prf-block.xlr-on,
+.xlr-prf-actions .xlr-prf-block.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
