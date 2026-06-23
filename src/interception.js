@@ -845,6 +845,43 @@ function findCursor(entries, direction) {
     )?.content?.value;
 }
 
+// Every proxied route swaps TweetDeck's headers for the modern GraphQL API's
+// (JSON, public bearer, no client-version). lang defaults to "en"; a couple of
+// routes pass the user's locale.
+function setApiHeaders(xhr, lang = "en") {
+    xhr.modReqHeaders["Content-Type"] = "application/json";
+    xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
+    xhr.modReqHeaders["X-Twitter-Client-Language"] = lang;
+    xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
+    delete xhr.modReqHeaders["X-Twitter-Client-Version"];
+}
+
+// Parse a route's GraphQL response, logging + returning null on malformed JSON
+// so callers can fall back to their empty shape.
+function parseResponse(xhr) {
+    try {
+        return JSON.parse(xhr.responseText);
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
+}
+
+// X returns timeline tweets unsorted; newest-first is what every column wants.
+function sortByDate(tweets) {
+    return tweets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+// Throttled timeline routes mark themselves cancelled in openHandler; honor that
+// here by faking an empty response instead of hitting the network.
+function sendOrEmulate(xhr, data) {
+    if (xhr.storage.cancelled) {
+        emulateResponse(xhr);
+    } else {
+        xhr.send(data);
+    }
+}
+
 const proxyRoutes = [
     // Home timeline
     {
@@ -896,21 +933,10 @@ const proxyRoutes = [
                 timings.home[user_id] = Date.now();
             }
         },
-        sendHandler: (xhr, data) => {
-            if(xhr.storage.cancelled) {
-                emulateResponse(xhr);
-            } else {
-                xhr.send(xhr.storage.body);
-            }
-        },
+        sendHandler: (xhr) => sendOrEmulate(xhr, xhr.storage.body),
         beforeSendHeaders: (xhr) => {
             xhr.storage.user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? getCurrentUserId();
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-            // updateFollows(xhr.storage.user_id);
+            setApiHeaders(xhr);
         },
         afterRequest: (xhr) => {
             if(xhr.storage.cancelled) {
@@ -919,13 +945,8 @@ const proxyRoutes = [
             if(xhr.storage.data) {
                 return xhr.storage.data;
             }
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return [];
-            }
+            let data = parseResponse(xhr);
+            if (!data) return [];
             if (data.errors && data.errors[0]) {
                 return [];
             }
@@ -965,10 +986,7 @@ const proxyRoutes = [
 
             if (tweets.length === 0) return tweets;
 
-            // i didn't know they return tweets unsorted???
-            tweets.sort(
-                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
+            sortByDate(tweets);
 
             let bottomCursor = findCursor(entries, "bottom");
             if (bottomCursor) {
@@ -1024,13 +1042,7 @@ const proxyRoutes = [
                 console.error(e);
             }
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         openHandler: (xhr, method, url, async, username, password) => {
             const list_id = xhr.storage.list_id;
             if(!timings.list[list_id]) {
@@ -1043,24 +1055,13 @@ const proxyRoutes = [
                 timings.list[list_id] = Date.now();
             }
         },
-        sendHandler: (xhr, data) => {
-            if(xhr.storage.cancelled) {
-                emulateResponse(xhr);
-            } else {
-                xhr.send(data);
-            }
-        },
+        sendHandler: sendOrEmulate,
         afterRequest: (xhr) => {
             if(xhr.storage.cancelled) {
                 return [];
             }
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return [];
-            }
+            let data = parseResponse(xhr);
+            if (!data) return [];
             let list = data?.data?.list?.tweets_timeline?.timeline?.instructions?.find(
                 (i) => i.type === "TimelineAddEntries"
             );
@@ -1092,10 +1093,7 @@ const proxyRoutes = [
 
             tweets = tweets.filter(t => !t.user.muting && !t.user.blocking);
 
-            // i didn't know they return tweets unsorted???
-            tweets.sort(
-                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            )
+            sortByDate(tweets);
 
             let bottomCursor = findCursor(list, "bottom");
             if (bottomCursor) {
@@ -1159,15 +1157,7 @@ const proxyRoutes = [
                 console.error(e);
             }
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-            // delete xhr.modReqHeaders["x-act-as-user-id"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         openHandler: (xhr, method, url, async, username, password) => {
             const user_id = xhr.storage.user_id;
             if(!timings.user[user_id]) {
@@ -1180,24 +1170,13 @@ const proxyRoutes = [
                 timings.user[user_id] = Date.now();
             }
         },
-        sendHandler: (xhr, data) => {
-            if(xhr.storage.cancelled) {
-                emulateResponse(xhr);
-            } else {
-                xhr.send(data);
-            }
-        },
+        sendHandler: sendOrEmulate,
         afterRequest: (xhr) => {
             if(xhr.storage.cancelled) {
                 return [];
             }
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return [];
-            }
+            let data = parseResponse(xhr);
+            if (!data) return [];
             let timeline = data?.data?.user?.result?.timeline ?? data?.data?.user?.result?.timeline_v2;
             let instructions = timeline?.timeline?.instructions;
             let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
@@ -1230,10 +1209,7 @@ const proxyRoutes = [
 
             if (tweets.length === 0) return tweets;
 
-            // i didn't know they return tweets unsorted???
-            tweets.sort(
-                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
+            sortByDate(tweets);
 
             let bottomCursor = findCursor(entries, "bottom");
             if (bottomCursor) {
@@ -1308,15 +1284,7 @@ const proxyRoutes = [
                 console.error(e);
             }
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-            // delete xhr.modReqHeaders["x-act-as-user-id"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         // artificially slow down, because theres an invisible rate limit that gets hit after a few hours
         responseHeaderOverride: {
             "x-rate-limit-limit": (value) => {
@@ -1327,13 +1295,8 @@ const proxyRoutes = [
             },
         },
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return [];
-            }
+            let data = parseResponse(xhr);
+            if (!data) return [];
             // if (data.errors && data.errors[0]) {
             //     return [];
             // }
@@ -1402,12 +1365,7 @@ const proxyRoutes = [
         },
         beforeSendHeaders: (xhr) => {
             xhr.storage.user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? getCurrentUserId();
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = navigator.language.split("-")[0];
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
+            setApiHeaders(xhr, navigator.language.split("-")[0]);
         },
         afterRequest: (xhr) => {
             if(xhr.storage.notifications) {
@@ -1584,13 +1542,7 @@ const proxyRoutes = [
 
             xhr.modUrl = `https://${location.hostname}/i/api/2/notifications/mentions.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=20&requestContext=launch&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl${cursor ? `&cursor=${cursor}` : ''}`;
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
             try {
                 const response = JSON.parse(xhr.responseText);
@@ -1698,23 +1650,10 @@ const proxyRoutes = [
                 console.error(e);
             }
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-            // delete xhr.modReqHeaders["x-act-as-user-id"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return [];
-            }
+            let data = parseResponse(xhr);
+            if (!data) return [];
             // if (data.errors && data.errors[0]) {
             //     return [];
             // }
@@ -1738,10 +1677,7 @@ const proxyRoutes = [
                 cursors[`${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}-likes`] = cursor;
             }
 
-            // i didn't know they return tweets unsorted???
-            tweets.sort(
-                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
+            sortByDate(tweets);
 
             return tweets;
         },
@@ -1762,13 +1698,7 @@ const proxyRoutes = [
             const tweet_id = new URLSearchParams(data).get("id");
             xhr.send(JSON.stringify({"variables":{"tweet_id":tweet_id},"queryId":xhr.storage.isFavorite ? "lI07N6Otwv1PhnEgXILM7A" : "ZYKSe-w7KEslx3JhSIk5LA"}));
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
             return {};
         },
@@ -1882,21 +1812,8 @@ const proxyRoutes = [
                 timings.search[xhr.storage.query] = Date.now();
             }
         },
-        sendHandler: (xhr, data) => {
-            if(xhr.storage.cancelled) {
-                emulateResponse(xhr);
-            } else {
-                xhr.send(data);
-            }
-        },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        sendHandler: sendOrEmulate,
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
             const empty = { metadata: { cursor: null, refresh_interval_in_sec: 30 }, modules: [] };
             if(xhr.storage.cancelled) {
@@ -2003,14 +1920,7 @@ const proxyRoutes = [
                 console.error(e);
             }
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
             let data;
             try {
@@ -2066,13 +1976,7 @@ const proxyRoutes = [
         beforeRequest: (xhr) => {
             xhr.modUrl = `https://${location.hostname}/i/api/graphql/oB-5XsHNAbjvARJEc8CZFw/CreateTweet`;
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         beforeSendBody: (xhr, body) => {
             let params = Object.fromEntries(new URLSearchParams(body));
             let variables = {
@@ -2110,13 +2014,8 @@ const proxyRoutes = [
             });
         },
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return {};
-            }
+            let data = parseResponse(xhr);
+            if (!data) return {};
             if (data.errors && data.errors[0]) {
                 return {};
             }
@@ -2137,11 +2036,7 @@ const proxyRoutes = [
             xhr.modUrl = `https://${location.hostname}/i/api/graphql/ojPdsZsimiJrUGLR1sjUtA/CreateRetweet`;
         },
         beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
+            setApiHeaders(xhr);
             if (xhr.modReqHeaders["x-act-as-user-id"]) {
                 xhr.storage.retweeter = xhr.modReqHeaders["x-act-as-user-id"];
             }
@@ -2156,13 +2051,8 @@ const proxyRoutes = [
             });
         },
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return {};
-            }
+            let data = parseResponse(xhr);
+            if (!data) return {};
             if (data.errors && data.errors[0]) {
                 return {};
             }
@@ -2190,12 +2080,7 @@ const proxyRoutes = [
             xhr.modUrl = `https://${location.hostname}/i/api/graphql/iQtK4dl5hBmXewYZuEOKVw/DeleteRetweet`;
         },
         beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
+            setApiHeaders(xhr);
             if (xhr.modReqHeaders["x-act-as-user-id"]) {
                 xhr.storage.retweeter = xhr.modReqHeaders["x-act-as-user-id"];
             }
@@ -2207,13 +2092,8 @@ const proxyRoutes = [
             });
         },
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return {};
-            }
+            let data = parseResponse(xhr);
+            if (!data) return {};
             if (data.errors && data.errors[0]) {
                 return {};
             }
@@ -2239,22 +2119,10 @@ const proxyRoutes = [
             )[1];
             xhr.modUrl = tweetDetailUrl(xhr.storage.tweet_id);
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return {};
-            }
+            let data = parseResponse(xhr);
+            if (!data) return {};
             if (data.errors && data.errors[0]) {
                 return {};
             }
@@ -2275,22 +2143,10 @@ const proxyRoutes = [
             xhr.storage.tweet_id = originalUrl.searchParams.get("id");
             xhr.modUrl = tweetDetailUrl(xhr.storage.tweet_id);
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return {};
-            }
+            let data = parseResponse(xhr);
+            if (!data) return {};
             if (data.errors && data.errors[0]) {
                 return {};
             }
@@ -2314,14 +2170,7 @@ const proxyRoutes = [
             )[1];
             xhr.modUrl = `https://${location.hostname}/i/api/graphql/VaenaVgh5q5ih7kvyVjgtg/DeleteTweet`;
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         beforeSendBody: (xhr, body) => {
             return JSON.stringify({
                 variables: { tweet_id: xhr.storage.tweet_id, dark_request: false },
@@ -2349,14 +2198,7 @@ const proxyRoutes = [
             let cursor = originalUrl.searchParams.get("cursor");
             xhr.modUrl = tweetDetailUrl(xhr.storage.tweet_id, cursor ? { cursor } : {});
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
             // Wrap parsed tweets + entries in the legacy globalObjects shape that
             // processTimeline/getConversation consume. Each chirp's author is resolved from
@@ -2371,13 +2213,8 @@ const proxyRoutes = [
                     responseObjects: { feedbackActions: {}, immediateReactions: {} },
                 },
             });
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.error(e);
-                return conversation({}, {}, []);
-            }
+            let data = parseResponse(xhr);
+            if (!data) return conversation({}, {}, []);
             if (data.errors && data.errors[0]) {
                 return conversation({}, {}, []);
             }
@@ -2455,20 +2292,8 @@ const proxyRoutes = [
             // xhr.modUrl = `https://x.com/home/`;
         },
         beforeSendHeaders: (xhr) => {
-            // delete xhr.modReqHeaders["Content-Type"];
-            // delete xhr.modReqHeaders["X-Twitter-Active-User"];
-            // delete xhr.modReqHeaders["X-Twitter-Client-Language"];
-            // delete xhr.modReqHeaders["X-Twitter-Auth-Type"];
-            // delete xhr.modReqHeaders["Authorization"];
-            // delete xhr.modReqHeaders["X-Csrf-Token"];
             xhr.storage.user_id = xhr.modReqHeaders["x-act-as-user-id"];
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-
+            setApiHeaders(xhr);
         },
         afterRequest: (xhr) => {
             const data = JSON.parse(xhr.responseText);
@@ -2534,14 +2359,7 @@ const proxyRoutes = [
             let dest = params.get("dest");
             xhr.modUrl = `https://${location.hostname}/i/api/1.1/strato/column/None/tweetId=${tweet_id},destinationLanguage=None,translationSource=Some(Google),feature=None,timeout=None,onlyCached=None/translation/service/translateTweet`;
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["Content-Type"] = "application/json";
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = navigator.language.split("-")[0];
-            xhr.modReqHeaders["Authorization"] =
-                PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
-        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr, navigator.language.split("-")[0]),
         afterRequest: (xhr) => {
             const response = JSON.parse(xhr.responseText);
 
