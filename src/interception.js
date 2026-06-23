@@ -56,7 +56,6 @@ if(localStorage.OTDsettings) {
 // Snapshot the persisted layout once a day as a rolling backup (no-op if <24h since last).
 backupStateDaily();
 let seenNotifications = [];
-let seenHomeTweets = {};
 let timings = {
     home: {},
     list: {},
@@ -373,6 +372,68 @@ function hydrateUser(user, userResult) {
     if (userResult.verification?.verified) user.verified = true;
 }
 
+// Clicking a @mention/"Replying to" link makes TweetDeck resolve a user via the
+// legacy users/show.json (by screen_name) or users/lookup.json (by id) — both of
+// which x.com now Cloudflare-blocks, as do the UserByRestId/UsersByRestIds GraphQL
+// fallbacks. UserByScreenName is the only user endpoint still reachable, so we
+// route everything through it: screen_name straight through, and ids mapped back
+// to a handle harvested from tweets we've already parsed (handleById).
+const USER_BY_SCREEN_NAME_QID = "2qvSHpkWTMS9i0zJAwDNiA";
+const USER_FEATURES = Object.freeze({"hidden_profile_subscriptions_enabled":true,"payments_enabled":false,"rweb_xchat_enabled":false,"profile_label_improvements_pcf_label_in_post_enabled":true,"rweb_tipjar_consumption_enabled":true,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":true,"subscriptions_verification_info_verified_since_enabled":true,"highlights_tweets_tab_ui_enabled":true,"responsive_web_twitter_article_notes_tab_enabled":true,"subscriptions_feature_can_gift_premium":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true});
+
+const handleById = {};
+function indexHandle(id, screen_name) {
+    if (id && screen_name) handleById[String(id)] = screen_name;
+}
+function indexTweetHandles(t) {
+    if (!t) return;
+    if (t.user) indexHandle(t.user.id_str, t.user.screen_name);
+    for (let m of t.entities?.user_mentions ?? []) indexHandle(m.id_str, m.screen_name);
+}
+
+// Flatten a UserByScreenName result into the legacy v1.1 user object that
+// TwitterUser.fromJSONObject (the show/lookup processor) expects.
+function userResultToLegacy(result) {
+    if (!result || result.__typename === "UserUnavailable" || !result.legacy) return null;
+    let user = result.legacy;
+    user.id_str = result.rest_id;
+    user.id = +result.rest_id;
+    hydrateUser(user, result);
+    // fromJSONObject calls .replace on profile_image_url_https unconditionally.
+    if (!user.profile_image_url_https) {
+        user.profile_image_url_https = "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png";
+    }
+    return user;
+}
+
+const userByNameCache = {};
+function fetchUserByScreenName(screen_name) {
+    let key = screen_name.toLowerCase();
+    if (userByNameCache[key]) return userByNameCache[key];
+    let path = `/i/api/graphql/${USER_BY_SCREEN_NAME_QID}/UserByScreenName`;
+    let url = `${NEW_API}/${USER_BY_SCREEN_NAME_QID}/UserByScreenName?${generateParams(USER_FEATURES, { screen_name })}`;
+    let p = (async () => {
+        let headers = {
+            "Authorization": PUBLIC_TOKENS[0],
+            "Content-Type": "application/json",
+            "X-Twitter-Active-User": "yes",
+            "X-Twitter-Auth-Type": "OAuth2Session",
+            "X-Twitter-Client-Language": "en",
+            "X-Csrf-Token": (document.cookie.match(/ct0=([0-9a-f]+)/) || [])[1] || "",
+        };
+        if (localStorage.device_id) headers["X-Client-UUID"] = localStorage.device_id;
+        if (window.solveChallenge) {
+            try { headers["x-client-transaction-id"] = await solveChallenge(path, "GET"); } catch (e) {}
+        }
+        let res = await fetch(url, { headers, credentials: "include" });
+        let data = await res.json();
+        return userResultToLegacy(data?.data?.user?.result);
+    })();
+    p.catch(() => { delete userByNameCache[key]; });
+    userByNameCache[key] = p;
+    return p;
+}
+
 function parseTweet(res) {
     try {
 
@@ -557,6 +618,12 @@ function parseTweet(res) {
                 appendQuotePermalink(t);
             }
         }
+
+        // Harvest id->handle from every user + mention so the show/lookup routes can
+        // resolve reply-prefix recipients (which arrive as bare ids) by screen_name.
+        indexTweetHandles(tweet);
+        indexTweetHandles(tweet.retweeted_status);
+        indexTweetHandles(tweet.quoted_status);
 
         return tweet;
     } catch (e) {
@@ -749,7 +816,7 @@ function formatTwitterStyle(date) {
 }
 
 function emulateResponse(xhr) {
-    xhr._status = 200;
+    xhr._status = xhr._status || 200;
     xhr._readyState = 4;
     xhr.responseHeaderOverride = {
         "content-type": () => "application/json"
@@ -787,7 +854,7 @@ const proxyRoutes = [
             try {
                 let url = new URL(xhr.modUrl);
                 let params = new URLSearchParams(url.search);
-                let variables = {"count":40,"enableRanking":true,"includePromotedContent":true,"requestContext":"launch","seenTweetIds":[]};
+                let variables = {"count":40,"enableRanking":false,"includePromotedContent":false,"requestContext":"launch","seenTweetIds":[]};
 
                 let max_id = params.get("max_id");
                 let since_id = params.get("since_id");
@@ -800,7 +867,6 @@ const proxyRoutes = [
                     bn += BigInt(1);
                     if (cursors[`home-${user_id}-${bn}`]) {
                         variables.cursor = cursors[`home-${user_id}-${bn}`];
-                        // xhr.storage.cursor = true;
                     }
                 }
                 if (since_id) {
@@ -808,11 +874,10 @@ const proxyRoutes = [
                     if (cursors[`home-${user_id}-${bn}-top`]) {
                         variables.cursor = cursors[`home-${user_id}-${bn}-top`];
                         xhr.storage.cursor = true;
-                        xhr.storage.since_id = since_id;
                     }
                 }
-                xhr.modUrl = `${NEW_API}/MR2EaMHFNTqPEFIodfclng/HomeLatestTimeline`;
-                xhr.storage.body = JSON.stringify({ variables, features: TIMELINE_FEATURES, queryId: "MR2EaMHFNTqPEFIodfclng" });
+                xhr.modUrl = `${NEW_API}/n2m8OTpLdsM3Zhv33ljKoA/HomeLatestTimeline`;
+                xhr.storage.body = JSON.stringify({ variables, features: TIMELINE_FEATURES, queryId: "n2m8OTpLdsM3Zhv33ljKoA" });
             } catch (e) {
                 console.error(e);
             }
@@ -870,69 +935,33 @@ const proxyRoutes = [
                 return [];
             }
             entries = entries.entries;
+            let feedbackActions =
+                data.data.home.home_timeline_urt.responseObjects?.feedbackActions ?? [];
             let tweets = [];
             for (let e of entries) {
                 // thats a lot of trash https://lune.dimden.dev/0bf524e52eb.png
                 if (e.entryId.startsWith("tweet-")) {
-                    let res = e.content.itemContent.tweet_results.result;
-                    let tweet = parseTweet(res);
-                    if (!tweet) continue;
-                    if (
-                        tweet.source &&
-                        (tweet.source.includes("Twitter for Advertisers") ||
-                            tweet.source.includes("advertiser-interface"))
-                    )
-                        continue;
-                    if (tweet.user.blocking || tweet.user.muting) continue;
-
-                    tweets.push(tweet);
+                    let tweet = parseTweet(e.content.itemContent.tweet_results.result);
+                    if (tweet) tweets.push(tweet);
                 } else if (e.entryId.startsWith("home-conversation-")) {
-                    let items = e.content.items;
-
-                    let pushTweets = [];
-                    for (let i = 0; i < items.length; i++) {
-                        let item = items[i];
-                        if (
-                            item.entryId.includes("-tweet-") &&
-                            !item.entryId.includes("promoted")
-                        ) {
-                            let res = item.item.itemContent.tweet_results.result;
-                            let tweet = parseTweet(res);
-                            if (!tweet) continue;
-                            if (
-                                tweet.source &&
-                                (tweet.source.includes("Twitter for Advertisers") ||
-                                    tweet.source.includes("advertiser-interface"))
-                            )
-                                continue;
-                            if (tweet.user.blocking || tweet.user.muting) break;
-                            if (item.item.feedbackInfo) {
-                                tweet.feedback = item.item.feedbackInfo.feedbackKeys
-                                    .map(
-                                        (f) =>
-                                            data.data.home.home_timeline_urt.responseObjects.feedbackActions.find(
-                                                (a) => a.key === f
-                                            ).value
-                                    )
-                                    .filter((f) => f);
-                                if (tweet.feedback) {
-                                    tweet.feedbackMetadata =
-                                        item.item.feedbackInfo.feedbackMetadata;
-                                }
+                    for (let item of e.content.items) {
+                        if (!item.entryId.includes("-tweet-")) continue;
+                        let tweet = parseTweet(item.item.itemContent.tweet_results.result);
+                        if (!tweet) continue;
+                        if (item.item.feedbackInfo) {
+                            tweet.feedback = item.item.feedbackInfo.feedbackKeys
+                                .map((f) => feedbackActions.find((a) => a.key === f)?.value)
+                                .filter((f) => f);
+                            if (tweet.feedback.length) {
+                                tweet.feedbackMetadata = item.item.feedbackInfo.feedbackMetadata;
                             }
-                            pushTweets.push(tweet);
                         }
-                    }
-                    if(!seenHomeTweets[xhr.storage.user_id]) {
-                        seenHomeTweets[xhr.storage.user_id] = [];
-                    }
-                    for(let tweet of pushTweets) {
-                        if(xhr.storage.since_id && seenHomeTweets[xhr.storage.user_id].includes(tweet.id_str)) continue;
-                        seenHomeTweets[xhr.storage.user_id].push(tweet.id_str);
                         tweets.push(tweet);
                     }
                 }
             }
+
+            tweets = tweets.filter((t) => !t.user.muting && !t.user.blocking);
 
             if (tweets.length === 0) return tweets;
 
@@ -940,13 +969,6 @@ const proxyRoutes = [
             tweets.sort(
                 (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
-            if(!seenHomeTweets[xhr.storage.user_id]) {
-                seenHomeTweets[xhr.storage.user_id] = [];
-            }
-            for(let tweet of tweets) {
-                if(seenHomeTweets[xhr.storage.user_id].includes(tweet.id_str)) continue;
-                seenHomeTweets[xhr.storage.user_id].push(tweet.id_str);
-            }
 
             let bottomCursor = findCursor(entries, "bottom");
             if (bottomCursor) {
@@ -1772,15 +1794,54 @@ const proxyRoutes = [
             return "";
         },
     },
-    // User profile
+    // User profile — resolve through UserByScreenName (see fetchUserByScreenName).
+    // Mentions hit this with screen_name; the rare user_id form maps via handleById.
     {
         path: "/1.1/users/show.json",
         method: "GET",
-        beforeSendHeaders: (xhr) => {
-            xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
-            xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
-            xhr.modReqHeaders["Authorization"] = PUBLIC_TOKENS[0];
-            delete xhr.modReqHeaders["X-Twitter-Client-Version"];
+        openHandler: () => {},
+        sendHandler: async (xhr) => {
+            let status = 200, body;
+            try {
+                let params = new URLSearchParams(new URL(xhr.originalUrl).search);
+                let screen_name = params.get("screen_name") || handleById[params.get("user_id")];
+                let user = screen_name ? await fetchUserByScreenName(screen_name) : null;
+                if (user) {
+                    body = JSON.stringify(user);
+                } else {
+                    status = 404;
+                    body = JSON.stringify({ errors: [{ code: 50, message: "User not found." }] });
+                }
+            } catch (e) {
+                console.error("OTD users/show.json", e);
+                status = 500;
+                body = JSON.stringify({ errors: [{ code: 131, message: "Sorry, an error occurred." }] });
+            }
+            xhr._responseText = body;
+            xhr._status = status;
+            emulateResponse(xhr);
+        },
+    },
+    // Reply-prefix "Replying to @x" links resolve recipients via users/lookup.json
+    // (POST, comma-joined ids). Map each id back to a handle harvested from parsed
+    // tweets, then resolve the lot through UserByScreenName.
+    {
+        path: "/1.1/users/lookup.json",
+        method: "POST",
+        openHandler: () => {},
+        sendHandler: async (xhr, body) => {
+            let users = [];
+            try {
+                let raw = new URLSearchParams(body || "").get("user_id")
+                    || new URLSearchParams(new URL(xhr.originalUrl).search).get("user_id") || "";
+                let names = raw.split(",").map((id) => handleById[id.trim()]).filter(Boolean);
+                let resolved = await Promise.all(names.map((n) => fetchUserByScreenName(n).catch(() => null)));
+                users = resolved.filter(Boolean);
+            } catch (e) {
+                console.error("OTD users/lookup.json", e);
+            }
+            xhr._responseText = JSON.stringify(users);
+            emulateResponse(xhr);
         },
     },
     // Search
