@@ -1,7 +1,6 @@
 (() => {
   const BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
   const QID = {
-    USER_BY_SCREEN_NAME: 'NimuplG1OB7Fd2btCLdBOw',
     LIST_OWNERSHIPS: 'BBLgNbbUu6HXAX11lV_1Qw',
     LIST_ADD_MEMBER: 'vWPi0CTMoPFsjsL6W4IynQ',
     LIST_REMOVE_MEMBER: 'cAGvZIu7SW0YlLYynz3VYA',
@@ -86,8 +85,8 @@
     if (userIdInflight[name]) return userIdInflight[name];
     userIdInflight[name] = (async () => {
       try {
-        const d = await gql(QID.USER_BY_SCREEN_NAME, 'UserByScreenName', { screen_name: name });
-        const id = d?.data?.user?.result?.rest_id;
+        const user = await window.OTDuserByScreenName?.(name);
+        const id = user?.id_str;
         if (id) { userIds[name] = id; persistUserIds(); }
         return id;
       } finally {

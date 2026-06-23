@@ -434,6 +434,10 @@ function fetchUserByScreenName(screen_name) {
     return p;
 }
 
+// Shared with xlr.js so list/mute/block-by-handle resolve users through this one
+// (verified-current) UserByScreenName query id + cache, not a second copy.
+window.OTDuserByScreenName = fetchUserByScreenName;
+
 function parseTweet(res) {
     try {
 
