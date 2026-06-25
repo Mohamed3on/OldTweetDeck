@@ -179,6 +179,7 @@
   const userSearchSvg = mkSvg('M17.863 13.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H3.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46C7.627 11.85 9.648 11 12 11s4.373.85 5.863 2.44zM5.887 19h12.226c-.283-1.737-.944-3.06-1.928-4.11C14.965 13.73 13.615 13 12 13s-2.965.73-4.185 1.89c-.984 1.05-1.645 2.373-1.928 4.11zM12 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0-2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z');
   const plusSvg = mkSvg('M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z');
   const birdSvg = mkSvg('M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z');
+  const retweetSvg = mkSvg('M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V18H7.75c-2.347 0-4.25-1.9-4.25-4.25V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25c2.347 0 4.25 1.9 4.25 4.25v5.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L18 15.62V8.25c0-.97-.784-1.75-1.75-1.75z');
 
   const mkBtn = (cls, title, svg) => {
     const btn = document.createElement('button');
@@ -270,6 +271,15 @@
     const userId = await resolveUser(username);
     if (!userId) return false;
     return (await restPost('/1.1/blocks/destroy.json', { user_id: userId })).ok;
+  };
+
+  // friendships/update toggles the per-user "show Retweets" preference (source.want_retweets
+  // in friendships/show) — retweets:false hides their RTs from the timeline like the native
+  // follow dropdown's "Turn off Retweets".
+  const setUserRetweets = async (username, want) => {
+    const userId = await resolveUser(username);
+    if (!userId) return false;
+    return (await restPost('/1.1/friendships/update.json', { id: userId, retweets: want })).ok;
   };
 
   // friendships/show is the same source TweetDeck's follow-state uses; source.muting /
@@ -465,13 +475,17 @@
     return chip;
   }
 
-  // Stateful pill toggle (Mute/Block): fills when active, click flips it. onToggle(active)
-  // performs the REST call for the current state and returns success; .set() syncs state
-  // once the authoritative relationship resolves.
-  function makeToggle(cls, label, onLabel, active, onToggle) {
+  // Stateful pill toggle (Mute/Block/Retweets): fills when active, click flips it. Passing an
+  // icon renders it icon-only and swaps `title` instead of text. onToggle(active) performs the
+  // REST call for the current state and returns success; .set() syncs the authoritative state.
+  function makeToggle(cls, label, onLabel, active, onToggle, icon) {
     const btn = document.createElement('button');
     btn.className = `xlr-prf-toggle ${cls}`;
-    const sync = () => { btn.classList.toggle('xlr-on', active); btn.textContent = active ? onLabel : label; };
+    if (icon) btn.appendChild(icon);
+    const sync = () => {
+      btn.classList.toggle('xlr-on', active);
+      icon ? (btn.title = active ? onLabel : label) : (btn.textContent = active ? onLabel : label);
+    };
     sync();
     btn.onclick = withBusy(btn, 'xlr-inflight', async () => {
       if (await onToggle(active)) { active = !active; sync(); }
@@ -537,10 +551,14 @@
       return active ? unblockUser(username) : blockUser(username);
     });
     block.btn.classList.add('xlr-loading');
+    // active = retweets hidden (want_retweets false); clicking passes the desired want_retweets.
+    const rts = makeToggle('xlr-prf-rts', 'Turn off Retweets', 'Turn on Retweets', false,
+      (active) => setUserRetweets(username, active), retweetSvg.cloneNode(true));
+    rts.btn.classList.add('xlr-loading');
 
     const row = document.createElement('div');
     row.className = 'xlr-prf-actions';
-    row.append(viewBtn, mute.btn, block.btn);
+    row.append(viewBtn, mute.btn, block.btn, rts.btn);
     place(row);
 
     fetchMembership(username).then(() => {
@@ -550,7 +568,9 @@
     fetchRelationship(username).then((rel) => {
       mute.set(!!rel.muting);
       block.set(!!rel.blocking);
+      rts.set(rel.want_retweets === false);
       block.btn.classList.remove('xlr-loading');
+      rts.btn.classList.remove('xlr-loading');
     });
   }
 

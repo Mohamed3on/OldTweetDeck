@@ -354,3 +354,23 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .xlr-prf-actions .xlr-prf-mute.xlr-on:hover { background: rgb(255, 173, 31); color: #14171a; }
 .xlr-prf-actions .xlr-prf-block.xlr-on,
 .xlr-prf-actions .xlr-prf-block.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
+/* Retweets toggle is icon-only (the row has no room for a 4th text pill). When RTs are off the
+   pill fills slate and a diagonal strike crosses the icon — a "no retweets" glyph, so the state
+   reads from the icon rather than colour (green would misread as "retweets on"). The strike only
+   shows in the active state, where the solid slate background lets its halo carve a clean gap. */
+.xlr-prf-actions .xlr-prf-rts { position: relative; padding: 0 12px; }
+.xlr-prf-actions .xlr-prf-rts svg { width: 18px; height: 18px; }
+.xlr-prf-actions .xlr-prf-rts.xlr-on,
+.xlr-prf-actions .xlr-prf-rts.xlr-on:hover { background: rgb(83, 100, 113); color: #fff; }
+.xlr-prf-actions .xlr-prf-rts.xlr-on::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgb(83, 100, 113);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
