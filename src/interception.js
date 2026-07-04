@@ -346,6 +346,29 @@ function parseNoteTweet(result) {
     return { text, entities };
 }
 
+// A note (long) tweet's own media or quoted-tweet link comes back as a trailing
+// URL entity in entity_set.urls. We clear display_text_range for note tweets,
+// which disables TweetDeck's native trailing-attachment hiding (its identify*
+// AttachmentUrls helpers only run when a display range is present) — so the
+// media/quote renders AND a bare link is left in the text. Flag those trailing
+// self-media / tweet-permalink links as attachments so the linkifier drops them,
+// matching x.com.
+const NOTE_ATTACHMENT_PERMALINK = /(?:twitter|x)\.com\/[^/]+\/status(?:es)?\/\d+/i;
+function hideNoteAttachmentUrls(tweet, note) {
+    let urls = note.entities?.urls;
+    if (!urls?.length) return;
+    let selfMedia = new Set(
+        (tweet.extended_entities?.media ?? tweet.entities?.media ?? []).map((m) => m.url)
+    );
+    let end = [...note.text].length; // codepoints, to match entity indices
+    for (let u of [...urls].sort((a, b) => b.indices[0] - a.indices[0])) {
+        if (end - u.indices[1] > 1) break; // only trailing entities (allow one space)
+        if (!selfMedia.has(u.url) && !NOTE_ATTACHMENT_PERMALINK.test(u.expanded_url || "")) break;
+        u.isUrlForAttachment = true;
+        end = u.indices[0];
+    }
+}
+
 // X's modern API splits user fields across user_results.result (avatar, core, privacy,
 // relationship_perspectives, verification). Fold them into the flat legacy user shape,
 // filling only the gaps the legacy payload left behind.
@@ -515,8 +538,11 @@ function parseTweet(res) {
                 if (result.views) {
                     tweet.retweeted_status.ext.views = { r: { ok: { count: +result.views.count } } };
                 }
-                if (res.card && res.card.legacy && res.card.legacy.binding_values) {
-                    tweet.retweeted_status.card = res.card.legacy;
+                if (result.card && result.card.legacy && result.card.legacy.binding_values) {
+                    tweet.retweeted_status.card = result.card.legacy;
+                    let bvo = {};
+                    for (let bv of tweet.retweeted_status.card.binding_values) bvo[bv.key] = bv.value;
+                    tweet.retweeted_status.card.binding_values = bvo;
                 }
             } else {
                 console.warn("No retweeted status", result);
@@ -528,6 +554,7 @@ function parseTweet(res) {
                 tweet.retweeted_status.entities = note.entities;
                 tweet.retweeted_status.display_text_range = undefined; // no text range for long tweets
                 attachReplyMentions(tweet.retweeted_status.entities, implicit, note.text);
+                hideNoteAttachmentUrls(tweet.retweeted_status, note);
             }
         }
     
@@ -541,6 +568,7 @@ function parseTweet(res) {
             tweet.entities = note.entities;
             tweet.display_text_range = undefined; // no text range for long tweets
             attachReplyMentions(tweet.entities, implicit, note.text);
+            hideNoteAttachmentUrls(tweet, note);
         }
         if (tweet.quoted_status_result && tweet.quoted_status_result.result) {
             let result = tweet.quoted_status_result.result;
