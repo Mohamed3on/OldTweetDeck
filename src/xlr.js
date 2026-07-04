@@ -150,6 +150,24 @@
     $(input).val(newValue).trigger('uiInputSubmit');
   };
 
+  // Parse a search query's engagement thresholds. Missing min_retweets counts as 0 (Twitter's
+  // default); missing min_faves stays undefined so callers can tell a baseline was never set.
+  const engOf = (q) => ({
+    fav: (q.match(/\bmin_faves:(\d+)/i) || [])[1],
+    rt: (q.match(/\bmin_retweets:(\d+)/i) || [, '0'])[1],
+  });
+
+  // Rewrite a search query's engagement filters to the given thresholds: strip any existing
+  // min_faves/min_retweets tokens, then re-prepend the pair (leaving the rest untouched).
+  const applyEngagement = (value, fav, rt) => {
+    const rest = value.replace(/\bmin_faves:\d+\s*/gi, '').replace(/\bmin_retweets:\d+\s*/gi, '').trim();
+    const prefix = `min_faves:${fav} min_retweets:${rt}`;
+    return rest ? `${prefix} ${rest}` : prefix;
+  };
+
+  // Snap engagement filters back to baseline (min_faves:2 min_retweets:0). Idempotent.
+  const resetEngagement = (value) => applyEngagement(value, 2, 0);
+
   const getUsername = (article) => {
     const link = article.querySelector('.account-summary .account-link, .tweet-header .account-link');
     return link?.getAttribute('href')?.match(/\/([^/]+)$/)?.[1] || null;
@@ -574,6 +592,44 @@
     });
   }
 
+  // Repurpose a search column's native search type-icon into a one-click "reset engagement
+  // filters" control: clicking it snaps min_faves/min_retweets back to baseline. Keyed on a class
+  // (not a `seen` set) so re-rendered headers get re-wired; stopPropagation suppresses the header's
+  // own resetToTopColumn action.
+  function processColumnHeader(header) {
+    const icon = header.querySelector('.column-type-icon.icon-search:not(.xlr-reset-search)');
+    if (!icon) return;
+    icon.classList.add('xlr-reset-search');
+    icon.title = 'Reset to min_faves:2 min_retweets:0';
+    icon.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const input = header.querySelector(EDIT_BOX);
+      if (input) setFilterInput(input, resetEngagement(input.value));
+    };
+  }
+
+  // Every list: search column mirrors one shared set of engagement thresholds, dictated by the
+  // leftmost list: column (the "primary"). Each scan, rewrite every other list: column's
+  // min_faves/min_retweets to match the primary's — preserving its own list id and query text —
+  // so they stay in lockstep and line up on load. One-directional: editing a follower never
+  // propagates, and keyword/@mention columns (no list:) are left untouched.
+  function syncListColumns() {
+    const inputs = [...document.querySelectorAll('section.column')]
+      .filter(col => col.querySelector('.column-type-icon.icon-search'))
+      .map(col => col.querySelector(EDIT_BOX))
+      .filter(input => input && /\blist:/i.test(input.value));
+    if (inputs.length < 2) return;
+    const [primary, ...followers] = inputs;
+    if (document.activeElement === primary) return; // mid-edit — value not committed yet
+    const { fav, rt } = engOf(primary.value);
+    if (!fav) return; // no min_faves on the primary — nothing authoritative to mirror
+    for (const input of followers) {
+      if (document.activeElement === input) continue; // don't fight an active edit
+      const cur = engOf(input.value);
+      if (cur.fav !== fav || cur.rt !== rt) setFilterInput(input, applyEngagement(input.value, fav, rt));
+    }
+  }
+
   function updateButtonStates() {
     let atUser = null;
     for (const col of document.querySelectorAll('.column-panel')) {
@@ -594,6 +650,8 @@
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach(process);
     document.querySelectorAll('.prf-actions').forEach(processProfile);
+    document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
+    syncListColumns();
     updateButtonStates();
     scanQueued = false;
   };

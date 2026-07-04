@@ -362,6 +362,12 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .xlr-prf-actions .xlr-prf-rts svg { width: 18px; height: 18px; }
 .xlr-prf-actions .xlr-prf-rts.xlr-on,
 .xlr-prf-actions .xlr-prf-rts.xlr-on:hover { background: rgb(83, 100, 113); color: #fff; }
+/* A search column's type-icon doubles as a "reset engagement filters" control (see
+   processColumnHeader in xlr.js): clicking it snaps min_faves/min_retweets back to baseline.
+   Cue that it's clickable with a pointer and a blue hover tint. */
+.column-type-icon.xlr-reset-search { cursor: pointer; transition: color 0.15s; }
+.column-type-icon.xlr-reset-search:hover { color: rgb(29, 155, 240); }
+
 .xlr-prf-actions .xlr-prf-rts.xlr-on::after {
   content: '';
   position: absolute;
