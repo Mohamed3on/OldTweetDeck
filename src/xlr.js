@@ -150,23 +150,80 @@
     $(input).val(newValue).trigger('uiInputSubmit');
   };
 
-  // Parse a search query's engagement thresholds. Missing min_retweets counts as 0 (Twitter's
-  // default); missing min_faves stays undefined so callers can tell a baseline was never set.
+  // Like setFilterInput but coalesces the search: the value (and the parsed thresholds) update
+  // instantly, while the actual uiInputSubmit re-query is debounced — so rapid bump/cut clicks
+  // apply immediately on screen but only hit Twitter search once, ~300ms after the last click.
+  const submitTimers = new WeakMap();
+  const setFilterDebounced = (input, newValue, delay = 300) => {
+    if (newValue === input.value) return;
+    $(input).val(newValue);
+    clearTimeout(submitTimers.get(input));
+    submitTimers.set(input, setTimeout(() => $(input).trigger('uiInputSubmit'), delay));
+  };
+
+  // Parse a search query's engagement thresholds into numbers (absent → 0). Covers all three
+  // ladder-filtered axes: min_faves, min_retweets, min_replies.
   const engOf = (q) => ({
-    fav: (q.match(/\bmin_faves:(\d+)/i) || [])[1],
-    rt: (q.match(/\bmin_retweets:(\d+)/i) || [, '0'])[1],
+    fav: +((q.match(/\bmin_faves:(\d+)/i) || [])[1] || 0),
+    rt: +((q.match(/\bmin_retweets:(\d+)/i) || [])[1] || 0),
+    reply: +((q.match(/\bmin_replies:(\d+)/i) || [])[1] || 0),
   });
 
-  // Rewrite a search query's engagement filters to the given thresholds: strip any existing
-  // min_faves/min_retweets tokens, then re-prepend the pair (leaving the rest untouched).
-  const applyEngagement = (value, fav, rt) => {
-    const rest = value.replace(/\bmin_faves:\d+\s*/gi, '').replace(/\bmin_retweets:\d+\s*/gi, '').trim();
-    const prefix = `min_faves:${fav} min_retweets:${rt}`;
+  // Rewrite a query's engagement filters: strip existing min_faves/min_retweets/min_replies
+  // tokens, then re-prepend from the given thresholds (min_replies only when > 0, keeping the
+  // familiar min_faves:_ min_retweets:_ pair as the baseline shape). Leaves the rest untouched.
+  const applyEngagement = (value, { fav, rt, reply }) => {
+    const rest = value
+      .replace(/\bmin_faves:\d+\s*/gi, '')
+      .replace(/\bmin_retweets:\d+\s*/gi, '')
+      .replace(/\bmin_replies:\d+\s*/gi, '')
+      .trim();
+    let prefix = `min_faves:${fav} min_retweets:${rt}`;
+    if (reply > 0) prefix += ` min_replies:${reply}`;
     return rest ? `${prefix} ${rest}` : prefix;
   };
 
   // Snap engagement filters back to baseline (min_faves:2 min_retweets:0). Idempotent.
-  const resetEngagement = (value) => applyEngagement(value, 2, 0);
+  const resetEngagement = (value) => applyEngagement(value, { fav: 2, rt: 0, reply: 0 });
+
+  // Bump/cut on a list: column collapse the query to just the engagement operators + the list id,
+  // dropping any free-text terms — the canonical "min_faves:_ min_retweets:_ list:_" shape. Non-list
+  // (keyword/@mention) columns keep their query text.
+  const applyEngagementClean = (value, eng) => {
+    const list = value.match(/\blist:\d+/i);
+    return applyEngagement(list ? list[0] : value, eng);
+  };
+
+  // Twitter's search only "changes results" at discrete engagement thresholds — the same ladder
+  // for faves, retweets and replies. Below 10 the rungs are hand-picked (1,2,3,4,5,6,8); from 10 up
+  // each decade D contributes D, 1.5D, 2.5D … 9.5D (10 15 25 35…95, 100 150 250…950, 1000 1500…).
+  // nextStep returns the smallest rung strictly above n — used to bump a threshold just past a
+  // tweet's count so that tweet drops out.
+  const SEED = [1, 2, 3, 4, 5, 6, 8];
+  const RUNG_M = [2, 3, 5, 7, 9, 11, 13, 15, 17, 19]; // (D/2)*m → D, 1.5D, 2.5D … 9.5D per decade
+  const nextStep = (n) => {
+    for (const s of SEED) if (s > n) return s;
+    for (let D = 10; ; D *= 10)
+      for (const m of RUNG_M) { const r = (D / 2) * m; if (r > n) return r; }
+  };
+  // Largest ladder rung ≤ n (null below the smallest rung). The cut control halves a threshold then
+  // rounds down to this rung, so each cut loosens by at least half and always lands on a rung.
+  const prevRung = (n) => {
+    let best = null;
+    for (const s of SEED) if (s <= n) best = s;
+    for (let D = 10; D <= n; D *= 10)
+      for (const m of RUNG_M) { const r = (D / 2) * m; if (r <= n) best = r; else break; }
+    return best;
+  };
+
+  // A retweet / reply is "worth" this many likes — the fave-equivalent weight that lets bumpColumn
+  // pick the cheapest axis (e.g. min_retweets:1 ≈ 20 likes can beat min_faves:45). Editable in
+  // Settings, persisted to localStorage.
+  const DEFAULT_WEIGHTS = { rt: 20, reply: 240 };
+  const engWeights = () => {
+    try { return { ...DEFAULT_WEIGHTS, ...(JSON.parse(localStorage.xlrEngWeights) || {}) }; }
+    catch { return { ...DEFAULT_WEIGHTS }; }
+  };
 
   const getUsername = (article) => {
     const link = article.querySelector('.account-summary .account-link, .tweet-header .account-link');
@@ -198,6 +255,8 @@
   const plusSvg = mkSvg('M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z');
   const birdSvg = mkSvg('M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z');
   const retweetSvg = mkSvg('M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V18H7.75c-2.347 0-4.25-1.9-4.25-4.25V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25c2.347 0 4.25 1.9 4.25 4.25v5.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L18 15.62V8.25c0-.97-.784-1.75-1.75-1.75z');
+  const bumpSvg = mkSvg('M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z');
+  const cutSvg = mkSvg('M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z');
 
   const mkBtn = (cls, title, svg) => {
     const btn = document.createElement('button');
@@ -593,41 +652,180 @@
   }
 
   // Repurpose a search column's native search type-icon into a one-click "reset engagement
-  // filters" control: clicking it snaps min_faves/min_retweets back to baseline. Keyed on a class
-  // (not a `seen` set) so re-rendered headers get re-wired; stopPropagation suppresses the header's
-  // own resetToTopColumn action.
+  // filters" control: clicking it snaps min_faves/min_retweets back to baseline AND clears any
+  // bump override so the column rejoins the mirror. Keyed on a class (not a `seen` set) so
+  // re-rendered headers get re-wired; stopPropagation suppresses the header's own reset action.
   function processColumnHeader(header) {
+    const section = header.closest('section.column');
+    const isSearch = header.querySelector('.column-type-icon.icon-search');
+
     const icon = header.querySelector('.column-type-icon.icon-search:not(.xlr-reset-search)');
-    if (!icon) return;
-    icon.classList.add('xlr-reset-search');
-    icon.title = 'Reset to min_faves:2 min_retweets:0';
-    icon.onclick = (e) => {
-      e.preventDefault(); e.stopPropagation();
-      const input = header.querySelector(EDIT_BOX);
-      if (input) setFilterInput(input, resetEngagement(input.value));
-    };
+    if (icon) {
+      icon.classList.add('xlr-reset-search');
+      icon.title = 'Reset to min_faves:2 min_retweets:0';
+      icon.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const input = header.querySelector(EDIT_BOX);
+        if (input) setFilterInput(input, resetEngagement(input.value));
+      };
+    }
+
+    // Engagement step controls sat just before the column's settings icon: bump (↑) raises the
+    // cheapest threshold past this column's top tweet; cut (↓) halves the threshold that sheds the
+    // most engagement. See bumpColumn / cutColumn.
+    const settingsLink = header.querySelector('.column-settings-link');
+    if (isSearch && settingsLink && !header.querySelector('.xlr-bump-btn')) {
+      const bump = mkBtn('xlr-hdr-step xlr-bump-btn', 'Bump past top tweet', bumpSvg);
+      bump.onclick = (e) => { e.preventDefault(); e.stopPropagation(); bumpColumn(section); };
+      const cut = mkBtn('xlr-hdr-step xlr-cut-btn', 'Cut engagement mins by half', cutSvg);
+      cut.onclick = (e) => { e.preventDefault(); e.stopPropagation(); cutColumn(section); };
+      settingsLink.parentNode.insertBefore(bump, settingsLink);
+      settingsLink.parentNode.insertBefore(cut, settingsLink);
+    }
   }
 
-  // Every list: search column mirrors one shared set of engagement thresholds, dictated by the
-  // leftmost list: column (the "primary"). Each scan, rewrite every other list: column's
-  // min_faves/min_retweets to match the primary's — preserving its own list id and query text —
-  // so they stay in lockstep and line up on load. One-directional: editing a follower never
-  // propagates, and keyword/@mention columns (no list:) are left untouched.
-  function syncListColumns() {
-    const inputs = [...document.querySelectorAll('section.column')]
-      .filter(col => col.querySelector('.column-type-icon.icon-search'))
-      .map(col => col.querySelector(EDIT_BOX))
-      .filter(input => input && /\blist:/i.test(input.value));
-    if (inputs.length < 2) return;
-    const [primary, ...followers] = inputs;
-    if (document.activeElement === primary) return; // mid-edit — value not committed yet
-    const { fav, rt } = engOf(primary.value);
-    if (!fav) return; // no min_faves on the primary — nothing authoritative to mirror
-    for (const input of followers) {
-      if (document.activeElement === input) continue; // don't fight an active edit
-      const cur = engOf(input.value);
-      if (cur.fav !== fav || cur.rt !== rt) setFilterInput(input, applyEngagement(input.value, fav, rt));
+  // The column's current top (most recent visible) tweet as a TweetDeck chirp entity, exposing
+  // exact likeCount / retweetCount / replyCount — read straight from the column's model.
+  function topChirp(col) {
+    const art = [...col.querySelectorAll('article.stream-item')]
+      .find(a => a.offsetParent !== null && a.style.display !== 'none');
+    const key = art?.getAttribute('data-key');
+    if (!key) return null;
+    try { return TD.controller.columnManager.get(col.getAttribute('data-column'))?.updateIndex?.[key] || null; }
+    catch { return null; }
+  }
+
+  const listSearchCols = () => [...document.querySelectorAll('section.column')]
+    .filter(c => c.querySelector('.column-type-icon.icon-search'))
+    .filter(c => { const i = c.querySelector(EDIT_BOX); return i && /\blist:/i.test(i.value); });
+
+  // How close (as a fraction of the winner's cost) the runner-up axis must be for bump/cut to call
+  // the pick a near-arbitrary tie and toast it. Lower = only flag very close calls.
+  const TIE_TOL = 0.15;
+
+  // Raise the single cheapest threshold that drops this column's top tweet. Each axis's next
+  // ladder rung above the tweet's count would exclude it; its fave-equivalent price is
+  // (rung − current) × weight (faves weight 1). Pick the smallest — so a 40-fave / 0-RT tweet
+  // bumps to min_retweets:1 (≈20) rather than min_faves:45. Just rewrites the query; on a list
+  // follower the change sticks until the primary next changes (see syncListColumns).
+  function bumpColumn(col) {
+    const input = col?.querySelector(EDIT_BOX);
+    const chirp = input && topChirp(col);
+    if (!chirp) return;
+    const w = engWeights(), cur = engOf(input.value);
+    const axes = [
+      { key: 'fav', label: 'likes', count: chirp.likeCount || 0, weight: 1 },
+      { key: 'rt', label: 'retweets', count: chirp.retweetCount || 0, weight: w.rt },
+      { key: 'reply', label: 'replies', count: chirp.replyCount || 0, weight: w.reply },
+    ];
+    // Price each axis's bump in fave-equivalents ((rung − current) × weight); keep only the ones
+    // that would actually move the threshold.
+    const opts = [];
+    for (const a of axes) {
+      const target = nextStep(a.count), delta = (target - cur[a.key]) * a.weight;
+      if (delta > 0) opts.push({ ...a, target, delta, step: target - cur[a.key] });
     }
+    if (!opts.length) return;
+    // Cheapest wins; on an exact tie fav > rt > reply (array order). Flag near-ties too: any
+    // runner-up within TIE_TOL of the cheapest makes the pick near-arbitrary (e.g. +43 likes vs
+    // +2 retweets ≈ 40 at weight 20), so toast the close options with their fave-equivalent cost
+    // and apply the cheapest anyway.
+    const min = Math.min(...opts.map(o => o.delta));
+    const best = opts.find(o => o.delta === min);
+    const close = opts.filter(o => o.delta <= min * (1 + TIE_TOL));
+    if (close.length > 1) {
+      const exact = close.every(o => o.delta === min);
+      const list = close.map(o => `+${o.step} ${o.label} (≈${Math.round(o.delta)})`).join(' or ');
+      window.showToast?.(`${exact ? 'Equal-weight' : 'Near-tie'} bump: ${list} — applied ${best.label}`);
+    }
+    setFilterDebounced(input, applyEngagementClean(input.value, { ...cur, [best.key]: best.target }));
+  }
+
+  const BASE_ENG = { fav: 2, rt: 0, reply: 0 };
+
+  // Loosen this column: halve the single threshold whose halving removes the most fave-equivalents
+  // (e.g. min_replies:6 → 3 sheds 3×240 = 720, beating min_faves:1000 → 500's 500), rounding the
+  // result down to a ladder rung. Floors at the reset baseline (faves 2, rt/replies 0). Just
+  // rewrites the query; on a list follower the change sticks until the primary next changes.
+  function cutColumn(col) {
+    const input = col?.querySelector(EDIT_BOX);
+    if (!input) return;
+    const cur = engOf(input.value), w = engWeights();
+    const axes = [
+      { key: 'fav', label: 'likes', weight: 1 },
+      { key: 'rt', label: 'retweets', weight: w.rt },
+      { key: 'reply', label: 'replies', weight: w.reply },
+    ];
+    // Each axis above baseline can be halved (rounded down to a rung, floored at baseline); its
+    // worth is the fave-equivalents shed ((current − target) × weight).
+    const opts = [];
+    for (const a of axes) {
+      const c = cur[a.key], f = BASE_ENG[a.key];
+      if (c <= f) continue;
+      let t = prevRung(c / 2);
+      if (t == null || t >= c) t = f;
+      t = Math.max(f, t);
+      if (t >= c) continue;
+      opts.push({ ...a, target: t, reduction: (c - t) * a.weight, step: c - t });
+    }
+    if (!opts.length) return;
+    // Loosest wins (biggest shed); on an exact tie fav > rt > reply. Flag near-ties too: any
+    // runner-up within TIE_TOL of the biggest cut makes the pick near-arbitrary — toast the close
+    // options and apply the biggest anyway.
+    const max = Math.max(...opts.map(o => o.reduction));
+    const best = opts.find(o => o.reduction === max);
+    const close = opts.filter(o => o.reduction >= max * (1 - TIE_TOL));
+    if (close.length > 1) {
+      const exact = close.every(o => o.reduction === max);
+      const list = close.map(o => `−${o.step} ${o.label} (≈${Math.round(o.reduction)})`).join(' or ');
+      window.showToast?.(`${exact ? 'Equal-weight' : 'Near-tie'} cut: ${list} — applied ${best.label}`);
+    }
+    setFilterDebounced(input, applyEngagementClean(input.value, { ...cur, [best.key]: best.target }));
+  }
+
+  // The list: search columns follow the leftmost one (the "primary") like a listener: whenever the
+  // primary's engagement thresholds change, broadcast them to every other list: column. Between
+  // primary changes the followers are free — a hand-typed edit, bump, or cut on a follower sticks
+  // until the primary next changes. First sight counts as a change, so columns line up on load.
+  // Keyword/@mention columns (no list:) are untouched.
+  let lastPrimaryEng = null;
+  function syncListColumns() {
+    const cols = listSearchCols();
+    if (cols.length < 2) { lastPrimaryEng = null; return; }
+    const [primary, ...followers] = cols;
+    const primaryInput = primary.querySelector(EDIT_BOX);
+    if (document.activeElement === primaryInput) return; // mid-edit — value not committed yet
+    const P = engOf(primaryInput.value);
+    if (!P.fav) return; // no baseline min_faves on the primary — nothing authoritative to mirror
+    const key = `${P.fav}/${P.rt}/${P.reply}`;
+    if (key === lastPrimaryEng) return; // primary unchanged — leave followers to their own edits
+    lastPrimaryEng = key;
+    for (const col of followers) {
+      const input = col.querySelector(EDIT_BOX);
+      if (document.activeElement === input) continue; // don't clobber an active edit
+      const cur = engOf(input.value);
+      if (cur.fav !== P.fav || cur.rt !== P.rt || cur.reply !== P.reply)
+        setFilterDebounced(input, applyEngagement(input.value, P));
+    }
+  }
+
+  // Surface the bump weights (a retweet / reply's like-equivalent) in the Settings modal, next to
+  // OldTweetDeck's Import/Export/Restore buttons. Persisted to localStorage; read by engWeights.
+  function injectWeights(container) {
+    if (!container || container.querySelector('.xlr-eng-weights')) return;
+    const w = engWeights();
+    const box = document.createElement('div');
+    box.className = 'xlr-eng-weights';
+    box.innerHTML = `<div class="xlr-eng-title">Bump weights</div>
+      <label>A retweet is worth <input type="number" min="0" step="1" data-k="rt" value="${w.rt}"> likes</label>
+      <label>A reply is worth <input type="number" min="0" step="1" data-k="reply" value="${w.reply}"> likes</label>`;
+    box.addEventListener('input', (e) => {
+      const k = e.target.dataset.k; if (!k) return;
+      const cur = engWeights();
+      cur[k] = Math.max(0, parseInt(e.target.value, 10) || 0);
+      localStorage.setItem('xlrEngWeights', JSON.stringify(cur));
+    });
+    container.appendChild(box);
   }
 
   function updateButtonStates() {
@@ -646,11 +844,85 @@
     }
   }
 
+  // X strips a quoted tweet from search/list results when the viewer has muted its author,
+  // so TweetDeck falls back to "This Tweet is unavailable". The tweet is still fetchable by
+  // id, so re-fetch it, rebuild the quoted card through TweetDeck's own pipeline, and drop
+  // in a subtle muted marker — rather than leaving the whole quote hidden.
+  const QUOTE_QID = '0hWvDhmW8YQ-S_ib3azIrw';
+  const QUOTE_FEATURES = {
+    creator_subscriptions_tweet_preview_api_enabled: true, tweetypie_unmention_optimization_enabled: true,
+    responsive_web_edit_tweet_api_enabled: true, graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+    view_counts_everywhere_api_enabled: true, longform_notetweets_consumption_enabled: true,
+    responsive_web_twitter_article_tweet_consumption_enabled: true, tweet_awards_web_tipping_enabled: false,
+    freedom_of_speech_not_reach_fetch_enabled: true, standardized_nudges_misinfo: true,
+    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true, longform_notetweets_rich_text_read_enabled: true,
+    longform_notetweets_inline_media_enabled: true, responsive_web_graphql_exclude_directive_enabled: true,
+    verified_phone_label_enabled: false, responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+    responsive_web_graphql_timeline_navigation_enabled: true, responsive_web_enhance_cards_enabled: false,
+    rweb_video_timestamps_enabled: true, c9s_tweet_anatomy_moderator_badge_enabled: true,
+    creator_subscriptions_quote_tweet_preview_enabled: false, rweb_tipjar_consumption_enabled: true,
+    profile_label_improvements_pcf_label_in_post_enabled: true, responsive_web_grok_analyze_button_fetch_trends_enabled: false,
+    premium_content_api_read_enabled: false, communities_web_enable_tweet_community_results_fetch: true,
+    articles_preview_enabled: true,
+  };
+
+  // Fetch a single tweet by id and hand it to interception's parseTweet, yielding the legacy
+  // tweet object that TweetDeck.fromJSONObject expects. Cached (incl. nulls) so repeated
+  // column refreshes don't re-hit the API for the same quote.
+  const quoteCache = {};
+  const fetchQuotedLegacy = (id) => (quoteCache[id] ??= (async () => {
+    try {
+      const url = new URL(`${location.origin}/i/api/graphql/${QUOTE_QID}/TweetResultByRestId`);
+      url.searchParams.set('variables', JSON.stringify({ tweetId: id, withCommunity: false, includePromotedContent: false, withVoice: false }));
+      url.searchParams.set('features', JSON.stringify(QUOTE_FEATURES));
+      const j = await (await fetch(url, { headers: hdrs(), credentials: 'include' })).json();
+      let r = j?.data?.tweetResult?.result;
+      if (r?.tweet) r = r.tweet;
+      if (!r || !r.legacy || !window.OTDparseTweet) return null;
+      return window.OTDparseTweet(r) || null;
+    } catch { return null; }
+  })());
+
+  const chirpFor = (article) => {
+    try {
+      const colId = article.closest('section.column')?.getAttribute('data-column');
+      return colId ? TD.controller.columnManager.get(colId)?.findChirp(article.getAttribute('data-tweet-id')) : null;
+    } catch { return null; }
+  };
+
+  async function recoverMutedQuote(article) {
+    if (article.dataset.xlrQuoteDone || !article.querySelector('.quoted-tweet-unavailable')) return;
+    article.dataset.xlrQuoteDone = '1';
+    const chirp = chirpFor(article);
+    const qid = chirp?.quotedStatusId;
+    if (!qid) return;
+    const legacy = await fetchQuotedLegacy(qid);
+    const authorId = legacy?.user?.id_str;
+    const c = prefClient();
+    // Only un-hide when the author is genuinely muted — leave deleted/blocked quotes as-is.
+    if (!authorId || !(c && c.mutes[authorId])) return;
+    const placeholder = article.querySelector('.quoted-tweet-unavailable');
+    if (!placeholder) return;
+    try {
+      const ts = new TD.services.TwitterStatus(chirp.account).fromJSONObject(legacy);
+      chirp.setQuotedStatus(ts);
+      const wrap = document.createElement('div');
+      wrap.innerHTML = ts.renderQuotedTweet({ mediaPreviewSize: TD.vo.Column.MEDIA_PREVIEW_SIZE_MEDIUM });
+      const node = wrap.firstElementChild;
+      if (!node) return;
+      node.classList.add('xlr-muted-quote');
+      const anchor = node.querySelector('.username') || node.querySelector('.account-inline');
+      if (anchor) anchor.insertAdjacentHTML('afterend', '<span class="xlr-muted-tag" title="You muted this account">muted</span>');
+      placeholder.replaceWith(node);
+    } catch {}
+  }
+
   let scanQueued = false;
   const scan = () => {
-    document.querySelectorAll('article.stream-item').forEach(process);
+    document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); });
     document.querySelectorAll('.prf-actions').forEach(processProfile);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
+    document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     syncListColumns();
     updateButtonStates();
     scanQueued = false;

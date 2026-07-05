@@ -460,6 +460,9 @@ function fetchUserByScreenName(screen_name) {
 // Shared with xlr.js so list/mute/block-by-handle resolve users through this one
 // (verified-current) UserByScreenName query id + cache, not a second copy.
 window.OTDuserByScreenName = fetchUserByScreenName;
+// Shared with xlr.js so it can rebuild a quoted tweet that X stripped from search/list
+// results (muted authors) into the same legacy shape TweetDeck's fromJSONObject consumes.
+window.OTDparseTweet = parseTweet;
 
 function parseTweet(res) {
     try {
