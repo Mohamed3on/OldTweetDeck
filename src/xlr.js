@@ -217,9 +217,11 @@
   };
 
   // A retweet / reply is "worth" this many likes — the fave-equivalent weight that lets bumpColumn
-  // pick the cheapest axis (e.g. min_retweets:1 ≈ 20 likes can beat min_faves:45). Editable in
-  // Settings, persisted to localStorage.
-  const DEFAULT_WEIGHTS = { rt: 20, reply: 240 };
+  // pick the cheapest axis. These defaults are the primary list's own measured exchange rate
+  // (Σlikes/Σrt, Σlikes/Σreply at its baseline filter), a starting point that any near-tie
+  // recalibrates and overwrites from that same list (see resolveTie). Editable in Settings,
+  // persisted to localStorage.
+  const DEFAULT_WEIGHTS = { rt: 10, reply: 5 };
   const engWeights = () => {
     try { return { ...DEFAULT_WEIGHTS, ...(JSON.parse(localStorage.xlrEngWeights) || {}) }; }
     catch { return { ...DEFAULT_WEIGHTS }; }
@@ -699,9 +701,65 @@
     .filter(c => c.querySelector('.column-type-icon.icon-search'))
     .filter(c => { const i = c.querySelector(EDIT_BOX); return i && /\blist:/i.test(i.value); });
 
-  // How close (as a fraction of the winner's cost) the runner-up axis must be for bump/cut to call
-  // the pick a near-arbitrary tie and toast it. Lower = only flag very close calls.
+  // How close (as a fraction of the winner's cost) the runner-up axis must be for bump/cut to treat
+  // the pick as a near-arbitrary tie. Lower = only the closest calls trigger a recalibration.
   const TIE_TOL = 0.15;
+
+  // The reference column whose live tweets define the engagement ratio: the "primary list". Its own
+  // like-for-retweet / like-for-reply rate is the single source of truth for the bump weights, so
+  // every near-tie calibrates from here — not from whichever column happened to be clicked. The
+  // list: id is set in Settings (injectWeights); this is only the fallback until one is saved. Clear
+  // the field (stored '') to switch calibration off and keep the manual weights.
+  const DEFAULT_PRIMARY_LIST = '815723390048866304';
+  const primaryList = () => (localStorage.xlrPrimaryList ?? DEFAULT_PRIMARY_LIST).trim();
+
+  // Re-derive the retweet / reply weights from the primary list's currently-loaded tweets: the
+  // stream's own like-for-retweet and like-for-reply exchange rate (Σlikes / Σretweets,
+  // Σlikes / Σreplies) — what a fave-equivalent weight is meant to be, measured instead of guessed.
+  // Returns null when no list is set, its column isn't open, or the sample is too thin to trust.
+  function calibrateWeights() {
+    const id = primaryList();
+    if (!id) return null;
+    const col = [...document.querySelectorAll('section.column')]
+      .find(c => c.querySelector(EDIT_BOX)?.value?.includes('list:' + id));
+    let idx;
+    try { idx = TD.controller.columnManager.get(col?.getAttribute('data-column'))?.updateIndex; }
+    catch { return null; }
+    if (!idx) return null;
+    let n = 0, fav = 0, rt = 0, reply = 0;
+    for (const c of Object.values(idx)) {
+      if (!c || typeof c.likeCount !== 'number') continue;
+      n++; fav += c.likeCount || 0; rt += c.retweetCount || 0; reply += c.replyCount || 0;
+    }
+    if (n < 8 || !fav || !rt || !reply) return null;
+    return { rt: Math.max(1, Math.round(fav / rt)), reply: Math.max(1, Math.round(fav / reply)) };
+  }
+
+  // Pick the winning option and, on a near-arbitrary tie, let real engagement data break it. Each
+  // opt carries a fave-equivalent `cost` (step × weight); `dir` is 'min' for a bump (cheapest wins)
+  // or 'max' for a cut (biggest shed wins). When two-plus options land within TIE_TOL of the winner
+  // the default weights can't really separate them, so re-derive weights from the primary list
+  // (calibrateWeights), save them as the bump weights (Settings + every future pick then follow the
+  // real ratio), re-price, and toast. Falls back to a plain near-tie toast when the sample is thin.
+  function resolveTie(opts, dir) {
+    const pick = () => opts.reduce((a, b) => ((dir === 'min' ? b.cost < a.cost : b.cost > a.cost) ? b : a));
+    let best = pick();
+    const close = opts.filter(o => dir === 'min'
+      ? o.cost <= best.cost * (1 + TIE_TOL) : o.cost >= best.cost * (1 - TIE_TOL));
+    if (close.length < 2) return best;
+    const cal = calibrateWeights();
+    if (cal) {
+      for (const o of opts) o.cost = o.step * (o.key === 'fav' ? 1 : cal[o.key]);
+      best = pick();
+      localStorage.setItem('xlrEngWeights', JSON.stringify(cal));
+      window.showToast?.(`Calibrated from primary list — 1 RT ≈ ${cal.rt}, 1 reply ≈ ${cal.reply} likes; saved & ${dir === 'min' ? 'bumped' : 'cut'} ${best.label}`);
+    } else {
+      const sign = dir === 'min' ? '+' : '−';
+      const list = close.map(o => `${sign}${o.step} ${o.label} (≈${Math.round(o.cost)})`).join(' or ');
+      window.showToast?.(`Near-tie — ${list} — applied ${best.label}`);
+    }
+    return best;
+  }
 
   // Raise the single cheapest threshold that drops this column's top tweet. Each axis's next
   // ladder rung above the tweet's count would exclude it; its fave-equivalent price is
@@ -718,26 +776,15 @@
       { key: 'rt', label: 'retweets', count: chirp.retweetCount || 0, weight: w.rt },
       { key: 'reply', label: 'replies', count: chirp.replyCount || 0, weight: w.reply },
     ];
-    // Price each axis's bump in fave-equivalents ((rung − current) × weight); keep only the ones
-    // that would actually move the threshold.
+    // Price each axis's bump in fave-equivalents (step × weight); keep only the ones that would
+    // actually move the threshold. resolveTie picks the cheapest and calibrates on a near-tie.
     const opts = [];
     for (const a of axes) {
-      const target = nextStep(a.count), delta = (target - cur[a.key]) * a.weight;
-      if (delta > 0) opts.push({ ...a, target, delta, step: target - cur[a.key] });
+      const target = nextStep(a.count), step = target - cur[a.key];
+      if (step * a.weight > 0) opts.push({ key: a.key, label: a.label, target, step, cost: step * a.weight });
     }
     if (!opts.length) return;
-    // Cheapest wins; on an exact tie fav > rt > reply (array order). Flag near-ties too: any
-    // runner-up within TIE_TOL of the cheapest makes the pick near-arbitrary (e.g. +43 likes vs
-    // +2 retweets ≈ 40 at weight 20), so toast the close options with their fave-equivalent cost
-    // and apply the cheapest anyway.
-    const min = Math.min(...opts.map(o => o.delta));
-    const best = opts.find(o => o.delta === min);
-    const close = opts.filter(o => o.delta <= min * (1 + TIE_TOL));
-    if (close.length > 1) {
-      const exact = close.every(o => o.delta === min);
-      const list = close.map(o => `+${o.step} ${o.label} (≈${Math.round(o.delta)})`).join(' or ');
-      window.showToast?.(`${exact ? 'Equal-weight' : 'Near-tie'} bump: ${list} — applied ${best.label}`);
-    }
+    const best = resolveTie(opts, 'min');
     setFilterDebounced(input, applyEngagementClean(input.value, { ...cur, [best.key]: best.target }));
   }
 
@@ -756,8 +803,9 @@
       { key: 'rt', label: 'retweets', weight: w.rt },
       { key: 'reply', label: 'replies', weight: w.reply },
     ];
-    // Each axis above baseline can be halved (rounded down to a rung, floored at baseline); its
-    // worth is the fave-equivalents shed ((current − target) × weight).
+    // Each axis above baseline can be halved (rounded down to a rung, floored at baseline); its cut
+    // is worth the fave-equivalents shed (step × weight). resolveTie picks the biggest shed and
+    // calibrates on a near-tie.
     const opts = [];
     for (const a of axes) {
       const c = cur[a.key], f = BASE_ENG[a.key];
@@ -766,20 +814,10 @@
       if (t == null || t >= c) t = f;
       t = Math.max(f, t);
       if (t >= c) continue;
-      opts.push({ ...a, target: t, reduction: (c - t) * a.weight, step: c - t });
+      opts.push({ key: a.key, label: a.label, target: t, step: c - t, cost: (c - t) * a.weight });
     }
     if (!opts.length) return;
-    // Loosest wins (biggest shed); on an exact tie fav > rt > reply. Flag near-ties too: any
-    // runner-up within TIE_TOL of the biggest cut makes the pick near-arbitrary — toast the close
-    // options and apply the biggest anyway.
-    const max = Math.max(...opts.map(o => o.reduction));
-    const best = opts.find(o => o.reduction === max);
-    const close = opts.filter(o => o.reduction >= max * (1 - TIE_TOL));
-    if (close.length > 1) {
-      const exact = close.every(o => o.reduction === max);
-      const list = close.map(o => `−${o.step} ${o.label} (≈${Math.round(o.reduction)})`).join(' or ');
-      window.showToast?.(`${exact ? 'Equal-weight' : 'Near-tie'} cut: ${list} — applied ${best.label}`);
-    }
+    const best = resolveTie(opts, 'max');
     setFilterDebounced(input, applyEngagementClean(input.value, { ...cur, [best.key]: best.target }));
   }
 
@@ -818,8 +856,13 @@
     box.className = 'xlr-eng-weights';
     box.innerHTML = `<div class="xlr-eng-title">Bump weights</div>
       <label>A retweet is worth <input type="number" min="0" step="1" data-k="rt" value="${w.rt}"> likes</label>
-      <label>A reply is worth <input type="number" min="0" step="1" data-k="reply" value="${w.reply}"> likes</label>`;
+      <label>A reply is worth <input type="number" min="0" step="1" data-k="reply" value="${w.reply}"> likes</label>
+      <label>Calibrate from list id <input type="text" inputmode="numeric" data-primary-list value="${primaryList()}"></label>`;
     box.addEventListener('input', (e) => {
+      if (e.target.matches('[data-primary-list]')) {
+        localStorage.setItem('xlrPrimaryList', e.target.value.replace(/\D/g, ''));
+        return;
+      }
       const k = e.target.dataset.k; if (!k) return;
       const cur = engWeights();
       cur[k] = Math.max(0, parseInt(e.target.value, 10) || 0);

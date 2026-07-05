@@ -435,7 +435,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .xlr-eng-weights { margin-top: 18px; font-size: 13px; line-height: 1.5; color: inherit; }
 .xlr-eng-weights .xlr-eng-title { font-weight: 700; margin-bottom: 6px; }
 .xlr-eng-weights label { display: block; margin: 6px 0; }
-.xlr-eng-weights input[type="number"] {
+.xlr-eng-weights input[type="number"],
+.xlr-eng-weights input[data-primary-list] {
   width: 60px;
   margin: 0 4px;
   padding: 4px 6px;
@@ -446,6 +447,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   border: 1px solid rgba(127, 127, 127, 0.4);
   border-radius: 6px;
 }
+.xlr-eng-weights input[data-primary-list] { width: 190px; text-align: left; }
 
 /* Subtle "muted" marker on a quoted card we recovered because its author is muted
    (X strips these from search/list results — see recoverMutedQuote in xlr.js). */
