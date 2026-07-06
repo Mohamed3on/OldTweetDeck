@@ -960,12 +960,37 @@
     } catch {}
   }
 
+  // Media lightbox: choose the card layout by observing whether the caption fits under the
+  // media. The default (stacked) layout drops the caption below the media, flex-shrinking it
+  // against the card's max-height; if that leaves the caption scrolling, promote to the
+  // side-by-side rail (.otd-media-wide) so the tweet uses the horizontal space instead.
+  // Reading the real overflow keeps every size cap in the CSS rather than mirrored here.
+  // Decided once per modal, once the media has a height (that's what squeezes the caption).
+  const processMediaModal = () => {
+    const panel = document.querySelector('.med-fullpanel');
+    if (!panel || panel.dataset.xlrMediaDone) return;
+    const media = panel.querySelector('.med-tray img, .med-tray video');
+    const tweet = panel.querySelector('.med-tweet');
+    if (!tweet) return;
+    if (!(media && media.getBoundingClientRect().height)) {   // media not sized yet — retry on load
+      if (media && !media.dataset.xlrMediaBound) {
+        media.dataset.xlrMediaBound = '1';
+        media.addEventListener('load', processMediaModal);
+        media.addEventListener('loadedmetadata', processMediaModal);
+      }
+      return;
+    }
+    panel.classList.toggle('otd-media-wide', tweet.scrollHeight - tweet.clientHeight > 8);
+    panel.dataset.xlrMediaDone = '1';
+  };
+
   let scanQueued = false;
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); });
     document.querySelectorAll('.prf-actions').forEach(processProfile);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
+    processMediaModal();
     syncListColumns();
     updateButtonStates();
     scanQueued = false;
@@ -977,6 +1002,15 @@
 
   document.addEventListener('input', (e) => {
     if (e.target.matches?.(EDIT_BOX)) updateButtonStates();
+  });
+
+  // The lightbox is a compact card now, not a full-screen panel, so clicking the dark
+  // scrim around it must dismiss it (the way clicking the old full-bleed panel did).
+  document.addEventListener('click', (e) => {
+    const scrim = e.target.closest?.('.js-mediatable.ovl-block');
+    if (scrim && !e.target.closest('.med-fullpanel')) {
+      scrim.querySelector('.mdl-dismiss-media, .js-dismiss')?.click();
+    }
   });
 
   observer.observe(document.body, { childList: true, subtree: true });

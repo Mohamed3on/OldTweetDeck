@@ -476,83 +476,115 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 
 /* ============================================================================
-   Media lightbox — side-by-side layout.
-   TweetDeck stacks the photo on top (.med-embeditem, pinned top:50/bottom:150)
-   and the tweet below it (.med-tweet, bottom-anchored with no height cap), so a
-   long note-tweet grows up over the image and the whole modal ignores the
-   horizontal axis — leaving huge dead margins where the 1024px cap sits inside a
-   wide viewport. Rebuild it the way X's own photo viewer works: image as the hero
-   on the LEFT, the full tweet as a scrollable full-height rail on the RIGHT, and
-   widen the panel to reclaim that dead space.
+   Media lightbox — a compact card that adapts to the tweet.
+   TweetDeck's lightbox is a full-screen opaque panel stacking the photo over a
+   bottom-anchored tweet (no height cap), so a long note-tweet grew up over the
+   image AND every tweet — even a one-liner — got a full-screen dark takeover.
+   Rebuild it as a compact card floating on a lightly-dimmed backdrop (the
+   timeline stays visible), sized to its content and laid out to fit the tweet:
 
-   Pure CSS, no JS change: `_sizeMedia` (bundle.js) sizes the <img> from
-   .med-embeditem's own width/height, so resizing that frame reflows the image;
-   an !important on the <img> overrides the inline max-height it writes. Flipped
-   positioning props need !important to beat `html.dark .med-*` (0,2,1); the
-   purely-additive props (flex display, padding, background…) win on source order. */
-.med-fullpanel {
+     • short tweet → STACKED: media on top, caption below, card hugs the media width
+     • long tweet  → SIDE-BY-SIDE: media left, the note-tweet scrolls in a right rail
+
+   xlr.js tags .med-fullpanel with .otd-media-wide for long tweets (processMediaModal);
+   the default here is the safe STACKED layout, so it still looks right if the tag
+   hasn't landed yet. Pure CSS otherwise: `_sizeMedia` (bundle.js) sizes the <img>
+   from .med-embeditem's box, and an !important on the <img> beats the inline
+   max-height it writes. Flipped positioning props use !important to beat
+   `html.dark .med-*` (0,2,1). All scoped to the media modal. */
+
+/* Overlay → a light scrim that centres the card (timeline stays legible behind) */
+.js-mediatable.ovl-block {
+  position: fixed !important;
+  inset: 0 !important;
   display: flex !important;
-  flex-direction: row !important;
-  align-items: stretch !important;
-  max-width: min(1400px, 94vw) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 40px !important;
+  box-sizing: border-box !important;
+  background: rgba(0, 0, 0, 0.12) !important;
+}
+.js-mediatable .s-padded { display: contents !important; } /* let the scrim centre the card directly */
+
+/* Card shell + DEFAULT stacked layout */
+.med-fullpanel {
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important; height: auto !important;
+  max-width: min(92vw, 1160px) !important;
+  max-height: 90vh !important;
+  background: rgb(21, 24, 28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
 }
 
-/* LEFT — image hero, centered in its column and filling the height */
+/* MEDIA (shared) */
 .med-fullpanel > .med-embeditem {
-  position: relative !important;   /* keep as the containing block for the ‹ › arrows */
-  top: auto !important; bottom: auto !important; left: auto !important; right: auto !important;
+  position: relative !important;   /* containing block for the ‹ › gallery arrows */
+  inset: auto !important;
   width: auto !important; height: auto !important;
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
+  flex: 0 0 auto !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  box-sizing: border-box;
   overflow: hidden;
+  background: transparent !important;
 }
 .med-fullpanel .med-tray { margin: 0 auto; max-width: 100%; padding-bottom: 0 !important; }
 .med-fullpanel .med-tray img {
-  max-width: 100% !important;
-  max-height: calc(100vh - 56px) !important;
+  max-width: min(86vw, 640px) !important;   /* stacked cap (overridden wider when side-by-side) */
+  max-height: 62vh !important;              /* leaves room for the caption; if it still can't fit, xlr.js promotes to side-by-side */
   width: auto !important;
   height: auto !important;
+  display: block;
 }
-/* Drop the "View original" / "Flag media" chrome — noise pinned over the photo */
+/* Drop the "View original" / "Flag media" chrome and the empty gallery tray */
 .med-fullpanel .med-origlink,
 .med-fullpanel .med-flaglink,
 .med-fullpanel .js-media-flagged-nsfw { display: none !important; }
-.med-fullpanel > #media-gallery-tray { flex: 0 0 auto; }
+.med-fullpanel > #media-gallery-tray { display: none !important; }
+.med-fullpanel .mdl-dismiss-media { z-index: 5 !important; }
 
-/* RIGHT — tweet as a full-height, scrollable reading rail */
+/* TWEET (shared) — native auto-hiding scrollbar, so no bar sits on a short tweet.
+   Default (stacked) is a caption below the media: `width:0; min-width:100%` lets
+   it wrap to the media width instead of stretching the card to its longest line. */
 .med-fullpanel > .med-tweet {
   position: relative !important;
-  top: auto !important; bottom: auto !important; left: auto !important; right: auto !important;
-  width: auto !important; height: auto !important;
-  max-height: none !important;
-  flex: 0 0 clamp(340px, 32%, 460px) !important;
-  align-self: stretch;
+  inset: auto !important;
+  height: auto !important;
+  width: 0 !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
+  flex: 0 1 auto !important;         /* grow to fit; shrink (→ scroll) only if the card hits 90vh */
+  min-height: 0 !important;
+  align-self: stretch !important;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 56px 22px 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  animation: otd-med-rail-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 14px 18px !important;
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
-@keyframes otd-med-rail-in { from { opacity: 0; transform: translateX(12px); } }
-.med-fullpanel > .med-tweet::-webkit-scrollbar { width: 6px; }
-.med-fullpanel > .med-tweet::-webkit-scrollbar-track { background: transparent; }
-.med-fullpanel > .med-tweet::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); border-radius: 6px; }
+/* Empty trailing containers add a stray line-box that trips the scrollbar — hide them */
+.med-fullpanel .med-tweet .js-show-this-thread:empty,
+.med-fullpanel .med-tweet .js-card-container:empty { display: none !important; }
 
-/* Narrow windows: fall back to a vertical stack so neither column is crushed */
-@media (max-width: 820px) {
-  .med-fullpanel { flex-direction: column !important; max-width: 96vw !important; }
-  .med-fullpanel > .med-tweet {
-    flex: 0 0 auto !important;
-    max-height: 44vh !important;
-    border-left: none !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 16px 18px 20px;
-  }
-  .med-fullpanel .med-tray img { max-height: 48vh !important; }
+/* SIDE-BY-SIDE — long tweet (xlr.js adds .otd-media-wide): media left, note-tweet
+   scrolls in a right-hand rail. Both centred so a mid-length tweet stays balanced. */
+.med-fullpanel.otd-media-wide { flex-direction: row !important; } /* align-items:center inherited from the base */
+.med-fullpanel.otd-media-wide .med-tray img { max-width: min(56vw, 760px) !important; max-height: 90vh !important; }
+.med-fullpanel.otd-media-wide > .med-tweet {
+  width: auto !important;
+  min-width: 0 !important;
+  flex: 0 0 clamp(320px, 28vw, 400px) !important;
+  max-height: 86vh !important;
+  align-self: center !important;
+  padding: 22px 22px !important;
+  border-top: none !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
