@@ -605,6 +605,20 @@ function parseTweet(res) {
                         if (result.views) {
                             tweet.quoted_status.ext.views = { r: { ok: { count: +result.views.count } } };
                         }
+                        // A quoted note (long) tweet carries its full text in note_tweet, same as
+                        // the focal tweet (above) and retweets — but nothing expanded it here, so a
+                        // quoted long tweet (and its media-modal preview) showed the cut legacy text
+                        // until you opened the tweet itself. Expand it in place like the sibling paths.
+                        if (result.note_tweet && result.note_tweet.note_tweet_results && localStorage.OTDenableAutoExpand === "1") {
+                            let note = parseNoteTweet(result);
+                            let implicit = captureReplyMentions(tweet.quoted_status);
+                            tweet.quoted_status.full_text = note.text;
+                            tweet.quoted_status.text = note.text;
+                            tweet.quoted_status.entities = note.entities;
+                            tweet.quoted_status.display_text_range = undefined; // no text range for long tweets
+                            attachReplyMentions(tweet.quoted_status.entities, implicit, note.text);
+                            hideNoteAttachmentUrls(tweet.quoted_status, note);
+                        }
                     }
                 } else {
                     console.warn("No quoted status", result);
