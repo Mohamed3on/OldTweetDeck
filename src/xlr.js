@@ -170,21 +170,21 @@
   });
 
   // Rewrite a query's engagement filters: strip existing min_faves/min_retweets/min_replies
-  // tokens, then re-prepend from the given thresholds (min_replies only when > 0, keeping the
-  // familiar min_faves:_ min_retweets:_ pair as the baseline shape). Leaves the rest untouched.
+  // tokens, then re-attach them from the given thresholds (min_replies only when > 0, keeping the
+  // familiar min_faves:_ min_retweets:_ pair as the baseline shape). List columns keep the mins up
+  // front (the "min_faves:_ min_retweets:_ list:_" shape); free-text searches read better with the
+  // search term first and the filters trailing. Leaves the rest untouched.
   const applyEngagement = (value, { fav, rt, reply }) => {
     const rest = value
       .replace(/\bmin_faves:\d+\s*/gi, '')
       .replace(/\bmin_retweets:\d+\s*/gi, '')
       .replace(/\bmin_replies:\d+\s*/gi, '')
       .trim();
-    let prefix = `min_faves:${fav} min_retweets:${rt}`;
-    if (reply > 0) prefix += ` min_replies:${reply}`;
-    return rest ? `${prefix} ${rest}` : prefix;
+    let mins = `min_faves:${fav} min_retweets:${rt}`;
+    if (reply > 0) mins += ` min_replies:${reply}`;
+    if (!rest) return mins;
+    return /\blist:/i.test(rest) ? `${mins} ${rest}` : `${rest} ${mins}`;
   };
-
-  // Snap engagement filters back to baseline (min_faves:2 min_retweets:0). Idempotent.
-  const resetEngagement = (value) => applyEngagement(value, { fav: 2, rt: 0, reply: 0 });
 
   // Bump/cut on a list: column collapse the query to just the engagement operators + the list id,
   // dropping any free-text terms — the canonical "min_faves:_ min_retweets:_ list:_" shape. Non-list
@@ -259,6 +259,7 @@
   const retweetSvg = mkSvg('M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V18H7.75c-2.347 0-4.25-1.9-4.25-4.25V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25c2.347 0 4.25 1.9 4.25 4.25v5.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L18 15.62V8.25c0-.97-.784-1.75-1.75-1.75z');
   const bumpSvg = mkSvg('M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z');
   const cutSvg = mkSvg('M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z');
+  const trashSvg = mkSvg('M16 6V5.5C16 4.12 14.88 3 13.5 3h-3C9.11 3 8 4.12 8 5.5V6H3v2h1.06l.81 11.21C4.98 20.78 6.28 22 7.86 22h8.27c1.58 0 2.88-1.22 3-2.79L19.93 8H21V6h-5zm-6-.5c0-.28.22-.5.5-.5h3c.27 0 .5.22.5.5V6h-4v-.5zm7.13 13.57c-.04.53-.48.93-1 .93H7.86c-.52 0-.96-.4-1-.93L6.07 8h11.85l-.79 11.07zM9 17v-6h2v6H9zm4 0v-6h2v6h-2z');
 
   const mkBtn = (cls, title, svg) => {
     const btn = document.createElement('button');
@@ -371,6 +372,15 @@
       );
       return (await r.json())?.relationship?.source || {};
     } catch { return {}; }
+  };
+
+  // After you drop someone from your world (delist or mute), you often want them fully gone — if you
+  // still follow them, offer to unfollow in the same gesture. Returns whether the unfollow ran.
+  const offerUnfollow = async (username) => {
+    const rel = await fetchRelationship(username);
+    if (!rel.following || !confirm(`You also follow @${username}. Unfollow them too?`)) return false;
+    const userId = await resolveUser(username);
+    return !!(userId && (await restPost('/1.1/friendships/destroy.json', { user_id: userId })).ok);
   };
 
   let popover = document.createElement('div');
@@ -503,10 +513,10 @@
         const userId = await resolveUser(username);
         if (!userId) return;
         const r = await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId });
-        if (r.ok) {
-          markDone(removeBtn, `Removed @${username}`, article);
-          updateMembership(username, listId, false);
-        }
+        if (!r.ok) return;
+        markDone(removeBtn, `Removed @${username}`, article);
+        updateMembership(username, listId, false);
+        if (await offerUnfollow(username)) removeBtn.title = `Removed & unfollowed @${username}`;
       });
       appendToBar(removeBtn);
     } else {
@@ -530,9 +540,11 @@
     muteBtn.onclick = withBusy(muteBtn, 'xlr-removing', async () => {
       if (isMuted(username)) {
         if (await unmuteUser(username)) syncMuteBtn();
-      } else if (await muteUser(username)) {
-        markDone(muteBtn, `Muted @${username}`, article);
+        return;
       }
+      if (!await muteUser(username)) return;
+      markDone(muteBtn, `Muted @${username}`, article);
+      if (await offerUnfollow(username)) muteBtn.title = `Muted & unfollowed @${username}`;
     });
     if (moreItem) moreItem.replaceChildren(muteBtn);
     else appendToBar(muteBtn);
@@ -654,9 +666,12 @@
   }
 
   // Repurpose a search column's native search type-icon into a one-click "reset engagement
-  // filters" control: clicking it snaps min_faves/min_retweets back to baseline AND clears any
-  // bump override so the column rejoins the mirror. Keyed on a class (not a `seen` set) so
-  // re-rendered headers get re-wired; stopPropagation suppresses the header's own reset action.
+  // filters" control: clicking it snaps the column to the primary list column's engagement mins,
+  // clearing any bump override so the column rejoins the mirror. Mention columns (searching a
+  // @handle) are the exception — they reset to just the baseline min_faves:2, no retweet/reply
+  // floor, since mentions are rare enough that any floor over-filters them. Keyed on a class
+  // (not a `seen` set) so re-rendered headers get re-wired; stopPropagation suppresses the
+  // header's own reset action.
   function processColumnHeader(header) {
     const section = header.closest('section.column');
     const isSearch = header.querySelector('.column-type-icon.icon-search');
@@ -664,25 +679,42 @@
     const icon = header.querySelector('.column-type-icon.icon-search:not(.xlr-reset-search)');
     if (icon) {
       icon.classList.add('xlr-reset-search');
-      icon.title = 'Reset to min_faves:2 min_retweets:0';
+      icon.title = 'Reset engagement filters to the primary column';
       icon.onclick = (e) => {
         e.preventDefault(); e.stopPropagation();
         const input = header.querySelector(EDIT_BOX);
-        if (input) setFilterInput(input, resetEngagement(input.value));
+        if (!input) return;
+        if (AT_RE.test(input.value)) {
+          // Mention column: drop every engagement floor, keeping only the baseline min_faves after
+          // the @handle.
+          const rest = input.value.replace(/\bmin_(?:faves|retweets|replies):\d+\s*/gi, '').trim();
+          setFilterInput(input, rest ? `${rest} min_faves:${BASE_ENG.fav}` : `min_faves:${BASE_ENG.fav}`);
+        } else {
+          setFilterInput(input, applyEngagement(input.value, primaryEng()));
+        }
       };
     }
 
     // Engagement step controls sat just before the column's settings icon: bump (↑) raises the
     // cheapest threshold past this column's top tweet; cut (↓) halves the threshold that sheds the
-    // most engagement. See bumpColumn / cutColumn.
+    // most engagement (see bumpColumn / cutColumn), and a trash button removes the column outright —
+    // search columns hide the native settings gear (xlr.css), so this is their only one-click remove.
     const settingsLink = header.querySelector('.column-settings-link');
     if (isSearch && settingsLink && !header.querySelector('.xlr-bump-btn')) {
       const bump = mkBtn('xlr-hdr-step xlr-bump-btn', 'Bump past top tweet', bumpSvg);
       bump.onclick = (e) => { e.preventDefault(); e.stopPropagation(); bumpColumn(section); };
       const cut = mkBtn('xlr-hdr-step xlr-cut-btn', 'Cut engagement mins by half', cutSvg);
       cut.onclick = (e) => { e.preventDefault(); e.stopPropagation(); cutColumn(section); };
+      const del = mkBtn('xlr-hdr-step xlr-del-btn', 'Delete column', trashSvg);
+      del.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const name = header.querySelector('.column-heading')?.textContent.trim();
+        if (!confirm(name ? `Delete the "${name}" column?` : 'Delete this column?')) return;
+        try { TD.controller.columnManager.deleteColumn(section.getAttribute('data-column')); } catch {}
+      };
       settingsLink.parentNode.insertBefore(bump, settingsLink);
       settingsLink.parentNode.insertBefore(cut, settingsLink);
+      settingsLink.parentNode.insertBefore(del, settingsLink);
     }
   }
 
@@ -700,6 +732,14 @@
   const listSearchCols = () => [...document.querySelectorAll('section.column')]
     .filter(c => c.querySelector('.column-type-icon.icon-search'))
     .filter(c => { const i = c.querySelector(EDIT_BOX); return i && /\blist:/i.test(i.value); });
+
+  // The engagement mins the reset control snaps a column to: the primary list column's own
+  // thresholds — the leftmost list: column, the same one the mirror broadcasts from. Falls back to
+  // the baseline when no list column is open.
+  const primaryEng = () => {
+    const primary = listSearchCols()[0]?.querySelector(EDIT_BOX);
+    return primary ? engOf(primary.value) : { ...BASE_ENG };
+  };
 
   // How close (as a fraction of the winner's cost) the runner-up axis must be for bump/cut to treat
   // the pick as a near-arbitrary tie. Lower = only the closest calls trigger a recalibration.

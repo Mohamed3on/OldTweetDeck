@@ -363,7 +363,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .xlr-prf-actions .xlr-prf-rts.xlr-on,
 .xlr-prf-actions .xlr-prf-rts.xlr-on:hover { background: rgb(83, 100, 113); color: #fff; }
 /* A search column's type-icon doubles as a "reset engagement filters" control (see
-   processColumnHeader in xlr.js): clicking it snaps min_faves/min_retweets back to baseline.
+   processColumnHeader in xlr.js): clicking it snaps the column to the primary column's mins.
    Cue that it's clickable with a pointer and a blue hover tint. */
 .column-type-icon.xlr-reset-search { cursor: pointer; transition: color 0.15s; }
 .column-type-icon.xlr-reset-search:hover { color: rgb(29, 155, 240); }
@@ -427,6 +427,9 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
    stubborn TweetDeck rule pins the button's `color`, so set the SVG fill directly. */
 .js-column-header .xlr-hdr-step:hover svg,
 .js-column-header .xlr-hdr-step.is-hover svg { fill: rgb(29, 155, 240) !important; }
+/* The delete-column button shares the header-step chrome but warns red on hover — it's destructive. */
+.js-column-header .xlr-hdr-step.xlr-del-btn:hover svg,
+.js-column-header .xlr-hdr-step.xlr-del-btn.is-hover svg { fill: rgb(244, 33, 46) !important; }
 .js-column-header .xlr-hdr-step:active svg,
 .js-column-header .xlr-hdr-step.is-active svg { transform: scale(0.88); }
 
