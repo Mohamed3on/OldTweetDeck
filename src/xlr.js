@@ -665,6 +665,44 @@
     });
   }
 
+  // The X user API returns only URL entities for a bio — never @mention entities — so
+  // TweetDeck renders bio mentions as plain text. Linkify them into rel="user" anchors
+  // (the markup profile_summary uses for the @handle), which TweetDeck's global click
+  // handler turns into a fresh profile popup. Walk text nodes so existing URL links —
+  // and any mention we've already wrapped — stay untouched; the @ must follow a boundary
+  // so emails (me@host) and paths (/@handle) don't match.
+  const MENTION_RE = /(^|[^\w@\/])@(\w{1,15})/g;
+  function linkifyBio(bio) {
+    if (seen.has(bio)) return;
+    seen.add(bio);
+    const nodes = [];
+    const walker = document.createTreeWalker(bio, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      if (!walker.currentNode.parentElement.closest('a')) nodes.push(walker.currentNode);
+    }
+    for (const node of nodes) {
+      const text = node.textContent;
+      MENTION_RE.lastIndex = 0;
+      if (!MENTION_RE.test(text)) continue;
+      MENTION_RE.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = MENTION_RE.exec(text))) {
+        frag.append(text.slice(last, m.index) + m[1]);
+        const a = document.createElement('a');
+        a.href = `https://twitter.com/${m[2]}`;
+        a.rel = 'user';
+        a.className = 'pretty-link';
+        a.target = '_blank';
+        a.textContent = '@' + m[2];
+        frag.append(a);
+        last = m.index + m[0].length;
+      }
+      frag.append(text.slice(last));
+      node.replaceWith(frag);
+    }
+  }
+
   // Repurpose a search column's native search type-icon into a one-click "reset engagement
   // filters" control: clicking it snaps the column to the primary list column's engagement mins,
   // clearing any bump override so the column rejoins the mirror. Mention columns (searching a
@@ -1028,6 +1066,7 @@
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); });
     document.querySelectorAll('.prf-actions').forEach(processProfile);
+    document.querySelectorAll('.prf-bio').forEach(linkifyBio);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     processMediaModal();
