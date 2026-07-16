@@ -78,11 +78,21 @@ RegExp.prototype.test = function() {
     }
 }
 
-// Step 5: self destruct
+// Step 5: self destruct. The prototype patches are invasive globals, so they still come off
+// on the original timer. The chunk-registry deletion is cheap and touches nothing OTD uses
+// (tweetdeck's bundle registers under webpackJsonp), so keep that running until OTD has
+// actually taken over instead: injection.js can still be fetching at 5s, and a twitter
+// bundle that registers in that window boots into the hijacked DOM, throws, and hits the
+// session-reset that clears our storage (see Step 0).
 setTimeout(() => {
-    clearInterval(_destroyerInt);
     Array.prototype.push = _originalPush;
     RegExp.prototype.test = _originalTest;
 }, 5000);
+
+let _readyInt = setInterval(() => {
+    if(!window.__OTDready && performance.now() < 60000) return;
+    clearInterval(_readyInt);
+    clearInterval(_destroyerInt);
+}, 200);
 
 // Step 6: Live OTD reaction: https://lune.dimden.dev/6743b45eb1de.png

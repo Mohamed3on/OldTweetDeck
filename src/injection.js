@@ -213,9 +213,20 @@ async function main() {
         '{{^hasMedia}} {{#isInThread}} <div class="margin-b--5"></div> {{/isInThread}} {{/hasMedia}} {{#quotedTweetMissing}} {{>status/quoted_tweet_missing}} {{/quotedTweetMissing}} {{#translation}}{{>status/tweet_translation}}{{/translation}} {{>status/tweet_media_wrapper}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}}'
     );
 
+    // Upstream left a debug console.error in logTweetProcessingError. It fires for every
+    // tweet shape TweetDeck can't build — already handled (caught, tweet skipped), so the
+    // log is pure noise.
+    bundle_js.value = bundle_js.value.replaceAll(
+        "console.error('logTweetProcessingError', arguments);",
+        ""
+    );
+
     let bundle_js_script = document.createElement("script");
     bundle_js_script.innerHTML = bundle_js.value;
     document.head.appendChild(bundle_js_script);
+
+    // OTD has taken over: destroyer.js can stop suppressing twitter's bundles now.
+    window.__OTDready = true;
 
     let twitter_text_script = document.createElement("script");
     twitter_text_script.innerHTML = twitter_text.value;
