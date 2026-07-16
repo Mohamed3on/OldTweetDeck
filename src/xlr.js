@@ -170,18 +170,22 @@
   });
 
   // Rewrite a query's engagement filters: strip existing min_faves/min_retweets/min_replies
-  // tokens, then re-attach them from the given thresholds (min_replies only when > 0, keeping the
-  // familiar min_faves:_ min_retweets:_ pair as the baseline shape). List columns keep the mins up
-  // front (the "min_faves:_ min_retweets:_ list:_" shape); free-text searches read better with the
-  // search term first and the filters trailing. Leaves the rest untouched.
+  // tokens, then re-attach them ordered by threshold, biggest first (min_replies only when > 0),
+  // so the strongest floor leads and 0-valued floors trail. Ties keep the canonical
+  // faves/retweets/replies order (stable sort). List columns keep the mins up front (before the
+  // "list:_" id); free-text searches read better with the search term first and the filters
+  // trailing. Leaves the rest untouched.
   const applyEngagement = (value, { fav, rt, reply }) => {
     const rest = value
       .replace(/\bmin_faves:\d+\s*/gi, '')
       .replace(/\bmin_retweets:\d+\s*/gi, '')
       .replace(/\bmin_replies:\d+\s*/gi, '')
       .trim();
-    let mins = `min_faves:${fav} min_retweets:${rt}`;
-    if (reply > 0) mins += ` min_replies:${reply}`;
+    const mins = [['min_faves', fav], ['min_retweets', rt], ['min_replies', reply]]
+      .filter(([k, v]) => k !== 'min_replies' || v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `${k}:${v}`)
+      .join(' ');
     if (!rest) return mins;
     return /\blist:/i.test(rest) ? `${mins} ${rest}` : `${rest} ${mins}`;
   };
@@ -374,13 +378,102 @@
     } catch { return {}; }
   };
 
+  // A grace-period toast: the unfollow is scheduled, a depleting ring counts down 5s, and one tap
+  // cancels it. Beats a blocking confirm() — the common answer (yes, unfollow) is zero-click, and
+  // hovering pauses the clock so reaching for Cancel never loses the race. Toasts stack. `commit`
+  // runs the actual unfollow when the timer expires and resolves whether it succeeded.
+  let unfStack;
+  const showUnfollowCountdown = (username, commit) => {
+    if (!unfStack) {
+      unfStack = document.createElement('div');
+      unfStack.className = 'otd-unf-stack';
+      document.body.appendChild(unfStack);
+    }
+    const DURATION = 5000;
+    const toast = document.createElement('div');
+    toast.className = 'otd-unf';
+    toast.innerHTML =
+      '<span class="otd-unf-timer">' +
+        '<svg class="otd-unf-ring" viewBox="0 0 24 24">' +
+          '<circle class="otd-unf-track" cx="12" cy="12" r="10" pathLength="100"/>' +
+          '<circle class="otd-unf-fill" cx="12" cy="12" r="10" pathLength="100"/>' +
+        '</svg>' +
+        '<span class="otd-unf-num">5</span>' +
+      '</span>' +
+      '<span class="otd-unf-text">Unfollowing <b></b></span>' +
+      '<button class="otd-unf-cancel">Cancel</button>';
+    const fill = toast.querySelector('.otd-unf-fill');
+    const num = toast.querySelector('.otd-unf-num');
+    const text = toast.querySelector('.otd-unf-text');
+    const cancelBtn = toast.querySelector('.otd-unf-cancel');
+    text.querySelector('b').textContent = '@' + username;
+    unfStack.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('otd-unf-in'));
+
+    const dismiss = () => {
+      toast.classList.add('otd-unf-out');
+      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    };
+
+    let raf = 0, last = 0, elapsed = 0, paused = false, settled = false;
+
+    const finish = async () => {
+      settled = true;
+      cancelAnimationFrame(raf);
+      cancelBtn.remove();
+      num.textContent = '';
+      fill.style.strokeDashoffset = '';           // hand the ring to the committing spinner
+      toast.classList.add('otd-unf-committing');
+      let ok = false;
+      try { ok = await commit(); } catch {}
+      toast.classList.remove('otd-unf-committing');
+      text.style.opacity = '0';                   // crossfade "Unfollowing" → "Unfollowed"
+      setTimeout(() => {
+        toast.classList.add(ok ? 'otd-unf-done' : 'otd-unf-fail');
+        num.textContent = ok ? '✓' : '!';
+        text.textContent = ok ? 'Unfollowed ' : 'Couldn’t unfollow ';
+        const b = document.createElement('b');
+        b.textContent = '@' + username;
+        text.appendChild(b);
+        text.style.opacity = '';
+        setTimeout(dismiss, 1600);
+      }, 160);
+    };
+
+    const frame = (t) => {
+      if (!last) last = t;
+      if (!paused) elapsed += t - last;
+      last = t;
+      const remaining = Math.max(0, DURATION - elapsed);
+      fill.style.strokeDashoffset = String(100 - (remaining / DURATION) * 100);
+      num.textContent = String(Math.max(1, Math.ceil(remaining / 1000)));
+      if (elapsed >= DURATION) { finish(); return; }
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+
+    toast.onmouseenter = () => { paused = true; };
+    toast.onmouseleave = () => { paused = false; last = 0; };
+    cancelBtn.onclick = () => {
+      if (settled) return;
+      settled = true;
+      cancelAnimationFrame(raf);
+      dismiss();
+    };
+  };
+
   // After you drop someone from your world (delist or mute), you often want them fully gone — if you
-  // still follow them, offer to unfollow in the same gesture. Returns whether the unfollow ran.
-  const offerUnfollow = async (username) => {
+  // still follow them, offer to unfollow in the same gesture. Fire-and-forget: onUnfollowed runs
+  // only if the 5s countdown completes without being cancelled.
+  const offerUnfollow = async (username, onUnfollowed) => {
     const rel = await fetchRelationship(username);
-    if (!rel.following || !confirm(`You also follow @${username}. Unfollow them too?`)) return false;
-    const userId = await resolveUser(username);
-    return !!(userId && (await restPost('/1.1/friendships/destroy.json', { user_id: userId })).ok);
+    if (!rel.following) return;
+    showUnfollowCountdown(username, async () => {
+      const userId = await resolveUser(username);
+      const ok = !!(userId && (await restPost('/1.1/friendships/destroy.json', { user_id: userId })).ok);
+      if (ok) onUnfollowed?.();
+      return ok;
+    });
   };
 
   let popover = document.createElement('div');
@@ -516,7 +609,7 @@
         if (!r.ok) return;
         markDone(removeBtn, `Removed @${username}`, article);
         updateMembership(username, listId, false);
-        if (await offerUnfollow(username)) removeBtn.title = `Removed & unfollowed @${username}`;
+        offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
       });
       appendToBar(removeBtn);
     } else {
@@ -544,7 +637,7 @@
       }
       if (!await muteUser(username)) return;
       markDone(muteBtn, `Muted @${username}`, article);
-      if (await offerUnfollow(username)) muteBtn.title = `Muted & unfollowed @${username}`;
+      offerUnfollow(username, () => { muteBtn.title = `Muted & unfollowed @${username}`; });
     });
     if (moreItem) moreItem.replaceChildren(muteBtn);
     else appendToBar(muteBtn);
@@ -830,11 +923,11 @@
       for (const o of opts) o.cost = o.step * (o.key === 'fav' ? 1 : cal[o.key]);
       best = pick();
       localStorage.setItem('xlrEngWeights', JSON.stringify(cal));
-      window.showToast?.(`Calibrated from primary list — 1 RT ≈ ${cal.rt}, 1 reply ≈ ${cal.reply} likes; saved & ${dir === 'min' ? 'bumped' : 'cut'} ${best.label}`);
+      window.showToast?.(`Calibrated from primary list — 1 RT ≈ ${cal.rt}, 1 reply ≈ ${cal.reply} likes; saved & ${dir === 'min' ? 'bumped' : 'cut'} ${best.label}`, { type: 'success' });
     } else {
       const sign = dir === 'min' ? '+' : '−';
       const list = close.map(o => `${sign}${o.step} ${o.label} (≈${Math.round(o.cost)})`).join(' or ');
-      window.showToast?.(`Near-tie — ${list} — applied ${best.label}`);
+      window.showToast?.(`Near-tie — ${list} — applied ${best.label}`, { type: 'info' });
     }
     return best;
   }

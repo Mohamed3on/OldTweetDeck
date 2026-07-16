@@ -62,16 +62,102 @@ let timings = {
     user: {},
     search: {},
 }
-let refreshInterval = localStorage.OTDrefreshInterval ? parseInt(localStorage.OTDrefreshInterval) : 35000;
+// Refresh cadence adapts to whether you're actually watching the tab. The guards below only
+// *cancel* TweetDeck's background polls, so these are floors on how often a real fetch escapes:
+// fast while the tab is focused, slower when the window's in the background, slowest when hidden
+// or while we're backing off from a rate limit. OTDrefreshInterval (if set) overrides the fast floor.
+let refreshInterval = localStorage.OTDrefreshInterval ? parseInt(localStorage.OTDrefreshInterval) : 12000;
+const BLURRED_INTERVAL = 30000; // tab visible but window unfocused
+const IDLE_INTERVAL = 90000;    // tab hidden, or cooling off after a 429
+let rateCoolUntil = 0;
+function pollFloor() {
+    if (Date.now() < rateCoolUntil || document.hidden) return IDLE_INTERVAL;
+    return document.hasFocus() ? refreshInterval : BLURRED_INTERVAL;
+}
+// TweetDeck can't refresh search faster than it polls, so hint its own timer a bit under the
+// current floor; the guard is still the real governor of how often a request actually goes out.
+const searchPollHint = (query) => Math.max(6, Math.round((query != null ? searchFloor(query) : pollFloor()) / 2000));
+// Per-column gating: TweetDeck tracks how much of each column is scrolled into view
+// (column.visibility.visibleFraction — 1 on-screen, 0 off-screen). Match an intercepted poll to
+// its column by feed type + search text, and back a scrolled-off column down to IDLE — no point
+// spending rate limit refreshing a feed nobody's looking at. Fails open: an unmatched request
+// (TweetDeck not ready, native list/user columns we can't key, an unknown feed) isn't gated.
+const tdColumn = (key) => { try { return window.TD?.controller?.columnManager?.get(key) ?? null; } catch { return null; } };
+const normQuery = (s) => (s || "").replace(/\p{Cf}/gu, "").trim().replace(/\s+/g, " ");
+function columnFraction(type, acct, query) {
+    let best = null;
+    for (const sec of document.querySelectorAll("section.column")) {
+        const m = tdColumn(sec.getAttribute("data-column"));
+        const sub = m && m.feedSubscriptions && Object.keys(m.feedSubscriptions)[0];
+        if (!sub) continue;
+        const parts = sub.split(":"); // twitter:<acct>:<type>:<hash>
+        if (parts[2] !== type) continue;
+        if (acct && parts[1] !== String(acct)) continue;
+        if (type === "search" && normQuery(sec.querySelector(".column-title-edit-box")?.value) !== normQuery(query)) continue;
+        const vf = m.visibility ? m.visibility.visibleFraction : 1;
+        best = best === null ? vf : Math.max(best, vf);
+    }
+    return best; // null = no column matched → don't gate
+}
+// Refresh floor for one stream: the tab-state floor, raised to IDLE when its column is off-screen.
+// Used for home (its 500/window budget is abundant); search has its own budget pacer below.
+function streamFloor(type, acct, query) {
+    const base = pollFloor();
+    const vf = columnFraction(type, acct, query);
+    return vf !== null && vf < 0.1 ? Math.max(base, IDLE_INTERVAL) : base;
+}
+// Every search column shares ONE rate-limit bucket (SearchTimeline: ~50 requests / 15-min window,
+// read live from x-rate-limit-* headers in interceptResponseText). Pace polls to spend `remaining`
+// over the time left in the window — but weighted by column order, so the leftmost (highest
+// priority) visible columns get a bigger share and refresh faster than the ones further right.
+const SEARCH_WINDOW = 900000; // 15 min
+const SEARCH_SAFETY = 0.85;   // only pace against 85% of the bucket — leave headroom for the
+                              // user's own searches (typing a query, suggestions) that share it
+let searchBudget = { remaining: 50, reset: 0, limit: 50 };
+function searchBudgetNow() {
+    const now = Date.now();
+    const { remaining, reset, limit } = searchBudget;
+    if (!reset || reset <= now) return { remaining: limit, msLeft: SEARCH_WINDOW }; // unknown/expired → fresh window
+    return { remaining: Math.max(1, remaining), msLeft: reset - now };
+}
+function searchFloor(query) {
+    const target = normQuery(query);
+    const cols = []; // every search column, DOM order = left→right, with how much of it is on screen
+    for (const sec of document.querySelectorAll("section.column")) {
+        const m = tdColumn(sec.getAttribute("data-column"));
+        const sub = m && m.feedSubscriptions && Object.keys(m.feedSubscriptions)[0];
+        if (!sub || sub.split(":")[2] !== "search") continue;
+        cols.push({ q: normQuery(sec.querySelector(".column-title-edit-box")?.value),
+                    vf: m.visibility ? m.visibility.visibleFraction : 1 });
+    }
+    const idx = cols.findIndex((c) => c.q === target);
+    if (idx < 0) return pollFloor(); // unknown feed → fail open to the tab-state floor
+    // Weight = priority (leftmost column highest) scaled by on-screen fraction. Off-screen columns
+    // get ~0 weight, so they drop out of the split and hand their whole budget share to the visible
+    // ones — the leftmost visible column ends up with the largest share and the shortest interval.
+    const n = cols.length;
+    let sumW = 0, w = 0;
+    cols.forEach((c, i) => { const wi = (n - i) * c.vf; sumW += wi; if (i === idx) w = wi; });
+    if (w < 0.01 || sumW <= 0) return SEARCH_WINDOW; // scrolled off → refresh on return, not on the budget
+    const { remaining, msLeft } = searchBudgetNow();
+    const paced = msLeft * sumW / (remaining * SEARCH_SAFETY * w);
+    return Math.max(pollFloor(), Math.min(paced, SEARCH_WINDOW));
+}
+// Coming back to a stale tab: let the next poll of every stream through immediately instead of
+// waiting out the interval (background polls were throttled or cancelled while you were away).
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden || Date.now() < rateCoolUntil) return;
+    for (const store of Object.values(timings)) for (const k in store) store[k] = 0;
+});
 
 let lastToastAt = 0;
-function showToast(message, { dedupeMs = 3000 } = {}) {
+function showToast(message, { dedupeMs = 3000, type = "error" } = {}) {
     const now = Date.now();
     if (now - lastToastAt < dedupeMs) return;
     lastToastAt = now;
     if (!document.body) return;
     const el = document.createElement("div");
-    el.className = "otd-toast";
+    el.className = `otd-toast otd-toast-${type}`;
     el.textContent = message;
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add("otd-toast-show"));
@@ -974,7 +1060,7 @@ const proxyRoutes = [
             if(!timings.home[user_id]) {
                 timings.home[user_id] = 0;
             }
-            if(Date.now() - timings.home[user_id] < refreshInterval && xhr.storage.cursor && Math.random() > 0.6) {
+            if(Date.now() - timings.home[user_id] < streamFloor("home", user_id) && xhr.storage.cursor) {
                 xhr.storage.cancelled = true;
             } else {
                 // GraphQL HomeLatestTimeline only accepts POST; the original XHR was GET.
@@ -1097,7 +1183,7 @@ const proxyRoutes = [
             if(!timings.list[list_id]) {
                 timings.list[list_id] = 0;
             }
-            if(Date.now() - timings.list[list_id] < refreshInterval && xhr.storage.cursor) {
+            if(Date.now() - timings.list[list_id] < pollFloor() && xhr.storage.cursor) {
                 xhr.storage.cancelled = true;
             } else {
                 xhr.open(method, url, async, username, password);
@@ -1212,7 +1298,7 @@ const proxyRoutes = [
             if(!timings.user[user_id]) {
                 timings.user[user_id] = 0;
             }
-            if(Date.now() - timings.user[user_id] < refreshInterval && xhr.storage.cursor) {
+            if(Date.now() - timings.user[user_id] < pollFloor() && xhr.storage.cursor) {
                 xhr.storage.cancelled = true;
             } else {
                 xhr.open(method, url, async, username, password);
@@ -1854,7 +1940,7 @@ const proxyRoutes = [
             if(!timings.search[xhr.storage.query]) {
                 timings.search[xhr.storage.query] = 0;
             }
-            if(Date.now() - timings.search[xhr.storage.query] < 60000*1.5 && xhr.storage.cursor) {
+            if(Date.now() - timings.search[xhr.storage.query] < searchFloor(xhr.storage.query) && xhr.storage.cursor) {
                 xhr.storage.cancelled = true;
             } else {
                 xhr.open(method, url, async, username, password);
@@ -1864,7 +1950,7 @@ const proxyRoutes = [
         sendHandler: sendOrEmulate,
         beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         afterRequest: (xhr) => {
-            const empty = { metadata: { cursor: null, refresh_interval_in_sec: 30 }, modules: [] };
+            const empty = { metadata: { cursor: null, refresh_interval_in_sec: searchPollHint(xhr.storage.query) }, modules: [] };
             if(xhr.storage.cancelled) {
                 return empty;
             }
@@ -1918,7 +2004,7 @@ const proxyRoutes = [
             return {
                 metadata: {
                     cursor,
-                    refresh_interval_in_sec: 30,
+                    refresh_interval_in_sec: searchPollHint(xhr.storage.query),
                 },
                 modules: res.map((t) => ({ status: { data: t } })),
             };
@@ -2485,7 +2571,7 @@ const proxyRoutes = [
         beforeSendBody: (xhr, body) => {
             let json = JSON.parse(body);
             console.log('state push', json);
-            if(json.columns) {
+            if(json.columns && json.columns.length) {
                 localStorage.OTDcolumnIds = JSON.stringify(json.columns);
             }
             if(json.settings && settings) {
@@ -2718,7 +2804,17 @@ XMLHttpRequest = function () {
             return value;
         },
         interceptResponseText(xhr) {
+            // Cache the shared SearchTimeline budget from live rate-limit headers — drives searchFloor's pacer.
+            if (xhr.responseURL && xhr.responseURL.includes("SearchTimeline")) {
+                const rem = xhr.getResponseHeader("x-rate-limit-remaining");
+                if (rem != null && rem !== "") {
+                    searchBudget.remaining = parseInt(rem);
+                    searchBudget.reset = (parseInt(xhr.getResponseHeader("x-rate-limit-reset")) || 0) * 1000;
+                    searchBudget.limit = parseInt(xhr.getResponseHeader("x-rate-limit-limit")) || searchBudget.limit;
+                }
+            }
             if (xhr.status === 429) {
+                rateCoolUntil = Date.now() + IDLE_INTERVAL;
                 showToast("Twitter rate limit hit — slow down or try again in a bit.");
             }
             if (xhr.proxyRoute && xhr.proxyRoute.afterRequest) {

@@ -220,6 +220,113 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+/* Toast color by kind (base .otd-toast red = error, e.g. rate limits): green for a
+   successful recalibration from the primary list, blue for the near-tie fallback note. */
+.otd-toast-success { background: rgb(0, 186, 124); }
+.otd-toast-info { background: rgb(29, 155, 240); }
+
+/* Unfollow grace-period toast — removing/muting someone you follow schedules the unfollow behind a
+   5s cancel window (see showUnfollowCountdown in xlr.js) instead of a blocking confirm(). Toasts
+   stack upward from the bottom, newest lowest. */
+.otd-unf-stack {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 999999;
+  pointer-events: none;
+}
+.otd-unf {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 10px;
+  background: rgb(21, 24, 28);
+  border: 1px solid rgb(56, 60, 65);
+  border-radius: 9999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08);
+  color: rgb(231, 233, 234);
+  font: 500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.otd-unf.otd-unf-in { opacity: 1; transform: translateY(0) scale(1); }
+.otd-unf.otd-unf-out {
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 1, 1), transform 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+.otd-unf-timer {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+.otd-unf-ring { position: absolute; inset: 0; width: 26px; height: 26px; }
+.otd-unf-track { fill: none; stroke: rgb(56, 60, 65); stroke-width: 2.5; }
+.otd-unf-fill {
+  fill: none;
+  stroke: rgb(29, 155, 240);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke 0.2s;
+}
+.otd-unf-num {
+  position: relative;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.otd-unf-text {
+  padding-right: 2px;
+  transition: opacity 0.16s ease;
+}
+.otd-unf-text b { font-weight: 700; }
+/* Scope under .otd-unf (→ 0,2,0) so it beats TweetDeck's `html.dark button` (0,1,2), which would
+   otherwise force a white bg + blue border; also kills the global button appearance. */
+.otd-unf .otd-unf-cancel {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  box-shadow: none;
+  border: none;
+  pointer-events: auto;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgb(231, 233, 234);
+  font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.12s, transform 0.12s;
+}
+.otd-unf .otd-unf-cancel:hover { background: rgba(255, 255, 255, 0.18); }
+.otd-unf .otd-unf-cancel:active { transform: scale(0.94); }
+.otd-unf-committing .otd-unf-fill {
+  stroke-dashoffset: 74;
+  animation: otd-unf-spin 0.7s linear infinite;
+}
+@keyframes otd-unf-spin {
+  from { transform: rotate(-90deg); }
+  to { transform: rotate(270deg); }
+}
+.otd-unf-done { color: rgb(0, 186, 124); }
+.otd-unf-done .otd-unf-fill { stroke: rgb(0, 186, 124); }
+.otd-unf-done .otd-unf-num { animation: xlr-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.otd-unf-fail { color: rgb(244, 33, 46); }
+.otd-unf-fail .otd-unf-fill { stroke: rgb(244, 33, 46); }
 
 /* List membership in the profile popup: removable chips for lists the user is already in,
    plus an "Add to list" button that opens the shared list popover (see xlr.js). */
