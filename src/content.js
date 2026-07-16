@@ -12,5 +12,12 @@ window.addEventListener('message', async e => {
         chrome.storage.local.get('otd_token', token => {
             window.postMessage({ token: token.otd_token }, '*');
         });
+    } else if(e.data?.action === 'otdSaveBackup') {
+        // Layout backup kept in extension storage, which page-side clears can't reach.
+        chrome.storage.local.set({ otd_state_backup: e.data.state });
+    } else if(e.data === 'otdGetBackup') {
+        chrome.storage.local.get('otd_state_backup', r => {
+            window.postMessage({ otdBackup: r.otd_state_backup ?? null }, '*');
+        });
     }
 });

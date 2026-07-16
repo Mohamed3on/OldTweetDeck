@@ -97,17 +97,19 @@ function exportState() {
     a.click();
 }
 
-// Keep one rolling backup of the layout (feeds/columns/settings/columnIds) in a separate
-// localStorage slot, refreshed at most once a day and overwriting the previous, so a reset
-// or corrupted state can be recovered from a snapshot that's never more than ~24h stale.
-// The blob matches the export format, so importState can restore it unchanged.
+// Keep one rolling backup of the layout (feeds/columns/settings/columnIds), refreshed at
+// most once a day and overwriting the previous. It lives in extension storage, not
+// localStorage: twitter's boot path can clear this origin outright (see destroyer.js), and
+// a backup kept there dies in the very wipe it exists to survive. injection.js loads it
+// into window.__OTDbackup before we run — that's both the freshness check below and what
+// restoreState reads. The blob matches the export format, so importState restores it as-is.
 function backupStateDaily() {
     try {
         const DAY = 24 * 60 * 60 * 1000;
-        let prev = localStorage.OTDstateBackup ? JSON.parse(localStorage.OTDstateBackup) : null;
+        let prev = window.__OTDbackup;
         if (prev && Date.now() - prev.savedAt < DAY) return;
         if (!columns || !Object.keys(columns).length) return; // nothing worth saving yet — don't clobber a good backup
-        localStorage.OTDstateBackup = JSON.stringify({ savedAt: Date.now(), ...snapshotState() });
+        window.postMessage({ action: "otdSaveBackup", state: { savedAt: Date.now(), ...snapshotState() } }, "*");
     } catch (e) {
         console.error("OTD daily state backup failed", e);
     }
@@ -144,17 +146,11 @@ function importState() {
 
 // Restore the layout from the rolling daily backup (see backupStateDaily). Mirrors
 // importState's write-and-reload, with a confirm because it replaces the current state.
+// Stays synchronous for the bundle's onclick: injection.js already fetched the backup.
 function restoreState() {
-    let raw = localStorage.OTDstateBackup;
-    if (!raw) {
+    let data = window.__OTDbackup;
+    if (!data) {
         alert("No daily backup found yet — one is saved automatically once you've used TweetDeck.");
-        return;
-    }
-    let data;
-    try {
-        data = JSON.parse(raw);
-    } catch (e) {
-        alert("Backup is corrupted and can't be restored.");
         return;
     }
     if (!data.feeds || !data.columns || !data.settings || !data.columnIds) {
@@ -174,6 +170,10 @@ function restoreState() {
 
 function cleanUp() {
     let ids = localStorage.OTDcolumnIds ? JSON.parse(localStorage.OTDcolumnIds) : [];
+    // Never reconcile against an empty id list. A crashed/half-booted TweetDeck posts
+    // columns:[], which would otherwise delete every column here and wipe the layout
+    // (recoverable only via backup). No ids means nothing legitimate to prune anyway.
+    if (!ids.length) return;
     for(let columnId in columns) {
         if(!ids.includes(columnId)) {
             delete columns[columnId];

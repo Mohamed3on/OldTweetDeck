@@ -25,6 +25,42 @@ window.postMessage('extensionId', '*');
 window.postMessage('cookie', '*');
 window.postMessage('getotdtoken', '*');
 
+// The layout lives in page localStorage, which twitter's own boot path can clear before any
+// OTD code runs (see destroyer.js) — so the backup lives in extension storage, out of reach
+// of a page-side clear. Load it once, before interception.js reads localStorage: a deck that
+// got wiped comes back on its own, and window.__OTDbackup then backs restoreState() and the
+// once-a-day freshness check without either of them needing to go async.
+async function loadBackup() {
+    window.__OTDbackup = await new Promise(resolve => {
+        const done = backup => {
+            window.removeEventListener('message', onMsg);
+            clearTimeout(timer);
+            resolve(backup);
+        };
+        const onMsg = e => {
+            if(e.data && typeof e.data === 'object' && 'otdBackup' in e.data) done(e.data.otdBackup);
+        };
+        const timer = setTimeout(() => done(null), 3000);
+        window.addEventListener('message', onMsg);
+        window.postMessage('otdGetBackup', '*');
+    });
+
+    let intact = false;
+    try {
+        intact = Object.keys(JSON.parse(localStorage.OTDcolumns)).length > 0 &&
+                 JSON.parse(localStorage.OTDcolumnIds).length > 0;
+    } catch(e) {} // missing or corrupt — treat as wiped
+
+    const backup = window.__OTDbackup;
+    if(intact || !backup?.columnIds?.length) return;
+
+    localStorage.OTDfeeds = JSON.stringify(backup.feeds);
+    localStorage.OTDcolumns = JSON.stringify(backup.columns);
+    localStorage.OTDsettings = JSON.stringify(backup.settings);
+    localStorage.OTDcolumnIds = JSON.stringify(backup.columnIds);
+    console.log(`OTD: layout was missing — restored ${backup.columnIds.length} columns from backup saved ${new Date(backup.savedAt).toLocaleString()}`);
+}
+
 async function main() {
     localStorage.OTDenableAutoExpand ??= "1";
 
@@ -144,6 +180,9 @@ async function main() {
     let challenge_js_script = document.createElement("script");
     challenge_js_script.innerHTML = challenge_js.value.replaceAll('SOLVER_URL', chrome.runtime.getURL("solver.html"));
     document.head.appendChild(challenge_js_script);
+
+    // Must land before interception.js: it reads the layout out of localStorage on load.
+    await loadBackup();
 
     let interception_js_script = document.createElement("script");
     interception_js_script.innerHTML = interception_js.value;

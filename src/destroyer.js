@@ -1,3 +1,34 @@
+// Step 0: protect our state before anything else can run.
+// If twitter's own bundles win the race below (this file only holds them off for ~5s,
+// while injection.js awaits 8 fetches before interception.js loads), they boot into a
+// hijacked DOM, throw, and hit a session-reset path that clears localStorage — taking
+// every OTD* key with it: columns, feeds, settings, and the daily backup itself.
+// This is the earliest MAIN-world code in the manifest, so the patch lands before any
+// page script can call clear(). Nothing in OTD ever removes its own keys, so a foreign
+// clear/removeItem touching OTD* is always a bug: preserve them and log who tried.
+(() => {
+    const _clear = Storage.prototype.clear;
+    const _removeItem = Storage.prototype.removeItem;
+    const trace = (what, n) =>
+        console.warn(`OTD: blocked ${what} of ${n} OTD key(s)\n`, new Error().stack);
+
+    Storage.prototype.clear = function () {
+        const saved = [];
+        for (let i = 0; i < this.length; i++) {
+            const k = this.key(i);
+            if (k && k.startsWith("OTD")) saved.push([k, this.getItem(k)]);
+        }
+        _clear.call(this);
+        for (const [k, v] of saved) this.setItem(k, v);
+        if (saved.length) trace("storage clear", saved.length);
+    };
+
+    Storage.prototype.removeItem = function (k) {
+        if (typeof k === "string" && k.startsWith("OTD")) return trace("removeItem", 1);
+        return _removeItem.call(this, k);
+    };
+})();
+
 // Step 1: fool twitter into thinking scripts loaded
 window.__SCRIPTS_LOADED__ = Object.freeze({
     main: true,
