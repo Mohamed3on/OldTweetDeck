@@ -1146,7 +1146,12 @@
     for (const e of ents) {
       if (e.fromIndex < pos || e.toIndex > cp.length) continue;
       html += escNote(cp.slice(pos, e.fromIndex).join(''));
-      html += `<a href="${escNote(e.ref.url)}" target="_blank" rel="noopener noreferrer">${escNote(cp.slice(e.fromIndex, e.toIndex).join(''))}</a>`;
+      // Note text is contributor-authored, so only link http(s) — a javascript:/data: ref
+      // renders as plain text instead of an anchor.
+      let label = escNote(cp.slice(e.fromIndex, e.toIndex).join(''));
+      html += /^https?:\/\//i.test(e.ref.url)
+        ? `<a href="${escNote(e.ref.url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+        : label;
       pos = e.toIndex;
     }
     return (html + escNote(cp.slice(pos).join(''))).replace(/\n/g, '<br>');
