@@ -1131,6 +1131,65 @@
     } catch {}
   }
 
+  // Community notes: interception.js indexes birdwatch pivots by tweet id in
+  // window.OTDbirdwatch (the legacy chirp shape can't carry them through
+  // fromJSONObject). Decorate rendered tweets from that map — a full note under
+  // the tweet body / detail view, and a collapsed toggle inside quote boxes.
+  const noteSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm2 5.2h10V10H7V8.2zm0 3.5h10v1.8H7v-1.8zm0 3.5h6.5V17H7v-1.8z"/></svg>';
+  const escNote = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // Entity indices are code points into subtitle.text; each ref is a t.co link
+  // whose display text is the covered substring.
+  const noteTextHtml = (pivot) => {
+    const cp = Array.from(pivot.subtitle?.text ?? '');
+    const ents = (pivot.subtitle?.entities ?? []).filter((e) => e.ref?.url).sort((a, b) => a.fromIndex - b.fromIndex);
+    let html = '', pos = 0;
+    for (const e of ents) {
+      if (e.fromIndex < pos || e.toIndex > cp.length) continue;
+      html += escNote(cp.slice(pos, e.fromIndex).join(''));
+      html += `<a href="${escNote(e.ref.url)}" target="_blank" rel="noopener noreferrer">${escNote(cp.slice(e.fromIndex, e.toIndex).join(''))}</a>`;
+      pos = e.toIndex;
+    }
+    return (html + escNote(cp.slice(pos).join(''))).replace(/\n/g, '<br>');
+  };
+  const noteBox = (pivot, collapsed) => {
+    const box = document.createElement('div');
+    box.className = 'xlr-note' + (collapsed ? ' is-collapsed' : '');
+    const title = (collapsed && pivot.shorttitle) || pivot.title || 'Readers added context';
+    box.innerHTML = `<div class="xlr-note-header">${noteSvg}<span>${escNote(title)}</span></div><div class="xlr-note-text">${noteTextHtml(pivot)}</div>`;
+    // The tweet/quote around the box is actionable — keep note clicks (links,
+    // collapse toggle) from also opening the detail view.
+    box.addEventListener('click', (e) => {
+      if (e.target.closest('a')) { e.stopPropagation(); return; }
+      if (collapsed && e.target.closest('.xlr-note-header')) {
+        e.preventDefault(); e.stopPropagation();
+        box.classList.toggle('is-collapsed');
+      }
+    });
+    return box;
+  };
+  function injectNotes(article) {
+    const map = window.OTDbirdwatch || {};
+    // Stream and detail articles both carry the main tweet's id (for RTs, the
+    // retweeted status) in data-tweet-id.
+    if (!article.dataset.xlrNotes) {
+      article.dataset.xlrNotes = '1';
+      const pivot = map[article.getAttribute('data-tweet-id')];
+      const body = pivot && article.querySelector('.tweet-detail, .tweet-body');
+      if (body) {
+        // detail: above the timestamp row; stream: above the action footer
+        const before = body.querySelector(':scope > .margin-tl, :scope > footer, :scope > .tweet-footer');
+        body.insertBefore(noteBox(pivot, false), before);
+      }
+    }
+    // Quote boxes render (sometimes late, via _showQuotedTweet) with their own id.
+    for (const q of article.querySelectorAll('.quoted-tweet[data-tweet-id]')) {
+      if (q.dataset.xlrNotes) continue;
+      q.dataset.xlrNotes = '1';
+      const pivot = map[q.getAttribute('data-tweet-id')];
+      if (pivot) (q.firstElementChild ?? q).appendChild(noteBox(pivot, true));
+    }
+  }
+
   // Media lightbox: choose the card layout by observing whether the caption fits under the
   // media. The default (stacked) layout drops the caption below the media, flex-shrinking it
   // against the card's max-height; if that leaves the caption scrolling, promote to the
@@ -1157,7 +1216,7 @@
 
   let scanQueued = false;
   const scan = () => {
-    document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); });
+    document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); injectNotes(a); });
     document.querySelectorAll('.prf-actions').forEach(processProfile);
     document.querySelectorAll('.prf-bio').forEach(linkifyBio);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);

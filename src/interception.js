@@ -500,6 +500,17 @@ function indexTweetHandles(t) {
     for (let m of t.entities?.user_mentions ?? []) indexHandle(m.id_str, m.screen_name);
 }
 
+// Community notes arrive as birdwatch_pivot on GraphQL tweet results, but the
+// legacy chirp TweetDeck builds (fromJSONObject) has no slot to carry them.
+// Index pivots by tweet id; xlr.js reads the map off the rendered DOM to draw them.
+const birdwatchById = {};
+window.OTDbirdwatch = birdwatchById;
+function indexBirdwatch(result) {
+    if (result?.tweet) result = result.tweet;
+    let id = result?.legacy?.id_str ?? result?.rest_id;
+    if (id && result.birdwatch_pivot) birdwatchById[id] = result.birdwatch_pivot;
+}
+
 // Flatten a UserByScreenName result into the legacy v1.1 user object that
 // TwitterUser.fromJSONObject (the show/lookup processor) expects.
 function userResultToLegacy(result) {
@@ -745,6 +756,11 @@ function parseTweet(res) {
         applyGrokTranslation(rt, tweet.retweeted_status);
         applyGrokTranslation(tweet.quoted_status_result?.result, tweet.quoted_status);
         applyGrokTranslation(rt?.quoted_status_result?.result, tweet.retweeted_status?.quoted_status);
+
+        indexBirdwatch(res);
+        indexBirdwatch(tweet.quoted_status_result?.result);
+        indexBirdwatch(rt);
+        indexBirdwatch(rt?.quoted_status_result?.result);
 
         // The quoted tweet is unavailable (suspended/deleted), so no card can render —
         // surface the permalink so the quote isn't silently dropped.

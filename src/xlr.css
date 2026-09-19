@@ -586,6 +586,44 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 
 /* ============================================================================
+   Community notes — full note under a noted tweet, collapsed toggle inside
+   quote boxes (data via window.OTDbirdwatch; see injectNotes in xlr.js). */
+.xlr-note {
+  margin: 8px 0 4px;
+  padding: 7px 10px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.xlr-note-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.xlr-note-header svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: currentColor;
+}
+.xlr-note-text { margin-top: 4px; }
+.xlr-note-text a { word-break: break-all; }
+.xlr-note.is-collapsed { padding: 4px 8px; }
+.xlr-note.is-collapsed .xlr-note-header { cursor: pointer; font-weight: 600; }
+.xlr-note.is-collapsed .xlr-note-header::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  margin-left: auto;
+  background: currentColor;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>') center/contain no-repeat;
+  opacity: 0.6;
+}
+.xlr-note.is-collapsed .xlr-note-text { display: none; }
+
+/* ============================================================================
    Media lightbox — a compact card that adapts to the tweet.
    TweetDeck's lightbox is a full-screen opaque panel stacking the photo over a
    bottom-anchored tweet (no height cap), so a long note-tweet grew up over the
