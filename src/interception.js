@@ -53,8 +53,9 @@ if(localStorage.OTDsettings) {
         settings = null;
     }
 }
-// Snapshot the persisted layout once a day as a rolling backup (no-op if <24h since last).
-backupStateDaily();
+// Snapshot the persisted layout hourly as a rolling backup (no-op if <1h since last).
+backupState();
+setInterval(backupState, 60 * 60 * 1000);
 let seenNotifications = [];
 let timings = {
     home: {},
@@ -183,21 +184,23 @@ function exportState() {
     a.click();
 }
 
-// Keep one rolling backup of the layout (feeds/columns/settings/columnIds), refreshed at
-// most once a day and overwriting the previous. It lives in extension storage, not
+// Keep one rolling backup of the layout (feeds/columns/settings/columnIds), refreshed
+// hourly and overwriting the previous. It lives in extension storage, not
 // localStorage: twitter's boot path can clear this origin outright (see destroyer.js), and
 // a backup kept there dies in the very wipe it exists to survive. injection.js loads it
 // into window.__OTDbackup before we run — that's both the freshness check below and what
 // restoreState reads. The blob matches the export format, so importState restores it as-is.
-function backupStateDaily() {
+function backupState() {
     try {
-        const DAY = 24 * 60 * 60 * 1000;
+        const HOUR = 60 * 60 * 1000;
         let prev = window.__OTDbackup;
-        if (prev && Date.now() - prev.savedAt < DAY) return;
+        if (prev && Date.now() - prev.savedAt < HOUR) return;
         if (!columns || !Object.keys(columns).length) return; // nothing worth saving yet — don't clobber a good backup
-        window.postMessage({ action: "otdSaveBackup", state: { savedAt: Date.now(), ...snapshotState() } }, "*");
+        let state = { savedAt: Date.now(), ...snapshotState() };
+        window.__OTDbackup = state; // advance the freshness clock so the hourly timer paces itself
+        window.postMessage({ action: "otdSaveBackup", state }, "*");
     } catch (e) {
-        console.error("OTD daily state backup failed", e);
+        console.error("OTD state backup failed", e);
     }
 }
 
@@ -230,13 +233,13 @@ function importState() {
     input.click();
 }
 
-// Restore the layout from the rolling daily backup (see backupStateDaily). Mirrors
+// Restore the layout from the rolling backup (see backupState). Mirrors
 // importState's write-and-reload, with a confirm because it replaces the current state.
 // Stays synchronous for the bundle's onclick: injection.js already fetched the backup.
 function restoreState() {
     let data = window.__OTDbackup;
     if (!data) {
-        alert("No daily backup found yet — one is saved automatically once you've used TweetDeck.");
+        alert("No backup found yet — one is saved automatically once you've used TweetDeck.");
         return;
     }
     if (!data.feeds || !data.columns || !data.settings || !data.columnIds) {
