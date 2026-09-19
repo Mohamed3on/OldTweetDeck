@@ -2380,6 +2380,11 @@ const proxyRoutes = [
             for (let entry of (instr ? instr.entries : [])) {
                 let content = entry.content;
                 let type = content?.entryType;
+                // Skip the "Discover more" injection: tweets "sourced from across X" that aren't
+                // part of this conversation. Twitter tags the module and every item inside it
+                // with a RelatedTweet conversationSection.
+                if (content?.clientEventInfo?.details?.conversationDetails?.conversationSection === "RelatedTweet")
+                    continue;
                 if (type === "TimelineTimelineItem") {
                     // Focal tweet, or an ancestor in the reply chain above it.
                     let ic = content.itemContent;
