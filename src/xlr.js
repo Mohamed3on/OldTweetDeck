@@ -148,6 +148,7 @@
   const setFilterInput = (input, newValue) => {
     if (newValue === input.value) return;
     $(input).val(newValue).trigger('uiInputSubmit');
+    syncResetIcons();
   };
 
   // Like setFilterInput but coalesces the search: the value (and the parsed thresholds) update
@@ -157,6 +158,7 @@
   const setFilterDebounced = (input, newValue, delay = 300) => {
     if (newValue === input.value) return;
     $(input).val(newValue);
+    syncResetIcons();
     clearTimeout(submitTimers.get(input));
     submitTimers.set(input, setTimeout(() => $(input).trigger('uiInputSubmit'), delay));
   };
@@ -252,12 +254,12 @@
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d); svg.appendChild(path); return svg;
   };
-  const removeSvg = mkSvg('M10 4c-1.105 0-2 .9-2 2s.895 2 2 2 2-.9 2-2-.895-2-2-2zM6 6c0-2.21 1.791-4 4-4s4 1.79 4 4-1.791 4-4 4-4-1.79-4-4zm13 4v3h-2v-3h-3V8h3V5h2v3h3v2h-3zM3.651 19.113C4.414 16.742 7.005 15 10 15c.395 0 .783.028 1.162.082l-1.67 1.67c-.55.549-.95 1.238-1.142 1.999L4 18.752V19h5.275l.622 2H4c-.553 0-1.163-.448-1.261-.996-.066-.372-.002-.594.26-1.075l.652-.816zm13.627-1.835l1.414-1.414 1.591 1.591 1.591-1.591 1.414 1.414-1.591 1.591 1.591 1.591-1.414 1.414-1.591-1.591-1.591 1.591-1.414-1.414 1.591-1.591-1.591-1.591z');
+  const removeSvg = mkSvg('M14 10H3v2h11v-2zm0-4H3v2h11V6zM3 16h7v-2H3v2zm11.41 6L17 19.41 19.59 22 21 20.59 18.41 18 21 15.41 19.59 14 17 16.59 14.41 14 13 15.41 15.59 18 13 20.59 14.41 22z');
   const checkSvg = mkSvg('M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z');
-  const addListSvg = mkSvg('M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z');
+  const addListSvg = mkSvg('M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z');
   const muteSvg = mkSvg('M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z');
   const filterSvg = mkSvg('M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z');
-  const userSearchSvg = mkSvg('M17.863 13.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H3.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46C7.627 11.85 9.648 11 12 11s4.373.85 5.863 2.44zM5.887 19h12.226c-.283-1.737-.944-3.06-1.928-4.11C14.965 13.73 13.615 13 12 13s-2.965.73-4.185 1.89c-.984 1.05-1.645 2.373-1.928 4.11zM12 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0-2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z');
+  const userSearchSvg = mkSvg('M10 4c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm.35 4.01C7.62 13.91 2 15.27 2 18v2h9.54c-.52-.58-.93-1.25-1.19-2H4c0-.64 3.13-2 6-2 .29 0 .58.02.88.04.4-.88 1.37-1.51 2.47-1.68-1.12-.23-2.25-.35-3-.35zm9.43 4.75c.31-.55.52-1.19.52-1.86 0-2.09-1.69-3.79-3.79-3.79S12.72 14.8 12.72 16.9s1.69 3.79 3.79 3.79c.68 0 1.31-.21 1.86-.52L21 22.53 22.53 21l-2.75-2.75zM16.5 18.9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z');
   const plusSvg = mkSvg('M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z');
   const birdSvg = mkSvg('M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z');
   const retweetSvg = mkSvg('M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V18H7.75c-2.347 0-4.25-1.9-4.25-4.25V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25c2.347 0 4.25 1.9 4.25 4.25v5.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L18 15.62V8.25c0-.97-.784-1.75-1.75-1.75z');
@@ -345,6 +347,15 @@
     return true;
   };
 
+  const followUser = async (username) => {
+    const userId = await resolveUser(username);
+    return !!(userId && (await restPost('/1.1/friendships/create.json', { user_id: userId })).ok);
+  };
+  const unfollowUser = async (username) => {
+    const userId = await resolveUser(username);
+    return !!(userId && (await restPost('/1.1/friendships/destroy.json', { user_id: userId })).ok);
+  };
+
   const blockUser = async (username) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
@@ -378,16 +389,18 @@
     } catch { return {}; }
   };
 
-  // A grace-period toast: the unfollow is scheduled, a depleting ring counts down 5s, and one tap
-  // cancels it. Beats a blocking confirm() — the common answer (yes, unfollow) is zero-click, and
-  // hovering pauses the clock so reaching for Cancel never loses the race. Toasts stack. `commit`
-  // runs the actual unfollow when the timer expires and resolves whether it succeeded.
+  // A grace-period toast: the action is scheduled, a depleting ring counts down 5s, and one tap
+  // cancels it. Beats a blocking confirm() — the common answer (yes, do it) is zero-click, and
+  // hovering pauses the clock so reaching for Cancel never loses the race. Pills stack in the shared
+  // bottom-centre .otd-stack (interception.js's showToast uses the same one). `labels` carries the
+  // verb forms ({ doing, done, failed }) plus the bold subject; `commit` runs the action when the
+  // timer expires and resolves whether it succeeded; `onCancel` fires if the user cancels.
   let unfStack;
-  const showUnfollowCountdown = (username, commit) => {
+  const showCountdown = ({ doing, done, failed, subject }, commit, onCancel) => {
     if (!unfStack) {
-      unfStack = document.createElement('div');
-      unfStack.className = 'otd-unf-stack';
-      document.body.appendChild(unfStack);
+      unfStack = document.querySelector('.otd-stack') || document.createElement('div');
+      unfStack.className = 'otd-stack';
+      if (!unfStack.parentNode) document.body.appendChild(unfStack);
     }
     const DURATION = 5000;
     const toast = document.createElement('div');
@@ -400,13 +413,19 @@
         '</svg>' +
         '<span class="otd-unf-num">5</span>' +
       '</span>' +
-      '<span class="otd-unf-text">Unfollowing <b></b></span>' +
+      '<span class="otd-unf-text"></span>' +
       '<button class="otd-unf-cancel">Cancel</button>';
     const fill = toast.querySelector('.otd-unf-fill');
     const num = toast.querySelector('.otd-unf-num');
     const text = toast.querySelector('.otd-unf-text');
     const cancelBtn = toast.querySelector('.otd-unf-cancel');
-    text.querySelector('b').textContent = '@' + username;
+    const setText = (verb) => {
+      text.textContent = verb + ' ';
+      const b = document.createElement('b');
+      b.textContent = subject;
+      text.appendChild(b);
+    };
+    setText(doing);
     unfStack.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('otd-unf-in'));
 
@@ -431,10 +450,7 @@
       setTimeout(() => {
         toast.classList.add(ok ? 'otd-unf-done' : 'otd-unf-fail');
         num.textContent = ok ? '✓' : '!';
-        text.textContent = ok ? 'Unfollowed ' : 'Couldn’t unfollow ';
-        const b = document.createElement('b');
-        b.textContent = '@' + username;
-        text.appendChild(b);
+        setText(ok ? done : failed);
         text.style.opacity = '';
         setTimeout(dismiss, 1600);
       }, 160);
@@ -459,6 +475,7 @@
       settled = true;
       cancelAnimationFrame(raf);
       dismiss();
+      onCancel?.();
     };
   };
 
@@ -468,9 +485,8 @@
   const offerUnfollow = async (username, onUnfollowed) => {
     const rel = await fetchRelationship(username);
     if (!rel.following) return;
-    showUnfollowCountdown(username, async () => {
-      const userId = await resolveUser(username);
-      const ok = !!(userId && (await restPost('/1.1/friendships/destroy.json', { user_id: userId })).ok);
+    showCountdown({ doing: 'Unfollowing', done: 'Unfollowed', failed: 'Couldn’t unfollow', subject: '@' + username }, async () => {
+      const ok = await unfollowUser(username);
       if (ok) onUnfollowed?.();
       return ok;
     });
@@ -483,9 +499,8 @@
 
   let popoverAnchor = null;
 
-  function setItemState(item, name, isMember) {
+  function setItemState(item, isMember) {
     item.classList.toggle('xlr-dropdown-done', isMember);
-    item.textContent = isMember ? `\u2713 ${name}` : name;
   }
 
   function renderItem(name, id, username, onToggle) {
@@ -494,7 +509,7 @@
     item.textContent = name;
     item.onclick = withBusy(item, 'xlr-inflight', async () => {
       const removing = item.classList.contains('xlr-dropdown-done');
-      setItemState(item, name, !removing);
+      setItemState(item, !removing);
       const userId = await resolveUser(username);
       const r = await gqlPost(
         removing ? QID.LIST_REMOVE_MEMBER : QID.LIST_ADD_MEMBER,
@@ -502,7 +517,7 @@
         { listId: id, userId },
       );
       if (r.ok) { updateMembership(username, id, !removing); onToggle?.(); }
-      else setItemState(item, name, removing);
+      else setItemState(item, removing);
     });
     return item;
   }
@@ -524,15 +539,22 @@
     const rect = addBtn.getBoundingClientRect();
     Object.assign(popover.style, {
       position: 'fixed',
-      bottom: (window.innerHeight - rect.top + 4) + 'px',
       right: (window.innerWidth - rect.right) + 'px',
-      top: 'auto',
       left: 'auto',
+      top: 'auto',
+      bottom: 'auto',
     });
     popover.showPopover();
+    // Drop below the button; flip above only when the list would run off the bottom of the viewport
+    // (and does fit above). Measured after showPopover so the real height decides, not the cap.
+    const h = popover.offsetHeight;
+    const up = rect.bottom + 4 + h > window.innerHeight && rect.top - 4 - h >= 0;
+    popover.classList.toggle('xlr-up', up);
+    if (up) popover.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    else popover.style.top = (rect.bottom + 4) + 'px';
 
     const memberOf = await fetchMembership(username);
-    items.forEach((item, i) => setItemState(item, lists[i].name, memberOf.has(lists[i].id)));
+    items.forEach((item, i) => setItemState(item, memberOf.has(lists[i].id)));
   }
 
   const seen = new WeakSet();
@@ -581,6 +603,8 @@
     };
     appendToBar(userSearchBtn);
 
+    // Order: user-search, filter (search columns only), add|remove, mute — the two search-ish buttons
+    // together, then list membership, mute last. xlrActionClicks() tallies real use to inform a reorder.
     if (listId && col?.querySelector(EDIT_BOX)) {
       const filterBtn = mkBtn('xlr-filter-btn', `Filter by @${username}`, filterSvg);
       filterBtn.dataset.xlrUsername = userLower;
@@ -730,10 +754,51 @@
 
     const mute = makeToggle('xlr-prf-mute', 'Mute', 'Muted', isMuted(username),
       (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }));
-    const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, async (active) => {
-      if (!confirm(active ? `Unblock @${username}?` : `Block @${username}?`)) return false;
-      return active ? unblockUser(username) : blockUser(username);
-    });
+    // Follow replaces TweetDeck's eight-state native group (hidden in xlr.css) with the same pill as
+    // Mute/Block, in the same spot right of the stats. Unfollowing runs through the 5s cancel pill;
+    // cancelling a pending request (protected accounts) is immediate. Skipped on your own profile,
+    // where native shows "Edit profile" instead.
+    const followState = actions.querySelector('.prf-follow-state');
+    const selfName = (() => { try { return TD.storage.accountController.getPreferredAccount('twitter').getUsername().toLowerCase(); } catch { return null; } })();
+    const follow = followState && username.toLowerCase() !== selfName &&
+      makeToggle('xlr-prf-follow', 'Follow', 'Following', false, async (active) => {
+        if (!active) {
+          if (!(await followUser(username))) return false;
+          const rel = await fetchRelationship(username);
+          applyFollow(rel.following || rel.following_requested ? rel : { following: true });
+          return false;   // applyFollow already set the state
+        }
+        const commit = async () => {
+          let ok = false;
+          try { ok = await unfollowUser(username); } catch {}
+          if (ok) follow.btn.classList.remove('xlr-requested');
+          return ok;
+        };
+        if (follow.btn.classList.contains('xlr-requested')) return commit();
+        return new Promise((resolve) => showCountdown(
+          { doing: 'Unfollowing', done: 'Unfollowed', failed: 'Couldn’t unfollow', subject: '@' + username },
+          async () => { const ok = await commit(); resolve(ok); return ok; },
+          () => resolve(false)));
+      });
+    const applyFollow = (rel) => {
+      if (!follow) return;
+      const requested = !!rel.following_requested && !rel.following;
+      follow.set(!!rel.following || requested);
+      follow.btn.classList.toggle('xlr-requested', requested);
+      if (requested) follow.btn.textContent = 'Requested';
+      follow.btn.hidden = !!rel.blocking;   // can't follow someone you block
+    };
+    if (follow) { follow.btn.classList.add('xlr-loading'); followState.appendChild(follow.btn); }
+
+    // Blocking runs through the same 5s cancel pill as unfollow; unblocking is reversible, so it's immediate.
+    // Blocking also drops the follow: the Follow pill hides while blocked and comes back on unblock.
+    const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, (active) => (active
+      ? unblockUser(username)
+      : new Promise((resolve) => showCountdown(
+          { doing: 'Blocking', done: 'Blocked', failed: 'Couldn’t block', subject: '@' + username },
+          async () => { let ok = false; try { ok = await blockUser(username); } catch {} resolve(ok); return ok; },
+          () => resolve(false)))
+    ).then((ok) => { if (ok) applyFollow({ following: false, blocking: !active }); return ok; }));
     block.btn.classList.add('xlr-loading');
     // active = retweets hidden (want_retweets false); clicking passes the desired want_retweets.
     const rts = makeToggle('xlr-prf-rts', 'Turn off Retweets', 'Turn on Retweets', false,
@@ -753,8 +818,10 @@
       mute.set(!!rel.muting);
       block.set(!!rel.blocking);
       rts.set(rel.want_retweets === false);
+      applyFollow(rel);
       block.btn.classList.remove('xlr-loading');
       rts.btn.classList.remove('xlr-loading');
+      follow && follow.btn.classList.remove('xlr-loading');
     });
   }
 
@@ -803,6 +870,44 @@
   // floor, since mentions are rare enough that any floor over-filters them. Keyed on a class
   // (not a `seen` set) so re-rendered headers get re-wired; stopPropagation suppresses the
   // header's own reset action.
+  // What the reset control snaps a query to. Mention columns drop every engagement floor, keeping
+  // only the baseline min_faves after the @handle; everything else takes the primary column's mins.
+  const resetTarget = (value) => {
+    if (AT_RE.test(value)) {
+      const rest = value.replace(/\bmin_(?:faves|retweets|replies):\d+\s*/gi, '').trim();
+      return rest ? `${rest} min_faves:${BASE_ENG.fav}` : `min_faves:${BASE_ENG.fav}`;
+    }
+    return applyEngagement(value, primaryEng());
+  };
+
+  // The reset control is the column's own type icon, so it only reads as clickable while a reset
+  // would change something: `xlr-dirty` (blue + pointer, xlr.css) whenever the query's mins differ
+  // from its reset target. Re-checked after every programmatic filter change and on typing.
+  function syncResetIcons() {
+    const same = (a, b) => a.fav === b.fav && a.rt === b.rt && a.reply === b.reply;
+    for (const icon of document.querySelectorAll('.column-type-icon.xlr-reset-search')) {
+      const input = icon.closest('.js-column-header')?.querySelector(EDIT_BOX);
+      icon.classList.toggle('xlr-dirty', !!input && !same(engOf(input.value), engOf(resetTarget(input.value))));
+    }
+  }
+  document.addEventListener('input', (e) => { if (e.target.matches?.(EDIT_BOX)) syncResetIcons(); });
+
+  // Click tally for the custom action-bar buttons (localStorage.xlrActionClicks, keyed user-search /
+  // filter / add / remove / mute) so the bar can be reordered by real use; read it with
+  // xlrActionClicks() in the console. Capture phase, since the buttons stop propagation.
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest?.('ul.tweet-actions button[class*="xlr-"], ul.tweet-detail-actions button[class*="xlr-"]');
+    const key = btn?.className.match(/\bxlr-([a-z-]+)-btn\b/)?.[1];
+    if (!key) return;
+    const tally = JSON.parse(localStorage.xlrActionClicks || 'null') || { since: new Date().toISOString().slice(0, 10), counts: {} };
+    tally.counts[key] = (tally.counts[key] || 0) + 1;
+    localStorage.xlrActionClicks = JSON.stringify(tally);
+  }, true);
+  window.xlrActionClicks = () => {
+    const { since, counts } = JSON.parse(localStorage.xlrActionClicks || 'null') || { counts: {} };
+    return { since, ...Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1])) };
+  };
+
   function processColumnHeader(header) {
     const section = header.closest('section.column');
     const isSearch = header.querySelector('.column-type-icon.icon-search');
@@ -814,17 +919,10 @@
       icon.onclick = (e) => {
         e.preventDefault(); e.stopPropagation();
         const input = header.querySelector(EDIT_BOX);
-        if (!input) return;
-        if (AT_RE.test(input.value)) {
-          // Mention column: drop every engagement floor, keeping only the baseline min_faves after
-          // the @handle.
-          const rest = input.value.replace(/\bmin_(?:faves|retweets|replies):\d+\s*/gi, '').trim();
-          setFilterInput(input, rest ? `${rest} min_faves:${BASE_ENG.fav}` : `min_faves:${BASE_ENG.fav}`);
-        } else {
-          setFilterInput(input, applyEngagement(input.value, primaryEng()));
-        }
+        if (input) setFilterInput(input, resetTarget(input.value));
       };
     }
+    syncResetIcons();
 
     // Engagement step controls sat just before the column's settings icon: bump (↑) raises the
     // cheapest threshold past this column's top tweet; cut (↓) halves the threshold that sheds the
@@ -839,9 +937,12 @@
       const del = mkBtn('xlr-hdr-step xlr-del-btn', 'Delete column', trashSvg);
       del.onclick = (e) => {
         e.preventDefault(); e.stopPropagation();
-        const name = header.querySelector('.column-heading')?.textContent.trim();
-        if (!confirm(name ? `Delete the "${name}" column?` : 'Delete this column?')) return;
-        try { TD.controller.columnManager.deleteColumn(section.getAttribute('data-column')); } catch {}
+        // Same grace-period pill as unfollow, no blocking confirm: the column goes 5s later unless cancelled.
+        const raw = header.querySelector('.column-heading')?.textContent.trim() || header.querySelector(EDIT_BOX)?.value.trim() || 'column';
+        const name = raw.length > 40 ? raw.slice(0, 39) + '…' : raw;
+        showCountdown({ doing: 'Deleting', done: 'Deleted', failed: 'Couldn’t delete', subject: name }, async () => {
+          try { TD.controller.columnManager.deleteColumn(section.getAttribute('data-column')); return true; } catch { return false; }
+        });
       };
       settingsLink.parentNode.insertBefore(bump, settingsLink);
       settingsLink.parentNode.insertBefore(cut, settingsLink);

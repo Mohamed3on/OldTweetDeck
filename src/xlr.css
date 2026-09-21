@@ -12,6 +12,14 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   margin: 0 !important;
 }
 
+/* Tweet-detail footer: one 10px beat around every rule. Native stacks 15/10/4/8px gaps
+   (the icons hug the rule above them, then sit 8px off the one below) and the inline reply
+   box (`.padding-axl`, 16px) lands 6px inboard of the tweet's 10px gutter. Native rules
+   are `html.dark .x` (0,2,1), so these need three classes to win. */
+.tweet-detail-wrapper .tweet-detail .tweet-stats { margin-top: 10px; margin-bottom: 0; }
+.tweet-detail-wrapper .tweet-detail .tweet-detail-actions { margin-top: 10px; padding: 8px 0; } /* icon ink sits ~2px inside its 21px box */
+.tweet-detail-wrapper .item-box .detail-view-inline { margin-top: 0; padding: 10px !important; }
+
 .xlr-remove-btn, .xlr-add-btn, .xlr-mute-btn, .xlr-filter-btn, .xlr-user-search-btn {
   background: none;
   border: none;
@@ -126,10 +134,12 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   min-width: 200px !important;
   max-width: 280px !important;
   max-height: 320px !important;
-  overflow: auto hidden !important;
+  overflow: hidden auto !important;   /* x hidden, y scrolls once the lists outgrow the cap */
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08) !important;
   margin: 0 !important;
+  transform-origin: top right;        /* opens downward from the button (xlr.js flips .xlr-up when it can't) */
 
+  &.xlr-up { transform-origin: bottom right; }
   &:popover-open {
     animation: xlr-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -140,7 +150,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 
 @keyframes xlr-dropdown-in {
-  from { opacity: 0; transform: scale(0.92) translateY(4px); }
+  from { opacity: 0; transform: scale(0.94); }
 }
 
 .xlr-dropdown-item {
@@ -198,37 +208,9 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   50% { transform: scale(1.5); opacity: 1; }
 }
 
-.otd-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translate(-50%, 20px);
-  background: rgb(244, 33, 46);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  z-index: 999999;
-  opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  pointer-events: none;
-  max-width: 90vw;
-}
-.otd-toast.otd-toast-show {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-/* Toast color by kind (base .otd-toast red = error, e.g. rate limits): green for a
-   successful recalibration from the primary list, blue for the near-tie fallback note. */
-.otd-toast-success { background: rgb(0, 186, 124); }
-.otd-toast-info { background: rgb(29, 155, 240); }
-
-/* Unfollow grace-period toast — removing/muting someone you follow schedules the unfollow behind a
-   5s cancel window (see showUnfollowCountdown in xlr.js) instead of a blocking confirm(). Toasts
-   stack upward from the bottom, newest lowest. */
-.otd-unf-stack {
+/* Bottom-centre notice stack shared by interception.js's showToast and the countdown pills below,
+   so a rate-limit notice and an unfollow countdown stack instead of overprinting. Newest lowest. */
+.otd-stack {
   position: fixed;
   bottom: 24px;
   left: 50%;
@@ -240,6 +222,38 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   z-index: 999999;
   pointer-events: none;
 }
+/* Plain toasts wear the same dark pill as the countdown; the kind is a leading dot (red = error,
+   e.g. rate limits; green = calibration success; blue = the near-tie note) rather than a slab of colour. */
+.otd-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 9px 12px;
+  background: rgb(21, 24, 28);
+  border: 1px solid rgb(56, 60, 65);
+  border-radius: 9999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08);
+  color: rgb(231, 233, 234);
+  font: 500 14px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  max-width: min(90vw, 560px);
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.otd-toast::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(244, 33, 46);
+}
+.otd-toast.otd-toast-show { opacity: 1; transform: none; }
+.otd-toast-success::before { background: rgb(0, 186, 124); }
+.otd-toast-info::before { background: rgb(29, 155, 240); }
+
+/* Grace-period pill — unfollow, block and delete-column schedule the action behind a 5s cancel
+   window (see showCountdown in xlr.js) instead of a blocking confirm(). */
 .otd-unf {
   pointer-events: auto;
   display: flex;
@@ -328,8 +342,36 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .otd-unf-fail { color: rgb(244, 33, 46); }
 .otd-unf-fail .otd-unf-fill { stroke: rgb(244, 33, 46); }
 
+/* Native profile rows share the 16px gutter of the xlr rows below. Untouched, the stats
+   labels sat at 17px (5px list pad + 12px cell pad) and "Followed by" at 10px
+   (`.padding-al`); the follow slot's 9px/16px pad seats a 34px pill level with the 52px
+   stat cells, 16px off the right edge. Native selectors are `html.dark .x` (0,2,1), hence three
+   classes. The social proof drops its fixed 500px width and lets its two floated
+   paragraphs flow as one inline run, so the space after "Followed by" survives.
+   The modal is shrink-to-fit (`.mdl.s-fluid { width: auto }`) and that fixed 500px was
+   the only thing holding it at the header's 520px — without it a long "Followed by"
+   line (or a wide chips row) stretches the popup past the header. Pin it. (0,4,0) beats
+   `html.dark .mdl.s-fluid` (0,3,1). */
+.mdl.s-fluid.s-profile.prf { width: 520px; }
+.prf .prf-actions .prf-stats { padding-left: 4px; }
+.prf .prf-actions .prf-follow-state { padding: 9px 16px 9px 10px !important; }
+/* Follow is an xlr pill now (see processProfile in xlr.js); the native eight-state group is hidden,
+   not removed (your own profile gets no pill, so native "Edit profile" stays). It follows the row's
+   own convention — outlined when you don't, filled when you do (like Muted / Blocked): "Follow" is
+   the outlined blue of Add to list, "Following" a solid blue fill, "Requested" (protected accounts)
+   the ghost pill. Hovering Following turns red, since a click starts the unfollow countdown. */
+.prf-follow-state:has(.xlr-prf-follow) .js-action-follow { display: none; }
+.prf .xlr-prf-follow:not(.xlr-on) { color: rgb(29, 155, 240); border-color: rgba(29, 155, 240, 0.45); background: none; }
+.prf .xlr-prf-follow:not(.xlr-on):hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
+.prf .xlr-prf-follow.xlr-on { background: rgb(29, 155, 240); color: #fff; }
+.prf .xlr-prf-follow.xlr-on.xlr-requested { background: rgba(255, 255, 255, 0.1); color: rgb(231, 233, 234); }
+.prf .xlr-prf-follow.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
+.prf .prf-actions .social-proof-container { width: auto; padding: 12px 16px !important; }
+.prf .prf-actions .social-proof-container p { display: inline; float: none; }
+
 /* List membership in the profile popup: removable chips for lists the user is already in,
-   plus an "Add to list" button that opens the shared list popover (see xlr.js). */
+   plus an "Add to list" button that opens the shared list popover (see xlr.js). Chips and
+   the Add button share the 34px pill height of the actions row beneath them. */
 .xlr-prf-lists {
   display: flex;
   flex-wrap: wrap;
@@ -363,7 +405,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 5px 7px 5px 13px;
+  height: 34px;
+  padding: 0 7px 0 13px;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
@@ -397,7 +440,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 13px 5px 10px;
+  height: 34px;
+  padding: 0 13px 0 10px;
   font: 600 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: rgb(29, 155, 240);
   border: 1px solid rgba(29, 155, 240, 0.45);
@@ -409,7 +453,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 
 /* Consolidated actions row that replaces the launcher grid: a primary "View tweets"
    button (proxies the hidden native Tweets launcher) plus Mute/Block toggles that fill
-   when active. Scoped (→ 0,2,0) to beat TweetDeck's html.dark button base (0,1,2). */
+   when active. Pill styles are scoped to the popup root (.prf → 0,2,0, beating TweetDeck's
+   html.dark button base at 0,1,2) so the Follow pill in the stats row shares them. */
 .prf-actions .js-profile-columns { display: none; }
 /* The "…" actions menu is redundant now mute/block are surfaced below. Hidden, not
    removed — processProfile still reads the target's id from its data-user-id. */
@@ -419,11 +464,11 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 16px 14px;
+  padding: 0 16px 14px;
   line-height: normal;
 }
-.xlr-prf-actions .xlr-prf-view,
-.xlr-prf-actions .xlr-prf-toggle {
+.prf .xlr-prf-view,
+.prf .xlr-prf-toggle {
   -webkit-appearance: none;
   appearance: none;
   box-sizing: border-box;
@@ -442,40 +487,42 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   border: 1px solid transparent;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
-.xlr-prf-actions .xlr-prf-view {
+.prf .xlr-prf-view {
   flex: 1;
   color: rgb(231, 233, 234);
   background: rgba(255, 255, 255, 0.1);
 }
-.xlr-prf-actions .xlr-prf-view:hover { background: rgba(255, 255, 255, 0.16); }
-.xlr-prf-actions .xlr-prf-view svg { width: 16px; height: 16px; }
+.prf .xlr-prf-view:hover { background: rgba(255, 255, 255, 0.16); }
+.prf .xlr-prf-view svg { width: 16px; height: 16px; }
 
-.xlr-prf-actions .xlr-prf-toggle.xlr-loading,
-.xlr-prf-actions .xlr-prf-toggle.xlr-inflight { opacity: 0.5; pointer-events: none; }
+.prf .xlr-prf-toggle.xlr-loading,
+.prf .xlr-prf-toggle.xlr-inflight { opacity: 0.5; pointer-events: none; }
 
 /* Mute/Block stay quiet (grey ghost) at rest — colour signals the active state only, so
    the resting row is calm and the one standing accent is the blue Add to list above. */
-.xlr-prf-actions .xlr-prf-toggle { color: rgb(139, 152, 165); background: rgba(255, 255, 255, 0.06); }
-.xlr-prf-actions .xlr-prf-toggle:hover { background: rgba(255, 255, 255, 0.12); color: rgb(231, 233, 234); }
-.xlr-prf-actions .xlr-prf-mute.xlr-on,
-.xlr-prf-actions .xlr-prf-mute.xlr-on:hover { background: rgb(255, 173, 31); color: #14171a; }
-.xlr-prf-actions .xlr-prf-block.xlr-on,
-.xlr-prf-actions .xlr-prf-block.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
+.prf .xlr-prf-toggle { color: rgb(139, 152, 165); background: rgba(255, 255, 255, 0.06); }
+.prf .xlr-prf-toggle:hover { background: rgba(255, 255, 255, 0.12); color: rgb(231, 233, 234); }
+.prf .xlr-prf-mute.xlr-on,
+.prf .xlr-prf-mute.xlr-on:hover { background: rgb(255, 173, 31); color: #14171a; }
+.prf .xlr-prf-block.xlr-on,
+.prf .xlr-prf-block.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
 /* Retweets toggle is icon-only (the row has no room for a 4th text pill). When RTs are off the
    pill fills slate and a diagonal strike crosses the icon — a "no retweets" glyph, so the state
    reads from the icon rather than colour (green would misread as "retweets on"). The strike only
    shows in the active state, where the solid slate background lets its halo carve a clean gap. */
-.xlr-prf-actions .xlr-prf-rts { position: relative; padding: 0 12px; }
-.xlr-prf-actions .xlr-prf-rts svg { width: 18px; height: 18px; }
-.xlr-prf-actions .xlr-prf-rts.xlr-on,
-.xlr-prf-actions .xlr-prf-rts.xlr-on:hover { background: rgb(83, 100, 113); color: #fff; }
+.prf .xlr-prf-rts { position: relative; padding: 0 12px; }
+.prf .xlr-prf-rts svg { width: 18px; height: 18px; }
+.prf .xlr-prf-rts.xlr-on,
+.prf .xlr-prf-rts.xlr-on:hover { background: rgb(83, 100, 113); color: #fff; }
 /* A search column's type-icon doubles as a "reset engagement filters" control (see
-   processColumnHeader in xlr.js): clicking it snaps the column to the primary column's mins.
-   Cue that it's clickable with a pointer and a blue hover tint. */
-.column-type-icon.xlr-reset-search { cursor: pointer; transition: color 0.15s; }
-.column-type-icon.xlr-reset-search:hover { color: rgb(29, 155, 240); }
+   processColumnHeader in xlr.js): clicking it snaps the column to the primary column's mins. It
+   only reads as a control while a reset would change something — xlr.js adds .xlr-dirty then —
+   so it lights up blue with a pointer, and stays a plain type icon otherwise. */
+.column-type-icon.xlr-reset-search { transition: color 0.15s; }
+.column-type-icon.xlr-reset-search.xlr-dirty { cursor: pointer; color: rgb(29, 155, 240); }
+.column-type-icon.xlr-reset-search.xlr-dirty:hover { color: rgb(120, 200, 255); }
 
-.xlr-prf-actions .xlr-prf-rts.xlr-on::after {
+.prf .xlr-prf-rts.xlr-on::after {
   content: '';
   position: absolute;
   left: 50%;
@@ -515,6 +562,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 /* An 18px baseline-aligned arrow sits centred on the query box (cy 25) — small enough to free
    space, and vertically level with the search text rather than the old sliders glyph. */
 .js-column-header .xlr-hdr-step svg { width: 18px; height: 18px; vertical-align: baseline; }
+/* Delete is destructive: hold it 8px off the bump/cut pair so a slipped click can't land on it. */
+.js-column-header .xlr-hdr-step.xlr-del-btn { margin-left: 8px; }
 /* TweetDeck's un-themed `button:hover/:focus/:active` paints a light pill (rgb(234,245,253) /
    white); its JS also toggles alias classes (.is-hover/.is-focus/.is-active) on the same buttons.
    Kill the pill on every state — pseudo AND alias class — so the control stays a bare glyph like

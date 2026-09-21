@@ -160,7 +160,11 @@ function showToast(message, { dedupeMs = 3000, type = "error" } = {}) {
     const el = document.createElement("div");
     el.className = `otd-toast otd-toast-${type}`;
     el.textContent = message;
-    document.body.appendChild(el);
+    // Shared bottom-centre stack with xlr.js's countdown pills, so concurrent notices stack instead of overprinting.
+    const stack = document.querySelector(".otd-stack") || document.createElement("div");
+    stack.className = "otd-stack";
+    if (!stack.parentNode) document.body.appendChild(stack);
+    stack.appendChild(el);
     requestAnimationFrame(() => el.classList.add("otd-toast-show"));
     setTimeout(() => {
         el.classList.remove("otd-toast-show");
