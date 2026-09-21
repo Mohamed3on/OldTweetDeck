@@ -59,7 +59,7 @@
 
   const listsReady = (async () => {
     try {
-      const cached = JSON.parse(localStorage.getItem('xlrLists_v2'));
+      const cached = JSON.parse(localStorage.getItem('xlrLists_v3'));
       if (cached && Date.now() - cached.ts < LIST_CACHE_TTL) {
         lists = cached.lists;
         listsByName = buildByName(lists);
@@ -71,9 +71,12 @@
       { headers: hdrs(), credentials: 'include' },
     );
     const data = await res.json();
-    lists = (data.lists || []).map(l => ({ name: l.name, id: l.id_str }));
+    // Biggest lists first — the API returns newest-created first, which buries the main lists.
+    lists = (data.lists || [])
+      .sort((a, b) => b.member_count - a.member_count)
+      .map(l => ({ name: l.name, id: l.id_str }));
     listsByName = buildByName(lists);
-    if (lists.length) localStorage.setItem('xlrLists_v2', JSON.stringify({ lists, ts: Date.now() }));
+    if (lists.length) localStorage.setItem('xlrLists_v3', JSON.stringify({ lists, ts: Date.now() }));
   })();
 
   try { userIds = JSON.parse(localStorage.getItem('xlrUserIds')) || {}; } catch {}

@@ -3,3 +3,5 @@ node_modules/
 files/output/
 build/
 .DS_Store
+agent-browser.json
+
