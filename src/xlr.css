@@ -208,8 +208,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   50% { transform: scale(1.5); opacity: 1; }
 }
 
-/* Bottom-centre notice stack shared by interception.js's showToast and the countdown pills below,
-   so a rate-limit notice and an unfollow countdown stack instead of overprinting. Newest lowest. */
+/* Bottom-centre notice stack shared by interception.js's showToast and the undo pills below, so a
+   rate-limit notice and an undo pill stack instead of overprinting. Newest lowest. */
 .otd-stack {
   position: fixed;
   bottom: 24px;
@@ -222,7 +222,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   z-index: 999999;
   pointer-events: none;
 }
-/* Plain toasts wear the same dark pill as the countdown; the kind is a leading dot (red = error,
+/* Plain toasts wear the same dark pill as the undo pill; the kind is a leading dot (red = error,
    e.g. rate limits; green = calibration success; blue = the near-tie note) rather than a slab of colour. */
 .otd-toast {
   display: flex;
@@ -252,14 +252,14 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .otd-toast-success::before { background: rgb(0, 186, 124); }
 .otd-toast-info::before { background: rgb(29, 155, 240); }
 
-/* Grace-period pill — unfollow, block and delete-column schedule the action behind a 5s cancel
-   window (see showCountdown in xlr.js) instead of a blocking confirm(). */
+/* Undo pill — an action that already happened (the unfollow that rides along with a list removal
+   or mute) with a one-tap reverse; see showUndo in xlr.js. */
 .otd-unf {
   pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 8px 8px 10px;
+  padding: 8px 8px 8px 14px;
   background: rgb(21, 24, 28);
   border: 1px solid rgb(56, 60, 65);
   border-radius: 9999px;
@@ -276,37 +276,6 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   opacity: 0;
   transform: translateY(14px) scale(0.96);
   transition: opacity 0.2s cubic-bezier(0.4, 0, 1, 1), transform 0.2s cubic-bezier(0.4, 0, 1, 1);
-}
-.otd-unf-timer {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-}
-.otd-unf-ring { position: absolute; inset: 0; width: 26px; height: 26px; }
-.otd-unf-track { fill: none; stroke: rgb(56, 60, 65); stroke-width: 2.5; }
-.otd-unf-fill {
-  fill: none;
-  stroke: rgb(29, 155, 240);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-dasharray: 100;
-  transform: rotate(-90deg);
-  transform-origin: center;
-  transition: stroke 0.2s;
-}
-.otd-unf-num {
-  position: relative;
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-.otd-unf-text {
-  padding-right: 2px;
-  transition: opacity 0.16s ease;
 }
 .otd-unf-text b { font-weight: 700; }
 /* Scope under .otd-unf (→ 0,2,0) so it beats TweetDeck's `html.dark button` (0,1,2), which would
@@ -328,18 +297,6 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 .otd-unf .otd-unf-cancel:hover { background: rgba(255, 255, 255, 0.18); }
 .otd-unf .otd-unf-cancel:active { transform: scale(0.94); }
-.otd-unf-committing .otd-unf-fill {
-  stroke-dashoffset: 74;
-  animation: otd-unf-spin 0.7s linear infinite;
-}
-@keyframes otd-unf-spin {
-  from { transform: rotate(-90deg); }
-  to { transform: rotate(270deg); }
-}
-.otd-unf-done { color: rgb(0, 186, 124); }
-.otd-unf-done .otd-unf-fill { stroke: rgb(0, 186, 124); }
-.otd-unf-done .otd-unf-num { animation: xlr-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.otd-unf-fail { color: rgb(244, 33, 46); }
 .otd-unf-fail .otd-unf-fill { stroke: rgb(244, 33, 46); }
 
 /* Native profile rows share the 16px gutter of the xlr rows below. Untouched, the stats
@@ -359,7 +316,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
    not removed (your own profile gets no pill, so native "Edit profile" stays). It follows the row's
    own convention — outlined when you don't, filled when you do (like Muted / Blocked): "Follow" is
    the outlined blue of Add to list, "Following" a solid blue fill, "Requested" (protected accounts)
-   the ghost pill. Hovering Following turns red, since a click starts the unfollow countdown. */
+   the ghost pill. Hovering Following turns red, since a click unfollows. */
 .prf-follow-state:has(.xlr-prf-follow) .js-action-follow { display: none; }
 .prf .xlr-prf-follow:not(.xlr-on) { color: rgb(29, 155, 240); border-color: rgba(29, 155, 240, 0.45); background: none; }
 .prf .xlr-prf-follow:not(.xlr-on):hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }

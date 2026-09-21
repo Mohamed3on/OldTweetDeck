@@ -389,107 +389,42 @@
     } catch { return {}; }
   };
 
-  // A grace-period toast: the action is scheduled, a depleting ring counts down 5s, and one tap
-  // cancels it. Beats a blocking confirm() — the common answer (yes, do it) is zero-click, and
-  // hovering pauses the clock so reaching for Cancel never loses the race. Pills stack in the shared
-  // bottom-centre .otd-stack (interception.js's showToast uses the same one). `labels` carries the
-  // verb forms ({ doing, done, failed }) plus the bold subject; `commit` runs the action when the
-  // timer expires and resolves whether it succeeded; `onCancel` fires if the user cancels.
+  // Acted-on pill with an Undo — "Unfollowed @user · Undo". No grace period: the action has already
+  // happened, Undo just runs the reverse. Pills stack in the shared bottom-centre .otd-stack
+  // (interception.js's showToast uses the same one) and dismiss after 6s or on Undo.
   let unfStack;
-  const showCountdown = ({ doing, done, failed, subject }, commit, onCancel) => {
+  const showUndo = (verb, subject, undo) => {
     if (!unfStack) {
       unfStack = document.querySelector('.otd-stack') || document.createElement('div');
       unfStack.className = 'otd-stack';
       if (!unfStack.parentNode) document.body.appendChild(unfStack);
     }
-    const DURATION = 5000;
     const toast = document.createElement('div');
     toast.className = 'otd-unf';
-    toast.innerHTML =
-      '<span class="otd-unf-timer">' +
-        '<svg class="otd-unf-ring" viewBox="0 0 24 24">' +
-          '<circle class="otd-unf-track" cx="12" cy="12" r="10" pathLength="100"/>' +
-          '<circle class="otd-unf-fill" cx="12" cy="12" r="10" pathLength="100"/>' +
-        '</svg>' +
-        '<span class="otd-unf-num">5</span>' +
-      '</span>' +
-      '<span class="otd-unf-text"></span>' +
-      '<button class="otd-unf-cancel">Cancel</button>';
-    const fill = toast.querySelector('.otd-unf-fill');
-    const num = toast.querySelector('.otd-unf-num');
+    toast.innerHTML = '<span class="otd-unf-text"></span><button class="otd-unf-cancel">Undo</button>';
     const text = toast.querySelector('.otd-unf-text');
-    const cancelBtn = toast.querySelector('.otd-unf-cancel');
-    const setText = (verb) => {
-      text.textContent = verb + ' ';
-      const b = document.createElement('b');
-      b.textContent = subject;
-      text.appendChild(b);
-    };
-    setText(doing);
+    text.textContent = verb + ' ';
+    const b = document.createElement('b');
+    b.textContent = subject;
+    text.appendChild(b);
     unfStack.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('otd-unf-in'));
-
     const dismiss = () => {
+      clearTimeout(timer);
       toast.classList.add('otd-unf-out');
       toast.addEventListener('transitionend', () => toast.remove(), { once: true });
     };
-
-    let raf = 0, last = 0, elapsed = 0, paused = false, settled = false;
-
-    const finish = async () => {
-      settled = true;
-      cancelAnimationFrame(raf);
-      cancelBtn.remove();
-      num.textContent = '';
-      fill.style.strokeDashoffset = '';           // hand the ring to the committing spinner
-      toast.classList.add('otd-unf-committing');
-      let ok = false;
-      try { ok = await commit(); } catch {}
-      toast.classList.remove('otd-unf-committing');
-      text.style.opacity = '0';                   // crossfade "Unfollowing" → "Unfollowed"
-      setTimeout(() => {
-        toast.classList.add(ok ? 'otd-unf-done' : 'otd-unf-fail');
-        num.textContent = ok ? '✓' : '!';
-        setText(ok ? done : failed);
-        text.style.opacity = '';
-        setTimeout(dismiss, 1600);
-      }, 160);
-    };
-
-    const frame = (t) => {
-      if (!last) last = t;
-      if (!paused) elapsed += t - last;
-      last = t;
-      const remaining = Math.max(0, DURATION - elapsed);
-      fill.style.strokeDashoffset = String(100 - (remaining / DURATION) * 100);
-      num.textContent = String(Math.max(1, Math.ceil(remaining / 1000)));
-      if (elapsed >= DURATION) { finish(); return; }
-      raf = requestAnimationFrame(frame);
-    };
-    raf = requestAnimationFrame(frame);
-
-    toast.onmouseenter = () => { paused = true; };
-    toast.onmouseleave = () => { paused = false; last = 0; };
-    cancelBtn.onclick = () => {
-      if (settled) return;
-      settled = true;
-      cancelAnimationFrame(raf);
-      dismiss();
-      onCancel?.();
-    };
+    const timer = setTimeout(dismiss, 6000);
+    toast.querySelector('.otd-unf-cancel').onclick = () => { dismiss(); undo(); };
   };
 
   // After you drop someone from your world (delist or mute), you often want them fully gone — if you
-  // still follow them, offer to unfollow in the same gesture. Fire-and-forget: onUnfollowed runs
-  // only if the 5s countdown completes without being cancelled.
+  // still follow them, unfollow in the same gesture, with an Undo pill in case that wasn't wanted.
   const offerUnfollow = async (username, onUnfollowed) => {
     const rel = await fetchRelationship(username);
-    if (!rel.following) return;
-    showCountdown({ doing: 'Unfollowing', done: 'Unfollowed', failed: 'Couldn’t unfollow', subject: '@' + username }, async () => {
-      const ok = await unfollowUser(username);
-      if (ok) onUnfollowed?.();
-      return ok;
-    });
+    if (!rel.following || !(await unfollowUser(username))) return;
+    onUnfollowed?.();
+    showUndo('Unfollowed', '@' + username, () => followUser(username));
   };
 
   let popover = document.createElement('div');
@@ -755,9 +690,8 @@
     const mute = makeToggle('xlr-prf-mute', 'Mute', 'Muted', isMuted(username),
       (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }));
     // Follow replaces TweetDeck's eight-state native group (hidden in xlr.css) with the same pill as
-    // Mute/Block, in the same spot right of the stats. Unfollowing runs through the 5s cancel pill;
-    // cancelling a pending request (protected accounts) is immediate. Skipped on your own profile,
-    // where native shows "Edit profile" instead.
+    // Mute/Block, in the same spot right of the stats. Unfollowing is immediate — re-following is one
+    // click. Skipped on your own profile, where native shows "Edit profile" instead.
     const followState = actions.querySelector('.prf-follow-state');
     const selfName = (() => { try { return TD.storage.accountController.getPreferredAccount('twitter').getUsername().toLowerCase(); } catch { return null; } })();
     const follow = followState && username.toLowerCase() !== selfName &&
@@ -768,17 +702,9 @@
           applyFollow(rel.following || rel.following_requested ? rel : { following: true });
           return false;   // applyFollow already set the state
         }
-        const commit = async () => {
-          let ok = false;
-          try { ok = await unfollowUser(username); } catch {}
-          if (ok) follow.btn.classList.remove('xlr-requested');
-          return ok;
-        };
-        if (follow.btn.classList.contains('xlr-requested')) return commit();
-        return new Promise((resolve) => showCountdown(
-          { doing: 'Unfollowing', done: 'Unfollowed', failed: 'Couldn’t unfollow', subject: '@' + username },
-          async () => { const ok = await commit(); resolve(ok); return ok; },
-          () => resolve(false)));
+        const ok = await unfollowUser(username);
+        if (ok) follow.btn.classList.remove('xlr-requested');
+        return ok;
       });
     const applyFollow = (rel) => {
       if (!follow) return;
@@ -790,15 +716,10 @@
     };
     if (follow) { follow.btn.classList.add('xlr-loading'); followState.appendChild(follow.btn); }
 
-    // Blocking runs through the same 5s cancel pill as unfollow; unblocking is reversible, so it's immediate.
     // Blocking also drops the follow: the Follow pill hides while blocked and comes back on unblock.
-    const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, (active) => (active
-      ? unblockUser(username)
-      : new Promise((resolve) => showCountdown(
-          { doing: 'Blocking', done: 'Blocked', failed: 'Couldn’t block', subject: '@' + username },
-          async () => { let ok = false; try { ok = await blockUser(username); } catch {} resolve(ok); return ok; },
-          () => resolve(false)))
-    ).then((ok) => { if (ok) applyFollow({ following: false, blocking: !active }); return ok; }));
+    const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, (active) =>
+      (active ? unblockUser(username) : blockUser(username))
+        .then((ok) => { if (ok) applyFollow({ following: false, blocking: !active }); return ok; }));
     block.btn.classList.add('xlr-loading');
     // active = retweets hidden (want_retweets false); clicking passes the desired want_retweets.
     const rts = makeToggle('xlr-prf-rts', 'Turn off Retweets', 'Turn on Retweets', false,
@@ -937,12 +858,7 @@
       const del = mkBtn('xlr-hdr-step xlr-del-btn', 'Delete column', trashSvg);
       del.onclick = (e) => {
         e.preventDefault(); e.stopPropagation();
-        // Same grace-period pill as unfollow, no blocking confirm: the column goes 5s later unless cancelled.
-        const raw = header.querySelector('.column-heading')?.textContent.trim() || header.querySelector(EDIT_BOX)?.value.trim() || 'column';
-        const name = raw.length > 40 ? raw.slice(0, 39) + '…' : raw;
-        showCountdown({ doing: 'Deleting', done: 'Deleted', failed: 'Couldn’t delete', subject: name }, async () => {
-          try { TD.controller.columnManager.deleteColumn(section.getAttribute('data-column')); return true; } catch { return false; }
-        });
+        try { TD.controller.columnManager.deleteColumn(section.getAttribute('data-column')); } catch {}
       };
       settingsLink.parentNode.insertBefore(bump, settingsLink);
       settingsLink.parentNode.insertBefore(cut, settingsLink);
