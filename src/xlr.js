@@ -539,10 +539,10 @@
         return;
       }
     };
-    appendToBar(userSearchBtn);
+    const buttons = [userSearchBtn];
 
-    // Order: user-search, filter (search columns only), add|remove, mute — the two search-ish buttons
-    // together, then list membership, mute last. xlrActionClicks() tallies real use to inform a reorder.
+    // Default order, which ties keep: user-search, filter (search columns only), add|remove, mute.
+    // The bar is laid out most-clicked first at the end (byClicks, next to the click tally below).
     if (listId && col?.querySelector(EDIT_BOX)) {
       const filterBtn = mkBtn('xlr-filter-btn', `Filter by @${username}`, filterSvg);
       filterBtn.dataset.xlrUsername = userLower;
@@ -559,7 +559,7 @@
         else newValue = `from:${username} ${current}`;
         setFilterInput(input, newValue);
       };
-      appendToBar(filterBtn);
+      buttons.push(filterBtn);
     }
 
     if (listId) {
@@ -573,7 +573,7 @@
         updateMembership(username, listId, false);
         offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
       });
-      appendToBar(removeBtn);
+      buttons.push(removeBtn);
     } else {
       const addBtn = mkBtn('xlr-add-btn', 'Add to list', addListSvg);
       addBtn.onmouseenter = () => fetchMembership(username);
@@ -582,7 +582,7 @@
         e.preventDefault(); e.stopPropagation();
         if (!addBtn._wasOpen) showPopover(addBtn, username);
       };
-      appendToBar(addBtn);
+      buttons.push(addBtn);
     }
 
     const muteBtn = mkBtn('xlr-mute-btn', 'Mute & remove from lists', muteSvg);
@@ -601,8 +601,12 @@
       markDone(muteBtn, `Muted @${username}`, article);
       offerUnfollow(username, () => { muteBtn.title = `Muted & unfollowed @${username}`; });
     });
-    if (moreItem) moreItem.replaceChildren(muteBtn);
-    else appendToBar(muteBtn);
+    buttons.push(muteBtn);
+
+    // Most-clicked first; the least used takes over the ⋯ menu's slot.
+    buttons.sort(byClicks);
+    if (moreItem) moreItem.replaceChildren(buttons.pop());
+    buttons.forEach(appendToBar);
   }
 
   function makeChip(listId, username, onChange) {
@@ -817,11 +821,16 @@
   document.addEventListener('input', (e) => { if (e.target.matches?.(EDIT_BOX)) syncResetIcons(); });
 
   // Click tally for the custom action-bar buttons (localStorage.xlrActionClicks, keyed user-search /
-  // filter / add / remove / mute) so the bar can be reordered by real use; read it with
-  // xlrActionClicks() in the console. Capture phase, since the buttons stop propagation.
+  // filter / add / remove / mute). process() lays the bar out most-clicked first from the counts as of
+  // page load, so buttons never reshuffle mid-session. Read it with xlrActionClicks() in the console.
+  // Capture phase, since the buttons stop propagation.
+  const clickKey = (btn) => btn?.className.match(/\bxlr-([a-z-]+)-btn\b/)?.[1];
+  let loadClicks = {};
+  try { loadClicks = JSON.parse(localStorage.xlrActionClicks).counts || {}; } catch {}
+  const byClicks = (a, b) => (loadClicks[clickKey(b)] || 0) - (loadClicks[clickKey(a)] || 0);
   document.addEventListener('click', (e) => {
     const btn = e.target.closest?.('ul.tweet-actions button[class*="xlr-"], ul.tweet-detail-actions button[class*="xlr-"]');
-    const key = btn?.className.match(/\bxlr-([a-z-]+)-btn\b/)?.[1];
+    const key = clickKey(btn);
     if (!key) return;
     const tally = JSON.parse(localStorage.xlrActionClicks || 'null') || { since: new Date().toISOString().slice(0, 10), counts: {} };
     tally.counts[key] = (tally.counts[key] || 0) + 1;
