@@ -2384,8 +2384,10 @@ const proxyRoutes = [
             // string id the entries reference and that fromJSONObject uses for chirp.id. Register
             // the parsed author (plus any quoted/retweeted authors) into the user map keyed by
             // user_id_str, the id the chirp resolves its user through.
-            let addTweet = (result) => {
-                let parsed = parseTweet(result);
+            let addTweet = (ic) => {
+                // Ads Twitter slots in among the replies (promoted tweets, e.g. "Attio") aren't part of it.
+                if (ic?.promotedMetadata) return null;
+                let parsed = parseTweet(ic?.tweet_results?.result);
                 if (!parsed || !parsed.id_str) return null;
                 tweets[parsed.id_str] = parsed;
                 if (parsed.user && parsed.user_id_str) users[parsed.user_id_str] = parsed.user;
@@ -2411,7 +2413,7 @@ const proxyRoutes = [
                 if (type === "TimelineTimelineItem") {
                     // Focal tweet, or an ancestor in the reply chain above it.
                     let ic = content.itemContent;
-                    let id = addTweet(ic?.tweet_results?.result);
+                    let id = addTweet(ic);
                     if (!id) continue;
                     entries.push({
                         entryId: `tweet-${id}`,
@@ -2423,7 +2425,7 @@ const proxyRoutes = [
                     let components = [];
                     for (let item of (content.items || [])) {
                         let ic = item.item?.itemContent;
-                        let id = addTweet(ic?.tweet_results?.result);
+                        let id = addTweet(ic);
                         if (!id) continue;
                         components.push({ conversationTweetComponent: { tweet: { id, displayType: ic.tweetDisplayType || "Tweet" } } });
                     }
@@ -2443,6 +2445,22 @@ const proxyRoutes = [
                     });
                 }
             }
+
+            // Rank the replies by likes, newest first on ties (ids are time-ordered), keeping the author's
+            // own self-thread continuation on top. getConversation renders entries in array order, so the
+            // threads are dealt back into the slots they held: ancestors, focal tweet and cursors stay put.
+            let rank = (e) => {
+                let { id, displayType } = e.content.item.content.conversationThread.conversationComponents[0].conversationTweetComponent.tweet;
+                return { self: displayType === "SelfThread", likes: tweets[id].favorite_count, id: tweets[id].id };
+            };
+            let slots = entries.flatMap((e, i) => (e.entryId.startsWith("conversationThread-") ? [i] : []));
+            slots
+                .map((i) => entries[i])
+                .sort((a, b) => {
+                    let [x, y] = [rank(a), rank(b)];
+                    return y.self - x.self || y.likes - x.likes || y.id - x.id;
+                })
+                .forEach((e, k) => (entries[slots[k]] = e));
 
             return conversation(tweets, users, entries);
         },
