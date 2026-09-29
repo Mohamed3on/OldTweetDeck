@@ -375,6 +375,8 @@ function applyGrokTranslation(result, legacy) {
 
     legacy.full_text = translation;
     legacy.text = translation;
+    // TweetDeck sets text direction from lang, so an RTL source would render the translation RTL.
+    if (data.destination_language) legacy.lang = data.destination_language;
     legacy.display_text_range = undefined;
     // Adopt Grok's entities: their indices point into the translated text, so mentions
     // and links linkify in place. The old entities pointed into the pre-translation text;
