@@ -1147,7 +1147,9 @@
     const placeholder = article.querySelector('.quoted-tweet-unavailable');
     if (!placeholder) return;
     try {
-      const ts = new TD.services.TwitterStatus(chirp.account).fromJSONObject(legacy);
+      // fromJSONObject converts entity indices to UTF-16 in place, so give it a copy of the
+      // cached tweet — re-converting on a later render shifts links past an emoji into raw t.co text.
+      const ts = new TD.services.TwitterStatus(chirp.account).fromJSONObject(structuredClone(legacy));
       chirp.setQuotedStatus(ts);
       const wrap = document.createElement('div');
       wrap.innerHTML = ts.renderQuotedTweet({ mediaPreviewSize: TD.vo.Column.MEDIA_PREVIEW_SIZE_MEDIUM });
