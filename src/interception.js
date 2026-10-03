@@ -372,6 +372,17 @@ function applyGrokTranslation(result, legacy) {
 
     // Grok drops the reply-prefix mentions from the translation; capture them first.
     let implicit = captureReplyMentions(legacy);
+    // It can also drop a visible link (a long tweet's trailing YouTube link), so re-append
+    // those. Attachment links (outside the display range or flagged) stay hidden.
+    let range = legacy.display_text_range;
+    let dropped = [];
+    for (let u of legacy.entities?.urls ?? []) {
+        if (u.isUrlForAttachment || translation.includes(u.url)) continue;
+        if (range && (u.indices[0] < range[0] || u.indices[1] > range[1])) continue;
+        let start = [...translation].length + 2; // entity indices count code points
+        translation += "\n\n" + u.url;
+        dropped.push({ ...u, indices: [start, start + u.url.length] });
+    }
 
     legacy.full_text = translation;
     legacy.text = translation;
@@ -387,6 +398,7 @@ function applyGrokTranslation(result, legacy) {
         for (let key of ["hashtags", "symbols", "urls", "user_mentions"]) {
             legacy.entities[key] = data.entities?.[key] ?? [];
         }
+        legacy.entities.urls = legacy.entities.urls.concat(dropped);
         attachReplyMentions(legacy.entities, implicit, translation);
         // Media isn't in Grok's entities and its URL is dropped from the translation, so
         // neutralize the stale inline indices — it still renders via the media-preview path.
