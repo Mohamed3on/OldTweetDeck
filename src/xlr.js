@@ -1291,6 +1291,11 @@
   TD.services.TwitterMedia.prototype.getDetailViewTemplateAndParams = function (chirpId, sensitive, opts) {
     return detailMedia.call(this, chirpId, sensitive, this.service === 'youtube' ? { ...opts, usingNarrowColumns: true } : opts);
   };
+  // TweetDeck's YouTube pattern only caught youtube.com/watch links (its youtu.be branch misses
+  // https://), so youtu.be, /live/ and /shorts/ links fell back to X's link card. fromURL reads
+  // the id from ?v= on watch links and from the last path segment otherwise.
+  TD.services.TwitterMedia.SERVICES.youtube =
+    /^(?:https?:\/\/)?(?:(?:www|m)\.)?(?:youtube\.com\/(?:watch\?|live\/|shorts\/)|youtu\.be\/)[\w-]/;
 
   observer.observe(document.body, { childList: true, subtree: true });
   listsReady.then(scan);
