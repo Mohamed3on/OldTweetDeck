@@ -1280,6 +1280,18 @@
     }
   });
 
+  // YouTube videos open on YouTube rather than playing inside TweetDeck. A preview click would
+  // open the media gallery's autoplaying embed: stop it in the capture phase, before TweetDeck's
+  // rel="mediaPreview" handler, so the link's own target=_blank opens the video. The detail view
+  // embeds a player outright, so render it as narrow columns do: the same thumbnail link.
+  document.addEventListener('click', (e) => {
+    if (e.target.closest?.('.js-media-image-link:is([href*="youtube.com/"], [href*="youtu.be/"])')) e.stopPropagation();
+  }, true);
+  const detailMedia = TD.services.TwitterMedia.prototype.getDetailViewTemplateAndParams;
+  TD.services.TwitterMedia.prototype.getDetailViewTemplateAndParams = function (chirpId, sensitive, opts) {
+    return detailMedia.call(this, chirpId, sensitive, this.service === 'youtube' ? { ...opts, usingNarrowColumns: true } : opts);
+  };
+
   observer.observe(document.body, { childList: true, subtree: true });
   listsReady.then(scan);
 })();
