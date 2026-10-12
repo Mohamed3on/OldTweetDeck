@@ -1164,8 +1164,8 @@
 
   // Community notes: interception.js indexes birdwatch pivots by tweet id in
   // window.OTDbirdwatch (the legacy chirp shape can't carry them through
-  // fromJSONObject). Decorate rendered tweets from that map — a full note under
-  // the tweet body / detail view, and a collapsed toggle inside quote boxes.
+  // fromJSONObject). Decorate rendered tweets from that map — a note under the
+  // tweet body / detail view, and a short-titled one inside quote boxes.
   const noteSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm2 5.2h10V10H7V8.2zm0 3.5h10v1.8H7v-1.8zm0 3.5h6.5V17H7v-1.8z"/></svg>';
   const escNote = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // Entity indices are code points into subtitle.text; each ref is a t.co link
@@ -1187,19 +1187,15 @@
     }
     return (html + escNote(cp.slice(pos).join(''))).replace(/\n/g, '<br>');
   };
-  const noteBox = (pivot, collapsed) => {
+  const noteBox = (pivot, inQuote) => {
     const box = document.createElement('div');
-    box.className = 'xlr-note' + (collapsed ? ' is-collapsed' : '');
-    const title = (collapsed && pivot.shorttitle) || pivot.title || 'Readers added context';
+    box.className = 'xlr-note';
+    const title = (inQuote && pivot.shorttitle) || pivot.title || 'Readers added context';
     box.innerHTML = `<div class="xlr-note-header">${noteSvg}<span>${escNote(title)}</span></div><div class="xlr-note-text">${noteTextHtml(pivot)}</div>`;
-    // The tweet/quote around the box is actionable — keep note clicks (links,
-    // collapse toggle) from also opening the detail view.
+    // The tweet/quote around the box is actionable — keep note link clicks from
+    // also opening the detail view.
     box.addEventListener('click', (e) => {
-      if (e.target.closest('a')) { e.stopPropagation(); return; }
-      if (collapsed && e.target.closest('.xlr-note-header')) {
-        e.preventDefault(); e.stopPropagation();
-        box.classList.toggle('is-collapsed');
-      }
+      if (e.target.closest('a')) e.stopPropagation();
     });
     return box;
   };

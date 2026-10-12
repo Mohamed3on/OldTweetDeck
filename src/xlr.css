@@ -592,8 +592,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 
 /* ============================================================================
-   Community notes — full note under a noted tweet, collapsed toggle inside
-   quote boxes (data via window.OTDbirdwatch; see injectNotes in xlr.js). */
+   Community notes — under a noted tweet and inside quote boxes
+   (data via window.OTDbirdwatch; see injectNotes in xlr.js). */
 .xlr-note {
   margin: 8px 0 4px;
   padding: 7px 10px;
@@ -616,18 +616,6 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 .xlr-note-text { margin-top: 4px; }
 .xlr-note-text a { word-break: break-all; }
-.xlr-note.is-collapsed { padding: 4px 8px; }
-.xlr-note.is-collapsed .xlr-note-header { cursor: pointer; font-weight: 600; }
-.xlr-note.is-collapsed .xlr-note-header::after {
-  content: "";
-  width: 10px;
-  height: 10px;
-  margin-left: auto;
-  background: currentColor;
-  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>') center/contain no-repeat;
-  opacity: 0.6;
-}
-.xlr-note.is-collapsed .xlr-note-text { display: none; }
 
 /* YouTube previews get YouTube's red play button. TweetDeck draws the same blue one on
    native video and YouTube links; only the link tells them apart (a YouTube preview
