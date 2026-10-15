@@ -18944,7 +18944,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<div class="media-image-container {{#isMediaPreviewCompact}}media-image-container-compact{{/isMediaPreviewCompact}} block position-rel"> <a class="js-media-image-link {{#needsSecureUrl}}js-needs-secure-url{{/needsSecureUrl}} pin-all media-image block {{#isPossiblySensitive}}is-invisible{{/isPossiblySensitive}}" {{#needsSecureUrl}}data-original-url="{{mediaPreviewSrc}}{{imageSrc}}"{{/needsSecureUrl}} {{^needsSecureUrl}}style="background-image:url({{mediaPreviewSrc}}{{imageSrc}})"{{/needsSecureUrl}} href="{{url}}" rel="mediaPreview" target="_blank" data-media-entity-id="{{mediaId}}" title="{{altText}}" ></a> </div>');
+                '<div class="media-image-container {{#isMediaPreviewCompact}}media-image-container-compact{{/isMediaPreviewCompact}} block position-rel"> <a class="js-media-image-link {{#needsSecureUrl}}js-needs-secure-url{{/needsSecureUrl}} pin-all media-image block {{#isPossiblySensitive}}is-invisible{{/isPossiblySensitive}}" {{#needsSecureUrl}}data-original-url="{{mediaPreviewSrc}}{{imageSrc}}"{{/needsSecureUrl}} {{^needsSecureUrl}}style="background-image:url({{mediaPreviewSrc}}{{imageSrc}})"{{/needsSecureUrl}} href="{{url}}" rel="mediaPreview" target="_blank" data-media-entity-id="{{mediaId}}" title="{{altText}}" >{{#isVideo}} {{> media/video_overlay}} {{/isVideo}}</a> </div>');
     },
     function (e, t, i) {
         "use strict";
@@ -40010,7 +40010,8 @@ document.body.addEventListener("click", function (e) {
             }),
             (TD.services.TwitterMedia._entitiesContainNativeMultiPhoto = function (e) {
                 return (0, h.default)(e, function (e) {
-                    if (e.nativePhotoCapable() && !1 === e.referenced_media) return e;
+                    // X lets a tweet mix photos, videos and GIFs: keep them all, not just the photos.
+                    if ("twitter" === e.service && !1 === e.referenced_media) return e;
                 });
             }),
             (TD.services.TwitterMedia._entitiesContainMultiPhoto = function (e) {
