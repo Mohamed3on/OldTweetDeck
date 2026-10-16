@@ -99,11 +99,18 @@
     return userIdInflight[name];
   };
 
-  const membershipCache = {};
+  // Persisted so a profile shows its list chips the moment it opens. Our own adds/removes patch it
+  // (updateMembership), but membership can also change outside OTD, so each user is still refetched
+  // once per session (membershipFresh).
+  let membershipCache = {};
+  try { membershipCache = JSON.parse(localStorage.getItem('xlrMemberships'), (_, v) => Array.isArray(v) ? new Set(v) : v) || {}; } catch {}
+  const persistMemberships = () =>
+    localStorage.setItem('xlrMemberships', JSON.stringify(membershipCache, (_, v) => v instanceof Set ? [...v] : v));
+  const membershipFresh = new Set();
   const membershipInflight = {};
 
   async function fetchMembership(username) {
-    if (membershipCache[username]) return membershipCache[username];
+    if (membershipFresh.has(username)) return membershipCache[username];
     if (membershipInflight[username]) return membershipInflight[username];
     membershipInflight[username] = (async () => {
       try {
@@ -120,7 +127,10 @@
             if (l?.is_member) memberOf.add(l.id_str || l.rest_id);
           }
         }
-        return (membershipCache[username] = memberOf);
+        membershipCache[username] = memberOf;
+        membershipFresh.add(username);
+        persistMemberships();
+        return memberOf;
       } finally {
         delete membershipInflight[username];
       }
@@ -130,7 +140,7 @@
 
   const updateMembership = (username, listId, added) => {
     const cache = membershipCache[username];
-    if (cache) added ? cache.add(listId) : cache.delete(listId);
+    if (cache) { added ? cache.add(listId) : cache.delete(listId); persistMemberships(); }
   };
 
   const listName = (id) => (lists.find(l => l.id === id) || {}).name;
@@ -660,7 +670,8 @@
     if (domId && !userIds[username]) { userIds[username] = domId; persistUserIds(); }
 
     const section = document.createElement('div');
-    section.className = 'xlr-prf-lists xlr-prf-loading';
+    // A cached membership renders at once (and refreshes below); only an unseen user's row loads.
+    section.className = membershipCache[username] ? 'xlr-prf-lists' : 'xlr-prf-lists xlr-prf-loading';
     const chips = document.createElement('div');
     chips.className = 'xlr-prf-chips';
     const addBtn = document.createElement('button');
@@ -672,6 +683,7 @@
       const memberOf = membershipCache[username] || new Set();
       chips.replaceChildren(...[...memberOf].map(id => makeChip(id, username, renderChips)));
     };
+    renderChips();
 
     addBtn.onmouseenter = () => fetchMembership(username);
     addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
@@ -738,7 +750,7 @@
     row.append(viewBtn, mute.btn, block.btn, rts.btn);
     place(row);
 
-    fetchMembership(username).then(() => {
+    fetchMembership(username).finally(() => {
       section.classList.remove('xlr-prf-loading');
       renderChips();
     });

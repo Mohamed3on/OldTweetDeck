@@ -337,8 +337,11 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   padding: 12px 16px;
   line-height: normal;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.xlr-prf-lists.xlr-prf-loading { opacity: 0.5; }
+/* Only a user with no cached membership loads; the row holds its space hidden and fades in whole
+   once the fetch lands, so the chips and Add to list arrive together instead of Add jumping aside. */
+.xlr-prf-lists.xlr-prf-loading { opacity: 0; }
 .xlr-prf-chips { display: contents; }
 
 /* TweetDeck's base `html.dark button` rule (specificity 0,1,2) forces white bg, blue
