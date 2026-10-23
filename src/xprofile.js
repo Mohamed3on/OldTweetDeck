@@ -95,19 +95,33 @@
       if (!addBtn._wasOpen) showPicker(addBtn, lists, userId, render);
     };
 
+    // Chips are kept by list id and only the changed ones touched, so an added chip animates in
+    // (@starting-style) and a removed one fades out, without the rest re-animating.
+    const chips = new Map();
+    row.appendChild(addBtn);
     function render() {
-      row.replaceChildren(...lists.filter(l => l.member).map(list => {
-        const chip = document.createElement('span');
-        chip.className = 'xp-chip';
-        chip.textContent = list.name;
-        const x = document.createElement('button');
-        x.className = 'xp-chip-x';
-        x.textContent = '×';
-        x.title = `Remove from ${list.name}`;
-        x.onclick = busy(chip, async () => { if (await setMember(list, userId, false)) render(); });
-        chip.appendChild(x);
-        return chip;
-      }), addBtn);
+      let next = addBtn;
+      for (const list of [...lists].reverse()) {
+        let chip = chips.get(list.id);
+        if (list.member && !chip) {
+          chip = document.createElement('span');
+          chip.className = 'xp-chip';
+          chip.textContent = list.name;
+          const x = document.createElement('button');
+          x.className = 'xp-chip-x';
+          x.textContent = '×';
+          x.title = `Remove from ${list.name}`;
+          x.onclick = busy(chip, async () => { if (await setMember(list, userId, false)) render(); });
+          chip.appendChild(x);
+          chips.set(list.id, chip);
+          row.insertBefore(chip, next);
+        } else if (!list.member && chip) {
+          chips.delete(list.id);
+          chip.classList.add('xp-leaving');
+          chip.addEventListener('transitionend', () => chip.remove(), { once: true });
+        }
+        if (list.member) next = chip;
+      }
     }
 
     // Cached per page load (toggles patch the same objects), so React re-mounting the header
