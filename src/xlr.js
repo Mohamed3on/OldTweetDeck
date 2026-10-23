@@ -1398,6 +1398,21 @@
     nav.insertBefore(link, nav.querySelector('[data-drawer="accountSettings"]'));
   }
 
+  // TweetDeck pins the column list to the top of the sidebar and this nav group to the bottom, so a
+  // short column list leaves a gap under its "+". Tuck the group up under it instead, leaving the
+  // spare room above the avatar; once the list overflows and scrolls, TweetDeck's layout applies.
+  function tuckNav() {
+    const nav = document.querySelector('.app-navigator');
+    const scroller = document.querySelector('.js-column-nav-scroller');
+    const add = scroller?.querySelector('.js-header-add-column');
+    if (!nav?.offsetParent || !add) return;
+    nav.style.top = nav.style.bottom = '';
+    if (scroller.classList.contains('column-navigator-overflow') || !add.offsetParent) return;
+    const top = add.getBoundingClientRect().bottom - nav.offsetParent.getBoundingClientRect().top;
+    if (top < nav.offsetTop) Object.assign(nav.style, { top: `${top}px`, bottom: 'auto' });
+  }
+  window.addEventListener('resize', () => setTimeout(tuckNav, 400)); // after TweetDeck re-checks overflow
+
   let scanQueued = false;
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); injectNotes(a); });
@@ -1407,6 +1422,7 @@
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     processMediaModal();
     injectFofNav();
+    tuckNav();
     syncListColumns();
     updateButtonStates();
     scanQueued = false;
