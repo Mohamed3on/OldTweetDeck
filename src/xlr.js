@@ -1258,6 +1258,146 @@
     panel.dataset.xlrMediaDone = '1';
   };
 
+  // "Followed by your follows": every account ranked by how many of the people you follow follow
+  // it, the number behind a profile's "Followed by X and N others you follow", for everyone at
+  // once. friends/ids returns 5,000 ids a call (1,000 calls / 15 min), so the whole graph costs one
+  // call per follow. By-id user lookups are Cloudflare-blocked, so handles come from friends/list
+  // (50 calls / 15 min, 200 users a page): yours first, then whichever follow's list covers the most
+  // still-unnamed accounts per page, until the budget runs out. Cached for a day.
+  const FOF_TTL = 1000 * 60 * 60 * 24, FOF_TOP = 100;
+  const api1 = (path) => fetch(`https://api.${location.hostname}/1.1/${path}`, { headers: hdrs(), credentials: 'include' });
+
+  const friendIds = async (uid) => {
+    let ids = [], cursor = '-1';
+    do {
+      const r = await api1(`friends/ids.json?stringify_ids=true&count=5000&user_id=${uid}&cursor=${cursor}`);
+      if (!r.ok) return ids; // protected accounts 401
+      const j = await r.json();
+      ids = ids.concat(j.ids);
+      cursor = j.next_cursor_str;
+    } while (cursor !== '0');
+    return ids;
+  };
+
+  const saveFof = (fof) => localStorage.setItem('xlrFof', JSON.stringify(fof));
+
+  // The ranking itself, plus for each follow (and you) which ranked accounts its friends/list would
+  // name and how many pages that costs, so names can keep filling in on later opens.
+  async function buildFof(progress) {
+    const me = myId(), mine = await friendIds(me), graph = { [me]: mine };
+    for (let i = 0; i < mine.length; i += 10) {
+      await Promise.all(mine.slice(i, i + 10).map(async (u) => { graph[u] = await friendIds(u); }));
+      progress(`Reading follow lists… ${Math.min(i + 10, mine.length)} / ${mine.length}`);
+    }
+    const counts = {};
+    for (const u of mine) for (const v of graph[u]) if (v !== me) counts[v] = (counts[v] || 0) + 1;
+    const following = new Set(mine);
+    const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, FOF_TOP)
+      .map(([id, c]) => ({ id, c, f: following.has(id) }));
+    const ranked = new Set(rows.map(r => r.id)), cover = {}, cost = {};
+    for (const [u, ids] of Object.entries(graph)) {
+      const hits = ids.filter(v => ranked.has(v));
+      if (hits.length) { cover[u] = hits; cost[u] = Math.ceil(ids.length / 200); }
+    }
+    const fof = { ts: Date.now(), total: mine.length, rows, cover, cost };
+    saveFof(fof);
+    return fof;
+  }
+
+  // Greedy: page through whichever friends/list names the most unnamed accounts per page, until
+  // they're all named or the 50 / 15 min budget runs out.
+  async function nameFof(fof) {
+    const byId = Object.fromEntries(fof.rows.map(r => [r.id, r]));
+    let budget = Infinity;
+    for (;;) {
+      const best = Object.keys(fof.cover)
+        .map(u => ({ u, cover: fof.cover[u].filter(id => !byId[id].n).length, cost: fof.cost[u] }))
+        .filter(x => x.cover && x.cost <= budget)
+        .sort((a, b) => b.cover / b.cost - a.cover / a.cost)[0];
+      if (!best) return;
+      let cursor = '-1';
+      do {
+        const r = await api1(`friends/list.json?count=200&skip_status=true&include_user_entities=false&user_id=${best.u}&cursor=${cursor}`);
+        budget = +r.headers.get('x-rate-limit-remaining') || 0;
+        if (!r.ok) return;
+        const j = await r.json();
+        for (const u of j.users) Object.assign(byId[u.id_str] || {}, { n: u.screen_name, name: u.name, img: u.profile_image_url_https });
+        cursor = j.next_cursor_str;
+      } while (cursor !== '0' && budget > 0);
+      saveFof(fof);
+    }
+  }
+
+  const fofDialog = document.createElement('dialog');
+  fofDialog.className = 'xlr-fof';
+  document.body.appendChild(fofDialog);
+  // Backdrop clicks land on the dialog itself; picking an account closes it so TweetDeck's
+  // rel="user" handler can open the profile popup, which would otherwise sit under the dialog.
+  fofDialog.addEventListener('click', (e) => {
+    if (e.target === fofDialog || e.target.closest('a')) fofDialog.close();
+  });
+
+  const escHtml = (s) => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+
+  function renderFof(fof, status) {
+    const hide = localStorage.getItem('xlrFofHideFollowing') === '1';
+    const rows = (fof?.rows || []).filter(r => !(hide && r.f));
+    const unnamed = rows.filter(r => !r.n).length;
+    fofDialog.innerHTML = `<div class="xlr-fof-head">
+        <div>
+          <div class="xlr-fof-title">Followed by your follows</div>
+          <div class="xlr-fof-sub">${status ? escHtml(status)
+            : `How many of the ${fof.total} people you follow follow each account · updated ${new Date(fof.ts).toLocaleString()}`}</div>
+          ${!status && unnamed ? `<div class="xlr-fof-sub">${unnamed} names haven’t loaded yet. X limits name lookups per 15 minutes, so reopen this later to fill them in.</div>` : ''}
+        </div>
+        <label class="xlr-fof-hide"><input type="checkbox" ${hide ? 'checked' : ''}> Hide accounts I follow</label>
+        <button class="xlr-fof-refresh" ${status ? 'disabled' : ''}>Refresh</button>
+      </div>
+      <ol class="xlr-fof-list">${rows.map(r => `<li${r.f ? ' class="xlr-fof-following"' : ''}>
+        <span class="xlr-fof-count" title="Followed by ${r.c} of your follows">${r.c}</span>
+        ${r.n
+          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><img src="${escHtml(r.img)}" alt=""><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span>@${r.n}${r.f ? ' · Following' : ''}</span></span></a>`
+          : `<a href="https://x.com/i/user/${r.id}" target="_blank"><span class="xlr-fof-names"><b>Name not loaded</b><span>Open on X</span></span></a>`}
+      </li>`).join('')}</ol>`;
+    fofDialog.querySelector('.xlr-fof-hide input').onchange = (e) => {
+      localStorage.setItem('xlrFofHideFollowing', e.target.checked ? '1' : '0');
+      renderFof(fof, status);
+    };
+    fofDialog.querySelector('.xlr-fof-refresh').onclick = () => loadFof(true);
+  }
+
+  let fofLoading = null;
+  const loadFof = (force) => fofLoading ??= (async () => {
+    let fof = null;
+    try { fof = JSON.parse(localStorage.getItem('xlrFof')); } catch {}
+    try {
+      if (!fof?.cover || force || Date.now() - fof.ts > FOF_TTL) {
+        renderFof(fof, 'Reading follow lists…');
+        fof = await buildFof((s) => renderFof(fof, s));
+      }
+      if (fof.rows.some(r => !r.n)) { renderFof(fof, 'Looking up names…'); await nameFof(fof); }
+      renderFof(fof);
+    } catch {
+      renderFof(fof, 'Couldn’t read follow lists. Try again in 15 minutes.');
+    } finally {
+      fofLoading = null;
+    }
+  })();
+
+  const leaderboardSvg = mkSvg('M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm16 8h-4v-6h4v6z');
+  function injectFofNav() {
+    const nav = document.querySelector('.app-navigator');
+    if (!nav || nav.querySelector('.xlr-fof-nav')) return;
+    const link = document.createElement('a');
+    link.className = 'link-clean cf app-nav-link padding-h--16 padding-v--2 xlr-fof-nav';
+    link.title = 'Followed by your follows';
+    link.innerHTML = `<div class="obj-left margin-l--2"><i class="icon icon-medium"></i></div>
+      <div class="nbfc padding-ts hide-condensed txt-size--14 txt-bold app-nav-link-text">Followed by your follows</div>`;
+    link.querySelector('i').appendChild(leaderboardSvg.cloneNode(true));
+    link.onclick = () => { fofDialog.showModal(); loadFof(); };
+    nav.insertBefore(link, nav.querySelector('[data-drawer="accountSettings"]'));
+  }
+
   let scanQueued = false;
   const scan = () => {
     document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); injectNotes(a); });
@@ -1266,6 +1406,7 @@
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     processMediaModal();
+    injectFofNav();
     syncListColumns();
     updateButtonStates();
     scanQueued = false;
