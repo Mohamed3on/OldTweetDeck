@@ -633,7 +633,16 @@
      "withheld_description": "",
      "withheld_scope": ""
     },
-    "user_id_str": "2779389582"
+    "user_id_str": "2779389582",
+    "ext": {
+     "views": {
+      "r": {
+       "ok": {
+        "count": 457605
+       }
+      }
+     }
+    }
    },
    "quoted_status_id_str": "2114232104464835065",
    "quoted_status_permalink": {
@@ -942,7 +951,16 @@
        "withheld_description": "",
        "withheld_scope": ""
       },
-      "user_id_str": "2779389582"
+      "user_id_str": "2779389582",
+      "ext": {
+       "views": {
+        "r": {
+         "ok": {
+          "count": 457605
+         }
+        }
+       }
+      }
      },
      "quoted_status_id_str": "2114232104464835065",
      "quoted_status_permalink": {
@@ -1218,7 +1236,16 @@
         "withheld_description": "",
         "withheld_scope": ""
        },
-       "user_id_str": "2779389582"
+       "user_id_str": "2779389582",
+       "ext": {
+        "views": {
+         "r": {
+          "ok": {
+           "count": 457605
+          }
+         }
+        }
+       }
       },
       "rest_id": "2114232104464835065",
       "unmention_data": {},

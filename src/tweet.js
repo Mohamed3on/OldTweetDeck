@@ -1,8 +1,8 @@
 // The tweet adapter: X's GraphQL tweet results → the legacy v1.1 tweet objects TweetDeck's
 // TwitterStatus.fromJSONObject consumes (note-tweet expansion, Grok translation, quote
-// permalinks, card flattening), indexing handles and community notes on the way. A page
-// script injected just ahead of the local interception.js, whose routes and window.OTD use
-// it; exported for the bun fixture tests.
+// permalinks, card flattening), plus the handles and community notes it saw. A page script
+// injected just ahead of the local interception.js, whose routes and window.OTD use it;
+// exported for the bun fixture tests.
 
 // Reply-prefix mentions ("Replying to @x") sit before a tweet's display range. Whenever
 // we replace a tweet's text + entities (Grok translation, note-tweet expansion) the new
@@ -166,233 +166,86 @@ function hydrateUser(user, userResult) {
     if (userResult.verification?.verified) user.verified = true;
 }
 
-// Clicking a @mention/"Replying to" link makes TweetDeck resolve a user via the
-// legacy users/show.json (by screen_name) or users/lookup.json (by id) — both of
-// which x.com now Cloudflare-blocks, as do the UserByRestId/UsersByRestIds GraphQL
-// fallbacks. UserByScreenName is the only user endpoint still reachable, so we
-// route everything through it: screen_name straight through, and ids mapped back
-// to a handle harvested from tweets we've already parsed (handleById).
-
-const handleById = {};
-function indexHandle(id, screen_name) {
-    if (id && screen_name) handleById[String(id)] = screen_name;
-}
-function indexTweetHandles(t) {
-    if (!t) return;
-    if (t.user) indexHandle(t.user.id_str, t.user.screen_name);
-    for (let m of t.entities?.user_mentions ?? []) indexHandle(m.id_str, m.screen_name);
+// A note (long) tweet's full text and entities replace the cut legacy ones.
+function expandNote(legacy, node) {
+    let note = parseNoteTweet(node);
+    let implicit = captureReplyMentions(legacy);
+    legacy.full_text = legacy.text = note.text;
+    legacy.entities = note.entities;
+    legacy.display_text_range = undefined; // no text range for long tweets
+    attachReplyMentions(legacy.entities, implicit, note.text);
+    hideNoteAttachmentUrls(legacy, note);
 }
 
-// Community notes arrive as birdwatch_pivot on GraphQL tweet results, but the
-// legacy chirp TweetDeck builds (fromJSONObject) has no slot to carry them.
-// Index pivots by tweet id; xlr.js reads the map off the rendered DOM to draw them.
-const birdwatchById = {};
-function indexBirdwatch(result) {
-    if (result?.tweet) result = result.tweet;
-    let id = result?.legacy?.id_str ?? result?.rest_id;
-    if (id && result.birdwatch_pivot) birdwatchById[id] = result.birdwatch_pivot;
+// Peel a result down to the tweet node: reply limits arrive as limitedActionResults
+// wrapping the tweet, and visibility-filtered tweets as a { tweet } wrapper.
+function unwrapTweet(node) {
+    if (node?.limitedActionResults) {
+        let limitation = node.limitedActionResults.limited_actions.find((l) => l.action === "Reply");
+        if (limitation && node.tweet?.legacy) {
+            node.tweet.legacy.limited_actions_text = limitation.prompt
+                ? limitation.prompt.subtext.text
+                : "This tweet has limitations to who can reply.";
+        }
+        node = node.tweet;
+    }
+    if (node && !node.legacy && node.tweet) node = node.tweet;
+    return node;
 }
 
-function parseTweet(res) {
+// One tweet node (the top tweet, its retweet, either one's quote) → its legacy object with
+// ids, author, view count, card and expanded note text, then its own retweet and quote the
+// same way. Returns null for a node without a usable legacy tweet and author.
+// role is "top", "retweet" or "quote": only the top tweet carries a retweet, quotes carry no
+// quote of their own (TweetDeck renders one level), and only nested tweets' notes wait on
+// auto-expand.
+function adaptNode(raw, role, autoExpand) {
+    let node = unwrapTweet(raw);
+    let legacy = node?.legacy, author = node?.core?.user_results?.result;
+    if (!legacy || !author?.legacy) return null;
+    if (!legacy.id) legacy.id = +legacy.id_str;
+    legacy.conversation_id = +legacy.conversation_id_str;
+    legacy.text = legacy.full_text;
+    legacy.user = author.legacy;
+    legacy.user.id = +legacy.user_id_str;
+    legacy.user.id_str = legacy.user_id_str;
+    hydrateUser(legacy.user, author);
+    if (node.views) (legacy.ext ??= {}).views = { r: { ok: { count: +node.views.count } } };
+    if (node.card?.legacy?.binding_values) {
+        legacy.card = node.card.legacy;
+        let bvo = {};
+        for (let bv of legacy.card.binding_values) bvo[bv.key] = bv.value;
+        legacy.card.binding_values = bvo;
+    }
+    if (node.note_tweet?.note_tweet_results && (role === "top" || autoExpand)) expandNote(legacy, node);
+
+    let rt = role === "top" ? adaptNode(legacy.retweeted_status_result?.result, "retweet", autoExpand) : null;
+    if (rt) legacy.retweeted_status = rt.legacy;
+    let quote = role !== "quote" ? adaptNode(node.quoted_status_result?.result, "quote", autoExpand) : null;
+    if (quote) legacy.quoted_status = quote.legacy;
+    applyGrokTranslation(node, legacy);
+    return { node, legacy, rt, quote };
+}
+
+// The adapter. Pure: it works on a copy of the result, reads no settings of its own and
+// writes no globals. Returns { tweet, facts } or null, where facts are what callers index:
+//   handles: id → screen_name for every author and mention. Clicking a @mention/"Replying
+//     to" link makes TweetDeck resolve a user by id, and only UserByScreenName is still
+//     reachable (by-id lookups are Cloudflare-blocked), so ids map back to handles.
+//   notes: tweet id → birdwatch_pivot. Community notes have no slot in the legacy chirp
+//     fromJSONObject builds, so xlr.js draws them onto the rendered tweet from this map.
+function adaptTweet(result, { autoExpand = true } = {}) {
     try {
+        if (!result || typeof result !== "object") return null;
+        let top = adaptNode(structuredClone(result), "top", autoExpand);
+        if (!top) return null;
+        let { node: res, legacy: tweet } = top;
 
-        if (typeof res !== "object") return;
-        if (res.limitedActionResults) {
-            let limitation = res.limitedActionResults.limited_actions.find((l) => l.action === "Reply");
-            if (limitation) {
-                res.tweet.legacy.limited_actions_text = limitation.prompt
-                    ? limitation.prompt.subtext.text
-                    : "This tweet has limitations to who can reply.";
-            }
-            res = res.tweet;
-        }
-        if (!res.legacy && res.tweet) res = res.tweet;
-        let tweet = res.legacy;
-        if (!res.core || !tweet) return;
-        let result = res.core.user_results?.result;
-        if (!result?.legacy) return;
-        if(!tweet.id) {
-            tweet.id = +tweet.id_str;
-        }
-        tweet.conversation_id = +tweet.conversation_id_str;
-        tweet.text = tweet.full_text;
-        tweet.user = result.legacy;
-        tweet.user.id = +tweet.user_id_str;
-        tweet.user.id_str = tweet.user_id_str;
-        hydrateUser(tweet.user, result);
-
-        if (tweet.retweeted_status_result?.result) {
-            let result = tweet.retweeted_status_result.result;
-            if (result.limitedActionResults) {
-                let limitation = result.limitedActionResults.limited_actions.find(
-                    (l) => l.action === "Reply"
-                );
-                if (limitation) {
-                    result.tweet.legacy.limited_actions_text = limitation.prompt
-                        ? limitation.prompt.subtext.text
-                        : "This tweet has limitations to who can reply.";
-                }
-                result = result.tweet;
-            }
-            if (
-                result.quoted_status_result &&
-                result.quoted_status_result.result &&
-                result.quoted_status_result.result.legacy &&
-                result.quoted_status_result.result.core &&
-                result.quoted_status_result.result.core.user_results.result.legacy
-            ) {
-                result.legacy.quoted_status = result.quoted_status_result.result.legacy;
-                result.legacy.quoted_status.id = +result.legacy.quoted_status.id_str;
-                result.legacy.quoted_status.text = result.legacy.quoted_status.full_text;
-                result.legacy.quoted_status.conversation_id = +result.legacy.quoted_status.conversation_id_str;
-                if (result.legacy.quoted_status) {
-                    result.legacy.quoted_status.user =
-                        result.quoted_status_result.result.core.user_results.result.legacy;
-                    result.legacy.quoted_status.user.id_str = result.legacy.quoted_status.user_id_str;
-                    result.legacy.quoted_status.user.id = +result.legacy.quoted_status.user_id_str;
-                    let user_result = result?.quoted_status_result?.result?.core?.user_results?.result;
-                    hydrateUser(result.legacy.quoted_status.user, user_result);
-                } else {
-                    console.warn("No retweeted quoted status", result);
-                }
-            }
-            tweet.retweeted_status = result.legacy;
-            if (tweet.retweeted_status && result.core?.user_results?.result?.legacy) {
-                let user_result = result?.core?.user_results?.result;
-                tweet.retweeted_status.text = tweet.retweeted_status.full_text;
-                tweet.retweeted_status.id = +tweet.retweeted_status.id_str;
-                tweet.retweeted_status.conversation_id = +tweet.retweeted_status.conversation_id_str;
-                tweet.retweeted_status.user = user_result.legacy;
-                tweet.retweeted_status.user.id_str = tweet.retweeted_status.user_id_str;
-                tweet.retweeted_status.user.id = +tweet.retweeted_status.user_id_str;
-                hydrateUser(tweet.retweeted_status.user, user_result);
-                tweet.retweeted_status.ext = {};
-                if (result.views) {
-                    tweet.retweeted_status.ext.views = { r: { ok: { count: +result.views.count } } };
-                }
-                if (result.card && result.card.legacy && result.card.legacy.binding_values) {
-                    tweet.retweeted_status.card = result.card.legacy;
-                    let bvo = {};
-                    for (let bv of tweet.retweeted_status.card.binding_values) bvo[bv.key] = bv.value;
-                    tweet.retweeted_status.card.binding_values = bvo;
-                }
-            } else {
-                console.warn("No retweeted status", result);
-            }
-            if (result.note_tweet && result.note_tweet.note_tweet_results && localStorage.OTDenableAutoExpand === "1") {
-                let note = parseNoteTweet(result);
-                let implicit = captureReplyMentions(tweet.retweeted_status);
-                tweet.retweeted_status.full_text = note.text;
-                tweet.retweeted_status.entities = note.entities;
-                tweet.retweeted_status.display_text_range = undefined; // no text range for long tweets
-                attachReplyMentions(tweet.retweeted_status.entities, implicit, note.text);
-                hideNoteAttachmentUrls(tweet.retweeted_status, note);
-            }
-        }
-    
-        if (res.quoted_status_result) {
-            tweet.quoted_status_result = res.quoted_status_result;
-        }
-        if (res.note_tweet && res.note_tweet.note_tweet_results) {
-            let note = parseNoteTweet(res);
-            let implicit = captureReplyMentions(tweet);
-            tweet.full_text = note.text;
-            tweet.entities = note.entities;
-            tweet.display_text_range = undefined; // no text range for long tweets
-            attachReplyMentions(tweet.entities, implicit, note.text);
-            hideNoteAttachmentUrls(tweet, note);
-        }
-        if (tweet.quoted_status_result && tweet.quoted_status_result.result) {
-            let result = tweet.quoted_status_result.result;
-            if (!result.core && result.tweet) result = result.tweet;
-            if (result.limitedActionResults) {
-                let limitation = result.limitedActionResults.limited_actions.find(
-                    (l) => l.action === "Reply"
-                );
-                if (limitation) {
-                    result.tweet.legacy.limited_actions_text = limitation.prompt
-                        ? limitation.prompt.subtext.text
-                        : "This tweet has limitations to who can reply.";
-                }
-                result = result.tweet;
-            }
-            if(result && result.legacy && result.core?.user_results?.result?.legacy) {
-                tweet.quoted_status = result.legacy;
-                tweet.quoted_status.id = +tweet.quoted_status.id_str;
-                tweet.quoted_status.conversation_id = +tweet.quoted_status.conversation_id_str;
-                tweet.quoted_status.text = tweet.quoted_status.full_text;
-                if (tweet.quoted_status) {
-                    tweet.quoted_status.user = result.core.user_results.result.legacy;
-                    if (!tweet.quoted_status.user) {
-                        delete tweet.quoted_status;
-                    } else {
-                        tweet.quoted_status.user.id_str = tweet.quoted_status.user_id_str;
-                        tweet.quoted_status.user.id = +tweet.quoted_status.user_id_str;
-                        let user_result = result?.core?.user_results?.result;
-                        hydrateUser(tweet.quoted_status.user, user_result);
-                        tweet.quoted_status.ext = {};
-                        if (result.views) {
-                            tweet.quoted_status.ext.views = { r: { ok: { count: +result.views.count } } };
-                        }
-                        // A quoted note (long) tweet carries its full text in note_tweet, same as
-                        // the focal tweet (above) and retweets — but nothing expanded it here, so a
-                        // quoted long tweet (and its media-modal preview) showed the cut legacy text
-                        // until you opened the tweet itself. Expand it in place like the sibling paths.
-                        if (result.note_tweet && result.note_tweet.note_tweet_results && localStorage.OTDenableAutoExpand === "1") {
-                            let note = parseNoteTweet(result);
-                            let implicit = captureReplyMentions(tweet.quoted_status);
-                            tweet.quoted_status.full_text = note.text;
-                            tweet.quoted_status.text = note.text;
-                            tweet.quoted_status.entities = note.entities;
-                            tweet.quoted_status.display_text_range = undefined; // no text range for long tweets
-                            attachReplyMentions(tweet.quoted_status.entities, implicit, note.text);
-                            hideNoteAttachmentUrls(tweet.quoted_status, note);
-                        }
-                    }
-                } else {
-                    console.warn("No quoted status", result);
-                }
-            }
-        }
-        if (res.card && res.card.legacy) {
-            tweet.card = res.card.legacy;
-            let bvo = {};
-            for (let i = 0; i < tweet.card.binding_values.length; i++) {
-                let bv = tweet.card.binding_values[i];
-                bvo[bv.key] = bv.value;
-            }
-            tweet.card.binding_values = bvo;
-        }
-        if (res.views) {
-            if (!tweet.ext) tweet.ext = {};
-            tweet.ext.views = { r: { ok: { count: +res.views.count } } };
-        }
-        if (res.source) {
-            tweet.source = res.source;
-        }
-        if (res.birdwatch_pivot) {
-            // community notes
-            tweet.birdwatch = res.birdwatch_pivot;
-        }
-    
-        if (tweet.favorited && tweet.favorite_count === 0) {
-            tweet.favorite_count = 1;
-        }
-        if (tweet.retweeted && tweet.retweet_count === 0) {
-            tweet.retweet_count = 1;
-        }
-
-        applyGrokTranslation(res, tweet);
-        let rt = tweet.retweeted_status_result?.result;
-        if (rt?.tweet) rt = rt.tweet;
-        applyGrokTranslation(rt, tweet.retweeted_status);
-        applyGrokTranslation(tweet.quoted_status_result?.result, tweet.quoted_status);
-        applyGrokTranslation(rt?.quoted_status_result?.result, tweet.retweeted_status?.quoted_status);
-
-        indexBirdwatch(res);
-        indexBirdwatch(tweet.quoted_status_result?.result);
-        indexBirdwatch(rt);
-        indexBirdwatch(rt?.quoted_status_result?.result);
+        if (res.quoted_status_result) tweet.quoted_status_result = res.quoted_status_result;
+        if (res.source) tweet.source = res.source;
+        if (res.birdwatch_pivot) tweet.birdwatch = res.birdwatch_pivot; // community notes
+        if (tweet.favorited && tweet.favorite_count === 0) tweet.favorite_count = 1;
+        if (tweet.retweeted && tweet.retweet_count === 0) tweet.retweet_count = 1;
 
         // The quoted tweet is unavailable (suspended/deleted), so no card can render —
         // surface the permalink so the quote isn't silently dropped.
@@ -402,17 +255,22 @@ function parseTweet(res) {
             }
         }
 
-        // Harvest id->handle from every user + mention so the show/lookup routes can
-        // resolve reply-prefix recipients (which arrive as bare ids) by screen_name.
-        indexTweetHandles(tweet);
-        indexTweetHandles(tweet.retweeted_status);
-        indexTweetHandles(tweet.quoted_status);
-
-        return tweet;
+        let facts = { handles: {}, notes: {} };
+        for (let n of [top, top.quote, top.rt, top.rt?.quote]) {
+            let id = n?.legacy.id_str ?? n?.node.rest_id;
+            if (id && n.node.birdwatch_pivot) facts.notes[id] = n.node.birdwatch_pivot;
+        }
+        let handle = (id, screen_name) => { if (id && screen_name) facts.handles[String(id)] = screen_name; };
+        for (let t of [tweet, tweet.retweeted_status, tweet.quoted_status]) {
+            if (!t) continue;
+            if (t.user) handle(t.user.id_str, t.user.screen_name);
+            for (let m of t.entities?.user_mentions ?? []) handle(m.id_str, m.screen_name);
+        }
+        return { tweet, facts };
     } catch (e) {
-        console.error('error parsing tweet', e.message, 'stack:', e.stack, 'res:', JSON.stringify(res, null, 2)?.slice(0, 2000));
-        return;
+        console.error('error parsing tweet', e.message, 'stack:', e.stack, 'res:', JSON.stringify(result, null, 2)?.slice(0, 2000));
+        return null;
     }
 }
 
-if (typeof module !== 'undefined') module.exports = { parseTweet, handleById, birdwatchById };
+if (typeof module !== 'undefined') module.exports = { adaptTweet };

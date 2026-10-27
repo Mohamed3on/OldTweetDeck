@@ -1272,17 +1272,17 @@
   // so TweetDeck falls back to "This Tweet is unavailable". The tweet is still fetchable by
   // id, so re-fetch it, rebuild the quoted card through TweetDeck's own pipeline, and drop
   // in a subtle muted marker — rather than leaving the whole quote hidden.
-  // Fetch a single tweet by id and hand it to interception's parseTweet, yielding the legacy
-  // tweet object that TweetDeck.fromJSONObject expects. Cached (incl. nulls) so repeated
-  // column refreshes don't re-hit the API for the same quote.
+  // Fetch a single tweet by id; the raw result is cached (incl. nulls) so repeated column
+  // refreshes don't re-hit the API for the same quote. Each render adapts it afresh through
+  // interception's parseTweet: fromJSONObject converts entity indices to UTF-16 in place, so
+  // a legacy tweet must never be fed to it twice.
   const quoteCache = {};
-  const fetchQuotedLegacy = (id) => (quoteCache[id] ??= (async () => {
+  const fetchQuotedResult = (id) => (quoteCache[id] ??= (async () => {
     try {
       const j = await (await XApi.gql('TweetResultByRestId', { tweetId: id, withCommunity: false, includePromotedContent: false, withVoice: false })).json();
       let r = j?.data?.tweetResult?.result;
       if (r?.tweet) r = r.tweet;
-      if (!r || !r.legacy) return null;
-      return OTD.parseTweet(r) || null;
+      return r?.legacy ? r : null;
     } catch { return null; }
   })());
 
@@ -1299,7 +1299,8 @@
     const chirp = chirpFor(article);
     const qid = chirp?.quotedStatusId;
     if (!qid) return;
-    const legacy = await fetchQuotedLegacy(qid);
+    const result = await fetchQuotedResult(qid);
+    const legacy = result && OTD.parseTweet(result);
     const authorId = legacy?.user?.id_str;
     const c = prefClient();
     // Only un-hide when the author is genuinely muted — leave deleted/blocked quotes as-is.
@@ -1307,9 +1308,7 @@
     const placeholder = article.querySelector('.quoted-tweet-unavailable');
     if (!placeholder) return;
     try {
-      // fromJSONObject converts entity indices to UTF-16 in place, so give it a copy of the
-      // cached tweet — re-converting on a later render shifts links past an emoji into raw t.co text.
-      const ts = new TD.services.TwitterStatus(chirp.account).fromJSONObject(structuredClone(legacy));
+      const ts = new TD.services.TwitterStatus(chirp.account).fromJSONObject(legacy);
       chirp.setQuotedStatus(ts);
       const wrap = document.createElement('div');
       wrap.innerHTML = ts.renderQuotedTweet({ mediaPreviewSize: TD.vo.Column.MEDIA_PREVIEW_SIZE_MEDIUM });

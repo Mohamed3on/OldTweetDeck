@@ -173,6 +173,19 @@ function restoreState() {
     location.reload();
 }
 
+// What the tweet adapter (src/tweet.js) saw, indexed for later: id → handle for the
+// show/lookup routes, which can only resolve users by screen_name, and community notes
+// by tweet id for xlr.js to draw.
+const handleById = {};
+const birdwatchById = {};
+function parseTweet(result) {
+    const adapted = adaptTweet(result, { autoExpand: localStorage.OTDenableAutoExpand === "1" });
+    if (!adapted) return;
+    Object.assign(handleById, adapted.facts.handles);
+    Object.assign(birdwatchById, adapted.facts.notes);
+    return adapted.tweet;
+}
+
 // Flatten a UserByScreenName result into the legacy v1.1 user object that
 // TwitterUser.fromJSONObject (the show/lookup processor) expects.
 function userResultToLegacy(result) {
