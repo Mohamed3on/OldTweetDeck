@@ -774,7 +774,7 @@
   const hc = document.createElement('div');
   hc.className = 'xlr-hc';
   document.body.appendChild(hc);
-  let hcLink = null, hcShowT, hcHideT;
+  let hcLink = null, hcShowT, hcPrefT, hcHideT;
   const fmtCount = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format;
   const hcHandle = (a) => a?.getAttribute('href')?.match(/^https?:\/\/(?:twitter|x)\.com\/(\w{1,15})\/?$/)?.[1];
   // friendships/show per user, kept for the session so re-hovering doesn't refetch; a follow toggle drops it.
@@ -789,6 +789,7 @@
         .map(e => e.content?.itemContent?.user_results?.result).filter(Boolean)
         .map(r => ({ name: r.core?.name || r.legacy?.name, img: r.avatar?.image_url || r.legacy?.profile_image_url_https })),
     ).catch(() => { delete hcKnown[userId]; return []; });
+  const hcAvatar = (u) => u.profile_image_url_https.replace('_normal.', '_bigger.');
   const pinSvg = mkSvg('M12 7c-1.93 0-3.5 1.57-3.5 3.5S10.07 14 12 14s3.5-1.57 3.5-3.5S13.93 7 12 7zm0 5c-.827 0-1.5-.673-1.5-1.5S11.173 9 12 9s1.5.673 1.5 1.5S12.827 12 12 12zm0-10c-4.687 0-8.5 3.813-8.5 8.5 0 5.967 7.621 11.116 7.945 11.332l.555.37.555-.37c.324-.216 7.945-5.365 7.945-11.332C20.5 5.813 16.687 2 12 2zm0 17.77c-1.665-1.241-6.5-5.196-6.5-9.27C5.5 6.916 8.416 4 12 4s6.5 2.916 6.5 6.5c0 4.073-4.835 8.028-6.5 9.27z');
   const verifiedSvg = mkSvg('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z');
 
@@ -805,7 +806,7 @@
     head.href = `https://twitter.com/${username}`;
     // TweetDeck only opens its profile popup for user links inside its app, so click the original.
     head.onclick = (e) => { e.preventDefault(); hideHc(); link.click(); };
-    hc.querySelector('.xlr-hc-avatar').src = u.profile_image_url_https.replace('_normal.', '_bigger.');
+    hc.querySelector('.xlr-hc-avatar').src = hcAvatar(u);
     hc.querySelector('.xlr-hc-name').textContent = u.name;
     if (u.verified) hc.querySelector('.xlr-hc-name').appendChild(verifiedSvg.cloneNode(true));
     hc.querySelector('.xlr-hc-handle').textContent = '@' + username;
@@ -868,8 +869,20 @@
       chips.className = 'xlr-prf-chips';
       const addBtn = mkBtn('xlr-hc-add', 'Add to list', plusSvg);
       addBtn.append(document.createElement('span'));   // "Add to list" label, shown only with no chips
+      // showHc rebuilds the card on every open and renderChips redraws every chip, so only chips
+      // that weren't in the last render scale in (xlr-hc-chip-new); a removed one fades out first.
+      let prev = null;
       const renderChips = () => {
-        chips.replaceChildren(...[...(membershipCache[username] || [])].map(id => makeChip(id, username, renderChips)));
+        const ids = [...(membershipCache[username] || [])];
+        chips.replaceChildren(...ids.map((id) => {
+          const chip = makeChip(id, username, () => {
+            chip.classList.add('xlr-hc-chip-leaving');
+            setTimeout(renderChips, 180);
+          });
+          if (prev && !prev.has(id)) chip.classList.add('xlr-hc-chip-new');
+          return chip;
+        }));
+        prev = new Set(ids);
       };
       renderChips();
       addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
@@ -903,7 +916,7 @@
   }
 
   const hideHc = () => {
-    clearTimeout(hcShowT); clearTimeout(hcHideT);
+    clearTimeout(hcShowT); clearTimeout(hcPrefT); clearTimeout(hcHideT);
     if (popover.matches(':popover-open') && hc.contains(popoverAnchor)) return;
     hcLink = null;
     hc.classList.remove('xlr-hc-open', 'xlr-hc-instant');
@@ -916,20 +929,27 @@
     if (!name) return;
     clearTimeout(hcHideT);
     if (link === hcLink) return;
-    clearTimeout(hcShowT);
+    clearTimeout(hcShowT); clearTimeout(hcPrefT);
     const anchor = e.target.closest('img') || link;
     const open = hc.classList.contains('xlr-hc-open');
     const user = window.OTDuserByScreenName?.(name);
+    user?.then((u) => { if (u) new Image().src = hcAvatar(u); }, () => {});   // avatar loads during the delay
+    // Follow state and "Followed by" (which needs the user's id) take ~300ms on top of the user's
+    // ~250ms, so they start once the hover has lasted 200ms, and the card waits up to 250ms past its
+    // delay for them: it opens whole instead of growing a beat later. Slower ones fade in once open.
+    const extras = (u) => Promise.all([hcRel(name), u.id_str !== myId() && knownFollowers(u.id_str)]);
+    hcPrefT = setTimeout(() => user?.then((u) => u && extras(u), () => {}), open ? 0 : 200);
     hcShowT = setTimeout(async () => {
-      hcRel(name);   // intent confirmed: fetch the follow state alongside the user
       const u = await user?.catch(() => null);
-      if (u && link.matches(':hover')) showHc(link, anchor, u, open);
+      if (!u) return;
+      await Promise.race([extras(u), new Promise((r) => setTimeout(r, 250))]);
+      if (link.matches(':hover')) showHc(link, anchor, u, open);
     }, open ? 0 : 350);
   });
   document.addEventListener('mouseout', (e) => {
     const to = e.relatedTarget;
     if (to && (hc.contains(to) || hcHandle(to.closest?.('a[rel="user"]')))) return;
-    clearTimeout(hcShowT);
+    clearTimeout(hcShowT); clearTimeout(hcPrefT);
     clearTimeout(hcHideT);
     hcHideT = setTimeout(hideHc, 150);
   });

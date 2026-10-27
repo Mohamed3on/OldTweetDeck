@@ -832,7 +832,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   }
   &.xlr-hc-instant { transition: none; }
 }
-@media (prefers-reduced-motion: reduce) { .xlr-hc { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .xlr-hc, .xlr-hc .xlr-prf-chip { transform: none !important; } }
 
 /* x.com's hovercard layout: avatar and Follow share the top row, name and handle get the full
    width beneath, so a long name or the Follows you badge never squeezes the handle. The head link
@@ -844,7 +844,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   row-gap: 8px;
 }
 .xlr-hc-head { display: contents; color: inherit !important; text-decoration: none !important; }
-.xlr-hc-avatar { width: 48px; height: 48px; border-radius: 9999px; }
+.xlr-hc-avatar { width: 48px; height: 48px; border-radius: 9999px; background: rgba(255, 255, 255, 0.08); }
 .xlr-hc-names { grid-row: 2; grid-column: 1 / -1; display: flex; flex-direction: column; min-width: 0; }
 .xlr-hc .xlr-hc-follow { grid-row: 1; grid-column: 2; }
 .xlr-hc-name {
@@ -967,10 +967,13 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   font-weight: 500;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, opacity 0.18s cubic-bezier(0.23, 1, 0.32, 1), transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
   &:hover { background: rgba(255, 255, 255, 0.14); }
   &.xlr-inflight { opacity: 0.5; pointer-events: none; }
 }
+/* A chip added from the picker scales in; a removed one fades out before renderChips drops it. */
+@starting-style { .xlr-hc .xlr-hc-chip-new { opacity: 0; transform: scale(0.95); } }
+.xlr-hc .xlr-hc-chip-leaving { opacity: 0; transform: scale(0.95); pointer-events: none; }
 .xlr-hc .xlr-prf-chip-x,
 .xlr-hc .xlr-hc-add {
   -webkit-appearance: none;
