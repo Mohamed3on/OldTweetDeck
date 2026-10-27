@@ -923,6 +923,27 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   b { color: rgb(231, 233, 234); font-weight: 700; }
 }
 
+.xlr-hc-known {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgb(139, 152, 165);
+  animation: xlr-hc-fade 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  b { font-weight: 600; color: rgb(231, 233, 234); }
+  &:empty { display: none; }
+}
+.xlr-hc-known-avatars { display: flex; flex-shrink: 0; }
+.xlr-hc-known-avatars img {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid rgb(21, 24, 28);
+  & + img { margin-left: -7px; }
+}
+@keyframes xlr-hc-fade { from { opacity: 0; } }
+
 /* List chips: the profile popup's chips (makeChip), shrunk to the card. Scoped under .xlr-hc
    (0,2,0) to beat TweetDeck's `html.dark button` base, same as .xlr-prf-lists. */
 .xlr-hc-lists {

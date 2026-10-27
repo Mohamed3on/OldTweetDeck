@@ -4,6 +4,7 @@
     LIST_OWNERSHIPS: 'BBLgNbbUu6HXAX11lV_1Qw',
     LIST_ADD_MEMBER: 'vWPi0CTMoPFsjsL6W4IynQ',
     LIST_REMOVE_MEMBER: 'cAGvZIu7SW0YlLYynz3VYA',
+    FOLLOWERS_YOU_KNOW: '85KIcL0KntSKE-fEbKEV3w',
   };
   const FEATURES = {
     rweb_video_screen_enabled: false, profile_label_improvements_pcf_label_in_post_enabled: true,
@@ -779,6 +780,15 @@
   // friendships/show per user, kept for the session so re-hovering doesn't refetch; a follow toggle drops it.
   const hcRels = {};
   const hcRel = (name) => hcRels[name.toLowerCase()] ??= fetchRelationship(name);
+  // FollowersYouKnow: the people you follow who follow this account (x.com's "Followed by …",
+  // 500 calls / 15 min). No total comes back, so one 50-user page is the count, "+" when it's full.
+  const hcKnown = {};
+  const knownFollowers = (userId) => hcKnown[userId] ??= gql(QID.FOLLOWERS_YOU_KNOW, 'FollowersYouKnow',
+    { userId, count: 50, includePromotedContent: false }).then((data) =>
+      (data?.data?.user?.result?.timeline?.timeline?.instructions || []).flatMap(i => i.entries || [])
+        .map(e => e.content?.itemContent?.user_results?.result).filter(Boolean)
+        .map(r => ({ name: r.core?.name || r.legacy?.name, img: r.avatar?.image_url || r.legacy?.profile_image_url_https })),
+    ).catch(() => { delete hcKnown[userId]; return []; });
   const pinSvg = mkSvg('M12 7c-1.93 0-3.5 1.57-3.5 3.5S10.07 14 12 14s3.5-1.57 3.5-3.5S13.93 7 12 7zm0 5c-.827 0-1.5-.673-1.5-1.5S11.173 9 12 9s1.5.673 1.5 1.5S12.827 12 12 12zm0-10c-4.687 0-8.5 3.813-8.5 8.5 0 5.967 7.621 11.116 7.945 11.332l.555.37.555-.37c.324-.216 7.945-5.365 7.945-11.332C20.5 5.813 16.687 2 12 2zm0 17.77c-1.665-1.241-6.5-5.196-6.5-9.27C5.5 6.916 8.416 4 12 4s6.5 2.916 6.5 6.5c0 4.073-4.835 8.028-6.5 9.27z');
   const verifiedSvg = mkSvg('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z');
 
@@ -789,7 +799,8 @@
       <span class="xlr-hc-names"><b class="xlr-hc-name"></b><span class="xlr-hc-sub"><span class="xlr-hc-handle"></span>
       <span class="xlr-hc-fy" hidden>Follows you</span></span></span></a></div>
       <p class="xlr-hc-bio"></p><div class="xlr-hc-loc"></div>
-      <div class="xlr-hc-stats"><span><b></b> Following</span><span><b></b> Followers</span></div>`;
+      <div class="xlr-hc-stats"><span><b></b> Following</span><span><b></b> Followers</span></div>
+      <div class="xlr-hc-known"></div>`;
     const head = hc.querySelector('.xlr-hc-head');
     head.href = `https://twitter.com/${username}`;
     // TweetDeck only opens its profile popup for user links inside its app, so click the original.
@@ -805,6 +816,22 @@
     const [following, followers] = hc.querySelectorAll('.xlr-hc-stats b');
     following.textContent = fmtCount(u.friends_count);
     followers.textContent = fmtCount(u.followers_count);
+
+    // "Followed by A, B and N others you follow", led by up to three of their avatars.
+    const known = hc.querySelector('.xlr-hc-known');
+    if (u.id_str !== myId()) knownFollowers(u.id_str).then((users) => {
+      if (!users.length) return;
+      const n = users.length - 2, more = users.length >= 50 ? '+' : '';
+      const b = (t) => Object.assign(document.createElement('b'), { textContent: t });
+      const avatars = document.createElement('span');
+      avatars.className = 'xlr-hc-known-avatars';
+      avatars.append(...users.slice(0, 3).map(k => Object.assign(document.createElement('img'), { src: k.img, alt: '' })));
+      const text = document.createElement('span');
+      text.append('Followed by ', b(users[0].name));
+      if (users.length === 2) text.append(' and ', b(users[1].name));
+      if (n > 0) text.append(', ', b(users[1].name), ` and ${n}${more} other${n === 1 && !more ? '' : 's'} you follow`);
+      known.append(avatars, text);
+    });
 
     // Follow pill, as in the profile popup: following an account re-reads the relationship so a
     // protected one lands on "Requested". Not shown on your own card or someone you block.
