@@ -173,64 +173,36 @@ function restoreState() {
     location.reload();
 }
 
-// What the tweet adapter (src/tweet.js) saw, indexed for later: id → handle for the
-// show/lookup routes, which can only resolve users by screen_name, and community notes
-// by tweet id for xlr.js to draw.
-const handleById = {};
+// What the tweet adapter (src/tweet.js) saw, indexed for later: id → handle into the user
+// directory for the show/lookup routes, which can only resolve users by screen_name, and
+// community notes by tweet id for xlr.js to draw.
 const birdwatchById = {};
 function parseTweet(result) {
     const adapted = adaptTweet(result, { autoExpand: localStorage.OTDenableAutoExpand === "1" });
     if (!adapted) return;
-    Object.assign(handleById, adapted.facts.handles);
+    userDir.learn(adapted.facts.handles);
     Object.assign(birdwatchById, adapted.facts.notes);
     return adapted.tweet;
 }
 
-// Flatten a UserByScreenName result into the legacy v1.1 user object that
-// TwitterUser.fromJSONObject (the show/lookup processor) expects.
-function userResultToLegacy(result) {
-    if (!result || result.__typename === "UserUnavailable" || !result.legacy) return null;
-    let user = result.legacy;
-    user.id_str = result.rest_id;
-    user.id = +result.rest_id;
-    hydrateUser(user, result);
-    // fromJSONObject calls .replace on profile_image_url_https unconditionally.
-    if (!user.profile_image_url_https) {
-        user.profile_image_url_https = "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png";
-    }
-    return user;
-}
-
-const userByNameCache = {};
-function fetchUserByScreenName(screen_name) {
-    let key = screen_name.toLowerCase();
-    if (userByNameCache[key]) return userByNameCache[key];
-    let p = (async () => {
-        let res = await XApi.gql("UserByScreenName", { screen_name });
-        let data = await res.json();
-        return userResultToLegacy(data?.data?.user?.result);
-    })();
-    p.catch(() => { delete userByNameCache[key]; });
-    userByNameCache[key] = p;
-    return p;
-}
+// Who users are (src/users.js): me, handle ↔ id, lookups through UserByScreenName,
+// relationships and user actions. Shared with xlr.js as OTD.users.
+const userDir = createUserDirectory({
+    request: XApi,
+    storage: localStorage,
+    toLegacy: userResultToLegacy,
+    fallbackId: () => verifiedUser?.id_str ?? localStorage.twitterAccountID,
+});
 
 // Everything xlr.js takes from interception, on one namespace. The remote upstream
 // interception (OTDalwaysUseLocalFiles = "0") doesn't set it, and xlr switches off what
 // depends on it.
 //   parseTweet: rebuild a quoted tweet X stripped from search/list results (muted authors)
 //     into the legacy shape TweetDeck's fromJSONObject consumes
-//   userByScreenName: list/mute/block-by-handle and hover cards resolve users through this
-//     one UserByScreenName cache, not a second copy
+//   users: the user directory, so list/mute/block-by-handle, hover cards and profile
+//     actions share one cache, not a second copy
 //   birdwatch: community-note pivots by tweet id, drawn onto rendered tweets
-window.OTD = { parseTweet, userByScreenName: fetchUserByScreenName, birdwatch: birdwatchById };
-
-function getCurrentUserId() {
-    let accounts = TD.storage.accountController.getAll();
-    let screen_name = TD.storage.accountController.getUserIdentifier();
-    let account = accounts.find((account) => account.state.username === screen_name);
-    return account?.state?.userId ?? verifiedUser?.id_str ?? localStorage.twitterAccountID;
-}
+window.OTD = { parseTweet, users: userDir, birdwatch: birdwatchById };
 
 // Build the TweetDetail GraphQL URL, shared by the statuses/show routes (focal tweet only)
 // and the conversation route (focal tweet + reply thread). `extra` merges in per-route
@@ -580,7 +552,7 @@ const proxyRoutes = [
     timelineRoute({
         path: "/1.1/statuses/home_timeline.json",
         post: true, // GraphQL HomeLatestTimeline only accepts POST; the original XHR was GET.
-        stream: (params, xhr) => `home-${xhr.storage.user_id = params.get("user_id") ?? getCurrentUserId()}`,
+        stream: (params, xhr) => `home-${xhr.storage.user_id = params.get("user_id") ?? userDir.me()}`,
         floor: (xhr) => streamFloor("home", xhr.storage.user_id),
         request: (xhr, params, cursor) => {
             let variables = {"count":40,"enableRanking":false,"includePromotedContent":false,"requestContext":"launch","seenTweetIds":[]};
@@ -607,7 +579,7 @@ const proxyRoutes = [
     // User timeline
     timelineRoute({
         path: "/1.1/statuses/user_timeline.json",
-        stream: (params, xhr) => `user-${xhr.storage.user_id = params.get("user_id") || getCurrentUserId()}`,
+        stream: (params, xhr) => `user-${xhr.storage.user_id = params.get("user_id") || userDir.me()}`,
         floor: pollFloor,
         request: (xhr, params, cursor) => {
             let variables = {
@@ -671,7 +643,7 @@ const proxyRoutes = [
     // Notifications column
     timelineRoute({
         path: "/1.1/activity/about_me.json",
-        stream: (params) => `notifications-${params.get("user_id") ?? getCurrentUserId()}`,
+        stream: (params) => `notifications-${params.get("user_id") ?? userDir.me()}`,
         request: (xhr, params, cursor) => {
             xhr.modUrl = `https://${location.hostname}/i/api/2/notifications/all.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=20&requestContext=launch&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl${cursor ? `&cursor=${cursor}` : ''}`;
         },
@@ -812,7 +784,7 @@ const proxyRoutes = [
     // Mentions timeline
     timelineRoute({
         path: "/1.1/statuses/mentions_timeline.json",
-        stream: (params) => `mentions-${params.get("user_id") ?? getCurrentUserId()}`,
+        stream: (params) => `mentions-${params.get("user_id") ?? userDir.me()}`,
         request: (xhr, params, cursor) => {
             xhr.modUrl = `https://${location.hostname}/i/api/2/notifications/mentions.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=20&requestContext=launch&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl${cursor ? `&cursor=${cursor}` : ''}`;
         },
@@ -849,7 +821,7 @@ const proxyRoutes = [
     // User likes timeline
     timelineRoute({
         path: "/1.1/favorites/list.json",
-        stream: (params, xhr) => `likes-${xhr.storage.user_id = params.get("user_id") ?? getCurrentUserId()}`,
+        stream: (params, xhr) => `likes-${xhr.storage.user_id = params.get("user_id") ?? userDir.me()}`,
         request: (xhr, params, cursor) => {
             let variables = {
                 "userId": xhr.storage.user_id,
@@ -910,8 +882,8 @@ const proxyRoutes = [
             return "";
         },
     },
-    // User profile — resolve through UserByScreenName (see fetchUserByScreenName).
-    // Mentions hit this with screen_name; the rare user_id form maps via handleById.
+    // User profile — resolve through UserByScreenName (see src/users.js).
+    // Mentions hit this with screen_name; the rare user_id form maps via handleFor.
     {
         path: "/1.1/users/show.json",
         method: "GET",
@@ -920,8 +892,8 @@ const proxyRoutes = [
             let status = 200, body;
             try {
                 let params = new URLSearchParams(new URL(xhr.originalUrl).search);
-                let screen_name = params.get("screen_name") || handleById[params.get("user_id")];
-                let user = screen_name ? await fetchUserByScreenName(screen_name) : null;
+                let screen_name = params.get("screen_name") || userDir.handleFor(params.get("user_id"));
+                let user = screen_name ? await userDir.byHandle(screen_name) : null;
                 if (user) {
                     body = JSON.stringify(user);
                 } else {
@@ -950,8 +922,8 @@ const proxyRoutes = [
             try {
                 let raw = new URLSearchParams(body || "").get("user_id")
                     || new URLSearchParams(new URL(xhr.originalUrl).search).get("user_id") || "";
-                let names = raw.split(",").map((id) => handleById[id.trim()]).filter(Boolean);
-                let resolved = await Promise.all(names.map((n) => fetchUserByScreenName(n).catch(() => null)));
+                let names = raw.split(",").map((id) => userDir.handleFor(id.trim())).filter(Boolean);
+                let resolved = await Promise.all(names.map((n) => userDir.byHandle(n).catch(() => null)));
                 users = resolved.filter(Boolean);
             } catch (e) {
                 console.error("OTD users/lookup.json", e);
@@ -1116,7 +1088,7 @@ const proxyRoutes = [
             xhr.storage.tweet_id = originalUrl.pathname.match(
                 /\/1.1\/statuses\/retweet\/(\d+).json/
             )[1];
-            xhr.storage.retweeter = getCurrentUserId();
+            xhr.storage.retweeter = userDir.me();
             xhr.modUrl = XApi.url("CreateRetweet");
         },
         beforeSendHeaders: (xhr) => {
@@ -1154,7 +1126,7 @@ const proxyRoutes = [
             xhr.storage.tweet_id = originalUrl.pathname.match(
                 /\/1.1\/statuses\/unretweet\/(\d+).json/
             )[1];
-            xhr.storage.retweeter = getCurrentUserId();
+            xhr.storage.retweeter = userDir.me();
             xhr.modUrl = XApi.url("DeleteRetweet");
         },
         beforeSendHeaders: (xhr) => {
@@ -1473,10 +1445,9 @@ const proxyRoutes = [
         openHandler: () => {},
         sendHandler: emulateResponse,
         afterRequest: (xhr) => {
-            // verifiedUser may be unset if verify_credentials raced or errored this
-            // session; fall back to the persisted account id so the state bootstrap
-            // never throws — a throw here aborts the load and wipes the saved layout.
-            const accountId = verifiedUser?.id_str ?? localStorage.twitterAccountID;
+            // me() falls back to verify_credentials and then the persisted account id, so
+            // the state bootstrap never throws — a throw here aborts the load.
+            const accountId = userDir.me();
             OTDLayout.prune();
             const layout = OTDLayout.get();
             const state = {

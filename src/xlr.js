@@ -1,15 +1,14 @@
 (() => {
   // interception.js's exports (see window.OTD there). Absent under the remote upstream
-  // interception: community notes, muted-quote recovery and user lookups are then off.
+  // interception: community notes and muted-quote recovery are then off, and users resolve
+  // only from ids already persisted, through a directory of our own without lookups.
   const OTD = window.OTD;
-  if (!OTD) console.warn('OTD: upstream interception.js is loaded; community notes, muted-quote recovery and user lookups are off');
-
-  const myId = () => document.cookie.match(/twid=u%3D(\d+)/)?.[1];
+  if (!OTD) console.warn('OTD: upstream interception.js is loaded; community notes, muted-quote recovery and new user lookups are off');
+  const users = OTD?.users ?? createUserDirectory({ request: XApi, storage: localStorage, toLegacy: () => null });
   let lists = null, listsByName = null;
   const buildByName = (ls) => Object.fromEntries(ls.map(l => [l.name.toLowerCase(), l.id]));
 
   const LIST_CACHE_TTL = 1000 * 60 * 60 * 24;
-  let userIds = {};
 
   const listsReady = (async () => {
     try {
@@ -30,27 +29,6 @@
     if (lists.length) localStorage.setItem('xlrLists_v3', JSON.stringify({ lists, ts: Date.now() }));
   })();
 
-  try { userIds = JSON.parse(localStorage.getItem('xlrUserIds')) || {}; } catch {}
-  const persistUserIds = () => localStorage.setItem('xlrUserIds', JSON.stringify(userIds));
-
-  const userIdInflight = {};
-  const resolveUser = async (name) => {
-    if (userIds[name]) return userIds[name];
-    if (!OTD) return;
-    if (userIdInflight[name]) return userIdInflight[name];
-    userIdInflight[name] = (async () => {
-      try {
-        const user = await OTD.userByScreenName(name);
-        const id = user?.id_str;
-        if (id) { userIds[name] = id; persistUserIds(); }
-        return id;
-      } finally {
-        delete userIdInflight[name];
-      }
-    })();
-    return userIdInflight[name];
-  };
-
   // Persisted so a profile shows its list chips the moment it opens. Our own adds/removes patch it
   // (updateMembership), but membership can also change outside OTD, so each user is still refetched
   // once per session (membershipFresh).
@@ -66,10 +44,10 @@
     if (membershipInflight[username]) return membershipInflight[username];
     membershipInflight[username] = (async () => {
       try {
-        const userId = await resolveUser(username);
+        const userId = await users.idFor(username);
         if (!userId) return new Set();
         const data = await (await XApi.gql('ListOwnerships', {
-          userId: myId(), isListMemberTargetUserId: userId, count: 100, includePromotedContent: false,
+          userId: users.me(), isListMemberTargetUserId: userId, count: 100, includePromotedContent: false,
         })).json();
         const memberOf = new Set();
         for (const inst of data?.data?.user?.result?.timeline?.timeline?.instructions || []) {
@@ -98,7 +76,7 @@
   const listName = (id) => (lists.find(l => l.id === id) || {}).name;
 
   const removeFromList = async (username, listId) => {
-    const userId = await resolveUser(username);
+    const userId = await users.idFor(username);
     if (!userId) return false;
     const r = await XApi.gql('ListRemoveMember', { listId, userId });
     if (r.ok) updateMembership(username, listId, false);
@@ -263,30 +241,25 @@
 
   // Muted state mirrors TweetDeck's own client.mutes cache (keyed by user id) — the same
   // source its native dropdown trusts, so it's accurate even when the timeline API's
-  // user.muting flag is stale. The author is in TD.cache once their tweet has rendered,
-  // so getByScreenName resolves synchronously here.
+  // user.muting flag is stale. The author's id is known once their tweet has been parsed,
+  // so this stays synchronous.
   const prefClient = () => { try { return TD.controller.clients.getPreferredClient('twitter'); } catch { return null; } };
-  const cachedUser = (name) => {
-    let u = null;
-    try { TD.cache.twitterUsers.getByScreenName(name).addCallback(x => { u = x; }); } catch {}
-    return u;
-  };
   const isMuted = (name) => {
-    const c = prefClient(), u = cachedUser(name);
-    return !!(c && u && c.mutes[u.id]);
+    const c = prefClient(), id = users.known(name);
+    return !!(c && id && c.mutes[id]);
   };
   const setClientMute = (name, muted) => {
-    const c = prefClient(), u = cachedUser(name);
-    if (c && u) muted ? (c.mutes[u.id] = true) : (delete c.mutes[u.id]);
+    const c = prefClient(), id = users.known(name);
+    if (c && id) muted ? (c.mutes[id] = true) : (delete c.mutes[id]);
   };
 
+  // Mute (optionally dropping them from every list of yours) and unmute, keeping TweetDeck's
+  // client.mutes in step.
   const muteUser = async (username, { delist = true } = {}) => {
-    const userId = await resolveUser(username);
-    if (!userId) return false;
-    const r = await XApi.rest('/1.1/mutes/users/create.json', { user_id: userId });
-    if (!r.ok) return false;
+    if (!(await users.act(username, 'mute'))) return false;
     setClientMute(username, true);
     if (delist) {
+      const userId = users.known(username);
       const memberOf = await fetchMembership(username);
       await Promise.all([...memberOf].map(listId =>
         XApi.gql('ListRemoveMember', { listId, userId })
@@ -297,51 +270,9 @@
   };
 
   const unmuteUser = async (username) => {
-    const userId = await resolveUser(username);
-    if (!userId) return false;
-    const r = await XApi.rest('/1.1/mutes/users/destroy.json', { user_id: userId });
-    if (!r.ok) return false;
+    if (!(await users.act(username, 'unmute'))) return false;
     setClientMute(username, false);
     return true;
-  };
-
-  const followUser = async (username) => {
-    const userId = await resolveUser(username);
-    return !!(userId && (await XApi.rest('/1.1/friendships/create.json', { user_id: userId })).ok);
-  };
-  const unfollowUser = async (username) => {
-    const userId = await resolveUser(username);
-    return !!(userId && (await XApi.rest('/1.1/friendships/destroy.json', { user_id: userId })).ok);
-  };
-
-  const blockUser = async (username) => {
-    const userId = await resolveUser(username);
-    if (!userId) return false;
-    return (await XApi.rest('/1.1/blocks/create.json', { user_id: userId })).ok;
-  };
-
-  const unblockUser = async (username) => {
-    const userId = await resolveUser(username);
-    if (!userId) return false;
-    return (await XApi.rest('/1.1/blocks/destroy.json', { user_id: userId })).ok;
-  };
-
-  // friendships/update toggles the per-user "show Retweets" preference (source.want_retweets
-  // in friendships/show) — retweets:false hides their RTs from the timeline like the native
-  // follow dropdown's "Turn off Retweets".
-  const setUserRetweets = async (username, want) => {
-    const userId = await resolveUser(username);
-    if (!userId) return false;
-    return (await XApi.rest('/1.1/friendships/update.json', { id: userId, retweets: want })).ok;
-  };
-
-  // friendships/show is the same source TweetDeck's follow-state uses; source.muting /
-  // source.blocking give authoritative mute/block state for the profile action toggles.
-  const fetchRelationship = async (username) => {
-    try {
-      const r = await XApi.get(`/1.1/friendships/show.json?target_screen_name=${encodeURIComponent(username)}`);
-      return (await r.json())?.relationship?.source || {};
-    } catch { return {}; }
   };
 
   // Acted-on pill with an Undo — "Unfollowed @user · Undo". No grace period: the action has already
@@ -376,10 +307,10 @@
   // After you drop someone from your world (delist or mute), you often want them fully gone — if you
   // still follow them, unfollow in the same gesture, with an Undo pill in case that wasn't wanted.
   const offerUnfollow = async (username, onUnfollowed) => {
-    const rel = await fetchRelationship(username);
-    if (!rel.following || !(await unfollowUser(username))) return;
+    const rel = await users.relationship(username, { fresh: true });
+    if (!rel.following || !(await users.act(username, 'unfollow'))) return;
     onUnfollowed?.();
-    showUndo('Unfollowed', '@' + username, () => followUser(username));
+    showUndo('Unfollowed', '@' + username, () => users.act(username, 'follow'));
   };
 
   let popover = document.createElement('div');
@@ -400,7 +331,7 @@
     item.onclick = withBusy(item, 'xlr-inflight', async () => {
       const removing = item.classList.contains('xlr-dropdown-done');
       setItemState(item, !removing);
-      const userId = await resolveUser(username);
+      const userId = await users.idFor(username);
       const r = await XApi.gql(removing ? 'ListRemoveMember' : 'ListAddMember', { listId: id, userId });
       if (r.ok) { updateMembership(username, id, !removing); onToggle?.(); }
       else setItemState(item, removing);
@@ -513,7 +444,7 @@
     if (listId) {
       const removeBtn = mkBtn('xlr-remove-btn', 'Remove from list', removeSvg);
       removeBtn.onclick = withBusy(removeBtn, 'xlr-removing', async () => {
-        const userId = await resolveUser(username);
+        const userId = await users.idFor(username);
         if (!userId) return;
         const r = await XApi.gql('ListRemoveMember', { listId, userId });
         if (!r.ok) return;
@@ -605,7 +536,7 @@
 
     // The numeric id is right on the actions menu, so seed the cache and skip the lookup.
     const domId = actions.querySelector('.js-user-actions-menu[data-user-id]')?.dataset.userId;
-    if (domId && !userIds[username]) { userIds[username] = domId; persistUserIds(); }
+    if (domId) users.learn({ [domId]: username });
 
     const section = document.createElement('div');
     // A cached membership renders at once (and refreshes below); only an unseen user's row loads.
@@ -654,12 +585,12 @@
     const follow = followState && username.toLowerCase() !== selfName &&
       makeToggle('xlr-prf-follow', 'Follow', 'Following', false, async (active) => {
         if (!active) {
-          if (!(await followUser(username))) return false;
-          const rel = await fetchRelationship(username);
+          if (!(await users.act(username, 'follow'))) return false;
+          const rel = await users.relationship(username);
           applyFollow(rel.following || rel.following_requested ? rel : { following: true });
           return false;   // applyFollow already set the state
         }
-        const ok = await unfollowUser(username);
+        const ok = await users.act(username, 'unfollow');
         if (ok) follow.btn.classList.remove('xlr-requested');
         return ok;
       });
@@ -675,12 +606,12 @@
 
     // Blocking also drops the follow: the Follow pill hides while blocked and comes back on unblock.
     const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, (active) =>
-      (active ? unblockUser(username) : blockUser(username))
+      users.act(username, active ? 'unblock' : 'block')
         .then((ok) => { if (ok) applyFollow({ following: false, blocking: !active }); return ok; }));
     block.btn.classList.add('xlr-loading');
     // active = retweets hidden (want_retweets false); clicking passes the desired want_retweets.
     const rts = makeToggle('xlr-prf-rts', 'Turn off Retweets', 'Turn on Retweets', false,
-      (active) => setUserRetweets(username, active), retweetSvg.cloneNode(true));
+      (active) => users.act(username, active ? 'showRetweets' : 'hideRetweets'), retweetSvg.cloneNode(true));
     rts.btn.classList.add('xlr-loading');
 
     const row = document.createElement('div');
@@ -692,7 +623,7 @@
       section.classList.remove('xlr-prf-loading');
       renderChips();
     });
-    fetchRelationship(username).then((rel) => {
+    users.relationship(username, { fresh: true }).then((rel) => {
       mute.set(!!rel.muting);
       block.set(!!rel.blocking);
       rts.set(rel.want_retweets === false);
@@ -714,9 +645,6 @@
   let hcLink = null, hcAnchor = null, hcCtx = null, hcShowT, hcPrefT, hcHideT;
   const fmtCount = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format;
   const hcHandle = (a) => a?.getAttribute('href')?.match(/^https?:\/\/(?:twitter|x)\.com\/(\w{1,15})\/?$/)?.[1];
-  // friendships/show per user, kept for the session so re-hovering doesn't refetch; a follow toggle drops it.
-  const hcRels = {};
-  const hcRel = (name) => hcRels[name.toLowerCase()] ??= fetchRelationship(name);
   // FollowersYouKnow: the people you follow who follow this account (x.com's "Followed by …",
   // 500 calls / 15 min). No total comes back, so one 50-user page is the count, "+" when it's full.
   const hcKnown = {};
@@ -755,7 +683,6 @@
   // unless a bio mention swapped the card), where its clicks are replayed.
   function showHc(link, anchor, u, instant, ctx) {
     const username = u.screen_name;
-    if (u.id_str && !userIds[username]) { userIds[username] = u.id_str; persistUserIds(); }
     hc.innerHTML = `<div class="xlr-hc-top"><a class="xlr-hc-head" rel="user" target="_blank"><img class="xlr-hc-avatar" alt="">
       <span class="xlr-hc-names"><b class="xlr-hc-name"></b><span class="xlr-hc-sub"><span class="xlr-hc-handle"></span>
       <span class="xlr-hc-fy" hidden>Follows you</span></span></span></a></div>
@@ -776,28 +703,27 @@
 
     // "Followed by A, B and N others you follow", led by up to three of their avatars.
     const known = hc.querySelector('.xlr-hc-known');
-    if (u.id_str !== myId()) knownFollowers(u.id_str).then((users) => {
-      if (!users.length) return;
-      const n = users.length - 2, more = users.length >= 50 ? '+' : '';
+    if (u.id_str !== users.me()) knownFollowers(u.id_str).then((followers) => {
+      if (!followers.length) return;
+      const n = followers.length - 2, more = followers.length >= 50 ? '+' : '';
       const b = (t) => Object.assign(document.createElement('b'), { textContent: t });
       const avatars = document.createElement('span');
       avatars.className = 'xlr-hc-known-avatars';
-      avatars.append(...users.slice(0, 3).map(k => Object.assign(document.createElement('img'), { src: k.img, alt: '' })));
+      avatars.append(...followers.slice(0, 3).map(k => Object.assign(document.createElement('img'), { src: k.img, alt: '' })));
       const text = document.createElement('span');
-      text.append('Followed by ', b(users[0].name));
-      if (users.length === 2) text.append(' and ', b(users[1].name));
-      if (n > 0) text.append(', ', b(users[1].name), ` and ${n}${more} other${n === 1 && !more ? '' : 's'} you follow`);
+      text.append('Followed by ', b(followers[0].name));
+      if (followers.length === 2) text.append(' and ', b(followers[1].name));
+      if (n > 0) text.append(', ', b(followers[1].name), ` and ${n}${more} other${n === 1 && !more ? '' : 's'} you follow`);
       known.append(avatars, text);
     });
 
     // Follow pill, as in the profile popup: following an account re-reads the relationship so a
     // protected one lands on "Requested". Not shown on your own card or someone you block.
-    if (u.id_str !== myId()) {
+    if (u.id_str !== users.me()) {
       const follow = makeToggle('xlr-hc-follow', 'Follow', 'Following', false, async (active) => {
-        delete hcRels[username.toLowerCase()];
-        if (active) return unfollowUser(username);
-        if (!(await followUser(username))) return false;
-        const rel = await hcRel(username);
+        if (active) return users.act(username, 'unfollow');
+        if (!(await users.act(username, 'follow'))) return false;
+        const rel = await users.relationship(username);
         applyRel(rel.following || rel.following_requested ? rel : { following: true });
         return false;   // applyRel already set the state
       });
@@ -811,7 +737,7 @@
       follow.btn.classList.add('xlr-loading');
       hc.querySelector('.xlr-hc-top').appendChild(follow.btn);
       const fy = hc.querySelector('.xlr-hc-fy');
-      hcRel(username).then((rel) => {
+      users.relationship(username).then((rel) => {
         applyRel(rel);
         fy.hidden = !rel.followed_by;
         follow.btn.classList.remove('xlr-loading');
@@ -904,12 +830,12 @@
     const anchor = inCard ? hcAnchor : e.target.closest('img') || link;
     const ctx = inCard ? hcCtx : link;
     const open = hc.classList.contains('xlr-hc-open'), delay = open && !inCard ? 0 : 350;
-    const user = OTD?.userByScreenName(name);
+    const user = users.byHandle(name);
     user?.then((u) => { if (u) new Image().src = hcAvatar(u); }, () => {});   // avatar loads during the delay
     // Follow state and "Followed by" (which needs the user's id) take ~300ms on top of the user's
     // ~250ms, so they start once the hover has lasted 200ms, and the card waits up to 250ms past its
     // delay for them: it opens whole instead of growing a beat later. Slower ones fade in once open.
-    const extras = (u) => Promise.all([hcRel(name), u.id_str !== myId() && knownFollowers(u.id_str)]);
+    const extras = (u) => Promise.all([users.relationship(name), u.id_str !== users.me() && knownFollowers(u.id_str)]);
     hcPrefT = setTimeout(() => user?.then((u) => u && extras(u), () => {}), delay ? 200 : 0);
     hcShowT = setTimeout(async () => {
       const u = await user?.catch(() => null);
@@ -1431,7 +1357,7 @@
   // The ranking itself, plus for each follow (and you) which ranked accounts its friends/list would
   // name and how many pages that costs, so names can keep filling in on later opens.
   async function buildFof(progress) {
-    const me = myId(), mine = await friendIds(me), graph = { [me]: mine };
+    const me = users.me(), mine = await friendIds(me), graph = { [me]: mine };
     for (let i = 0; i < mine.length; i += 10) {
       await Promise.all(mine.slice(i, i + 10).map(async (u) => { graph[u] = await friendIds(u); }));
       progress(`Reading follow lists… ${Math.min(i + 10, mine.length)} / ${mine.length}`);

@@ -227,6 +227,21 @@ function adaptNode(raw, role, autoExpand) {
     return { node, legacy, rt, quote };
 }
 
+// Flatten a UserByScreenName result into the legacy v1.1 user object that
+// TwitterUser.fromJSONObject (the show/lookup processor) expects.
+function userResultToLegacy(result) {
+    if (!result || result.__typename === "UserUnavailable" || !result.legacy) return null;
+    let user = result.legacy;
+    user.id_str = result.rest_id;
+    user.id = +result.rest_id;
+    hydrateUser(user, result);
+    // fromJSONObject calls .replace on profile_image_url_https unconditionally.
+    if (!user.profile_image_url_https) {
+        user.profile_image_url_https = "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png";
+    }
+    return user;
+}
+
 // The adapter. Pure: it works on a copy of the result, reads no settings of its own and
 // writes no globals. Returns { tweet, facts } or null, where facts are what callers index:
 //   handles: id → screen_name for every author and mention. Clicking a @mention/"Replying
@@ -273,4 +288,4 @@ function adaptTweet(result, { autoExpand = true } = {}) {
     }
 }
 
-if (typeof module !== 'undefined') module.exports = { adaptTweet };
+if (typeof module !== 'undefined') module.exports = { adaptTweet, userResultToLegacy };
