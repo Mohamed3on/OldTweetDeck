@@ -1,10 +1,6 @@
 const cursors = {};
 const OTD_INIT_TIME = Date.now();
 
-const generateID = () => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
-
 let verifiedUser;
 if(localStorage.OTDverifiedUser) {
     try {
@@ -14,36 +10,9 @@ if(localStorage.OTDverifiedUser) {
         verifiedUser = null;
     }
 }
-let feeds;
-if(localStorage.OTDfeeds) {
-    try {
-        feeds = JSON.parse(localStorage.OTDfeeds);
-    } catch(e) {
-        console.warn(`Error parsing OTDfeeds.`, e);
-        feeds = {};
-    }
-}
-let columns;
-if(localStorage.OTDcolumns) {
-    try {
-        columns = JSON.parse(localStorage.OTDcolumns);
-    } catch(e) {
-        console.warn(`Error parsing OTDcolumns.`, e);
-        columns = {};
-    }
-}
-let settings;
-if(localStorage.OTDsettings) {
-    try {
-        settings = JSON.parse(localStorage.OTDsettings);
-    } catch(e) {
-        console.warn(`Error parsing OTDsettings.`, e);
-        settings = null;
-    }
-}
 // Snapshot the persisted layout hourly as a rolling backup (no-op if <1h since last).
-backupState();
-setInterval(backupState, 60 * 60 * 1000);
+OTDLayout.backupHourly();
+setInterval(() => OTDLayout.backupHourly(), 60 * 60 * 1000);
 let seenNotifications = [];
 const timings = {}; // stream key → when its last request went out
 // Refresh cadence adapts to whether you're actually watching the tab. The guards below only
@@ -155,40 +124,11 @@ function showToast(message, { dedupeMs = 3000, type = "error" } = {}) {
     }, 4000);
 }
 
-function snapshotState() {
-    return {
-        feeds,
-        columns,
-        settings,
-        columnIds: localStorage.OTDcolumnIds ? JSON.parse(localStorage.OTDcolumnIds) : []
-    };
-}
-
 function exportState() {
 	const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(snapshotState())], {type: 'application/json'}));
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(OTDLayout.snapshot())], {type: 'application/json'}));
     a.download = 'OTDState.json';
     a.click();
-}
-
-// Keep one rolling backup of the layout (feeds/columns/settings/columnIds), refreshed
-// hourly and overwriting the previous. It lives in extension storage, not
-// localStorage: twitter's boot path can clear this origin outright (see destroyer.js), and
-// a backup kept there dies in the very wipe it exists to survive. injection.js loads it
-// into window.__OTDbackup before we run — that's both the freshness check below and what
-// restoreState reads. The blob matches the export format, so importState restores it as-is.
-function backupState() {
-    try {
-        const HOUR = 60 * 60 * 1000;
-        let prev = window.__OTDbackup;
-        if (prev && Date.now() - prev.savedAt < HOUR) return;
-        if (!columns || !Object.keys(columns).length) return; // nothing worth saving yet — don't clobber a good backup
-        let state = { savedAt: Date.now(), ...snapshotState() };
-        window.__OTDbackup = state; // advance the freshness clock so the hourly timer paces itself
-        window.postMessage({ action: "otdSaveBackup", state }, "*");
-    } catch (e) {
-        console.error("OTD state backup failed", e);
-    }
 }
 
 function importState() {
@@ -200,36 +140,28 @@ function importState() {
         if(!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const text = e.target.result;
+            let data;
             try {
-                const data = JSON.parse(text);
-                if(!data.feeds || !data.columns || !data.settings || !data.columnIds) {
-                    throw new Error("Invalid file");
-                }
-                localStorage.OTDfeeds = JSON.stringify(data.feeds);
-                localStorage.OTDcolumns = JSON.stringify(data.columns);
-                localStorage.OTDsettings = JSON.stringify(data.settings);
-                localStorage.OTDcolumnIds = JSON.stringify(data.columnIds);
-                location.reload();
-            } catch(e) {
-                alert("Error parsing file");
-            }
+                data = JSON.parse(e.target.result);
+            } catch(e) {}
+            if(!OTDLayout.replace(data)) return alert("Error parsing file");
+            location.reload();
         };
         reader.readAsText(file);
     };
     input.click();
 }
 
-// Restore the layout from the rolling backup (see backupState). Mirrors
+// Restore the layout from the rolling backup (see OTDLayout.backupHourly). Mirrors
 // importState's write-and-reload, with a confirm because it replaces the current state.
 // Stays synchronous for the bundle's onclick: injection.js already fetched the backup.
 function restoreState() {
-    let data = window.__OTDbackup;
+    let data = OTDLayout.backup;
     if (!data) {
         alert("No backup found yet — one is saved automatically once you've used TweetDeck.");
         return;
     }
-    if (!data.feeds || !data.columns || !data.settings || !data.columnIds) {
+    if (!OTDLayout.isValid(data)) {
         alert("Backup is incomplete and can't be restored.");
         return;
     }
@@ -237,31 +169,8 @@ function restoreState() {
     if (!confirm(`Restore your layout from the backup saved ${when}? This replaces your current columns and settings.`)) {
         return;
     }
-    localStorage.OTDfeeds = JSON.stringify(data.feeds);
-    localStorage.OTDcolumns = JSON.stringify(data.columns);
-    localStorage.OTDsettings = JSON.stringify(data.settings);
-    localStorage.OTDcolumnIds = JSON.stringify(data.columnIds);
+    OTDLayout.replace(data);
     location.reload();
-}
-
-function cleanUp() {
-    let ids = localStorage.OTDcolumnIds ? JSON.parse(localStorage.OTDcolumnIds) : [];
-    // Never reconcile against an empty id list. A crashed/half-booted TweetDeck posts
-    // columns:[], which would otherwise delete every column here and wipe the layout
-    // (recoverable only via backup). No ids means nothing legitimate to prune anyway.
-    if (!ids.length) return;
-    for(let columnId in columns) {
-        if(!ids.includes(columnId)) {
-            delete columns[columnId];
-        }
-    }
-    localStorage.OTDcolumns = JSON.stringify(columns);
-    for(let id in feeds) {
-        if(!localStorage.OTDcolumns.includes(id)) {
-            delete feeds[id];
-        }
-    }
-    localStorage.OTDfeeds = JSON.stringify(feeds);
 }
 
 // Reply-prefix mentions ("Replying to @x") sit before a tweet's display range. Whenever
@@ -1964,12 +1873,14 @@ const proxyRoutes = [
             // session; fall back to the persisted account id so the state bootstrap
             // never throws — a throw here aborts the load and wipes the saved layout.
             const accountId = verifiedUser?.id_str ?? localStorage.twitterAccountID;
+            OTDLayout.prune();
+            const layout = OTDLayout.get();
             const state = {
                 client: {
-                    columns: localStorage.OTDcolumnIds ? JSON.parse(localStorage.OTDcolumnIds) : [],
+                    columns: layout.columnIds,
                     mtime: new Date().toISOString(),
                     name: "blackbird",
-                    settings: settings ?? {
+                    settings: OTDLayout.ensureSettings({
                         account_whitelist: [`twitter:${accountId}`],
                         default_account: `twitter:${accountId}`,
                         recent_searches: [],
@@ -1986,19 +1897,14 @@ const proxyRoutes = [
                         theme: "light",
                         use_narrow_columns: null,
                         version: 2
-                    },
+                    }),
                 },
-                columns: columns ?? {},
+                columns: layout.columns,
                 decider: {},
-                feeds: feeds ?? {},
+                feeds: layout.feeds,
                 messages: [],
                 new: true
             };
-            if(!settings) {
-                settings = state.client.settings;
-                localStorage.OTDsettings = JSON.stringify(settings);
-            }
-            cleanUp();
             console.log('account state', state);
 
             return state;
@@ -2018,16 +1924,9 @@ const proxyRoutes = [
         beforeSendBody: (xhr, body) => {
             let json = JSON.parse(body);
             console.log('state push', json);
-            if(json.columns && json.columns.length) {
-                localStorage.OTDcolumnIds = JSON.stringify(json.columns);
-            }
-            if(json.settings && settings) {
-                for(let key in json.settings) {
-                    settings[key] = json.settings[key];
-                }
-                localStorage.OTDsettings = JSON.stringify(settings);
-            }
-            cleanUp();
+            OTDLayout.setColumnIds(json.columns);
+            if(json.settings) OTDLayout.mergeSettings(json.settings);
+            OTDLayout.prune();
             return body;
         },
         afterRequest: (xhr) => {
@@ -2047,14 +1946,8 @@ const proxyRoutes = [
         sendHandler: emulateResponse,
         beforeSendBody: (xhr, body) => {
             let json = JSON.parse(body);
-            let ids = [];
-            for(let i = 0; i < json.length; i++) {
-                const id = json[i].id ?? generateID();
-                ids.push(id);
-                feeds[id] = json[i];
-            }
+            let ids = OTDLayout.putFeeds(json);
             xhr.storage.ids = ids;
-            localStorage.OTDfeeds = JSON.stringify(feeds);
             console.log('feeds push', json, ids);
             return body;
         },
@@ -2075,14 +1968,8 @@ const proxyRoutes = [
         sendHandler: emulateResponse,
         beforeSendBody: (xhr, body) => {
             let json = JSON.parse(body);
-            let ids = [];
-            for(let i = 0; i < json.length; i++) {
-                const id = json[i].id ?? generateID();
-                ids.push(id);
-                columns[id] = json[i];
-            }
+            let ids = OTDLayout.putColumns(json);
             xhr.storage.ids = ids;
-            localStorage.OTDcolumns = JSON.stringify(columns);
             console.log('columns push', json, ids);
             return body;
         },

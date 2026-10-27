@@ -27,11 +27,11 @@ window.postMessage('getotdtoken', '*');
 
 // The layout lives in page localStorage, which twitter's own boot path can clear before any
 // OTD code runs (see destroyer.js) — so the backup lives in extension storage, out of reach
-// of a page-side clear. Load it once, before interception.js reads localStorage: a deck that
-// got wiped comes back on its own, and window.__OTDbackup then backs restoreState() and the
-// once-a-day freshness check without either of them needing to go async.
+// of a page-side clear. Load it once, before interception.js reads the layout: the layout
+// store restores a deck that got wiped, and keeps the backup for restoreState() and the
+// hourly freshness check without either of them needing to go async.
 async function loadBackup() {
-    window.__OTDbackup = await new Promise(resolve => {
+    const backup = await new Promise(resolve => {
         const done = backup => {
             window.removeEventListener('message', onMsg);
             clearTimeout(timer);
@@ -45,20 +45,9 @@ async function loadBackup() {
         window.postMessage('otdGetBackup', '*');
     });
 
-    let intact = false;
-    try {
-        intact = Object.keys(JSON.parse(localStorage.OTDcolumns)).length > 0 &&
-                 JSON.parse(localStorage.OTDcolumnIds).length > 0;
-    } catch(e) {} // missing or corrupt — treat as wiped
-
-    const backup = window.__OTDbackup;
-    if(intact || !backup?.columnIds?.length) return;
-
-    localStorage.OTDfeeds = JSON.stringify(backup.feeds);
-    localStorage.OTDcolumns = JSON.stringify(backup.columns);
-    localStorage.OTDsettings = JSON.stringify(backup.settings);
-    localStorage.OTDcolumnIds = JSON.stringify(backup.columnIds);
-    console.log(`OTD: layout was missing — restored ${backup.columnIds.length} columns from backup saved ${new Date(backup.savedAt).toLocaleString()}`);
+    if(OTDLayout.adoptBackup(backup)) {
+        console.log(`OTD: layout was missing — restored ${backup.columnIds.length} columns from backup saved ${new Date(backup.savedAt).toLocaleString()}`);
+    }
 }
 
 async function main() {
@@ -67,7 +56,7 @@ async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
-    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js] =
+    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js, layout_js] =
         await Promise.allSettled([
             fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
@@ -78,6 +67,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/xlr.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/xlr.css")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/xapi.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/layout.js")).then(r => r.text()),
         ]);
     if (localStorage.OTDalwaysUseLocalFiles === "0") {
         const [
@@ -182,7 +172,10 @@ async function main() {
     challenge_js_script.innerHTML = challenge_js.value.replaceAll('SOLVER_URL', chrome.runtime.getURL("solver.html"));
     document.head.appendChild(challenge_js_script);
 
-    // Must land before interception.js: it reads the layout out of localStorage on load.
+    // Layout store, then the backup check, both before interception.js reads the layout on load.
+    let layout_js_script = document.createElement("script");
+    layout_js_script.textContent = layout_js.value;
+    document.head.appendChild(layout_js_script);
     await loadBackup();
 
     // Shared X request module (also on x.com via the manifest); before anything that calls X.
