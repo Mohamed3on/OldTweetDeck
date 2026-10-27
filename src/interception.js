@@ -356,7 +356,6 @@ function indexTweetHandles(t) {
 // legacy chirp TweetDeck builds (fromJSONObject) has no slot to carry them.
 // Index pivots by tweet id; xlr.js reads the map off the rendered DOM to draw them.
 const birdwatchById = {};
-window.OTDbirdwatch = birdwatchById;
 function indexBirdwatch(result) {
     if (result?.tweet) result = result.tweet;
     let id = result?.legacy?.id_str ?? result?.rest_id;
@@ -392,12 +391,15 @@ function fetchUserByScreenName(screen_name) {
     return p;
 }
 
-// Shared with xlr.js so list/mute/block-by-handle resolve users through this one
-// (verified-current) UserByScreenName query id + cache, not a second copy.
-window.OTDuserByScreenName = fetchUserByScreenName;
-// Shared with xlr.js so it can rebuild a quoted tweet that X stripped from search/list
-// results (muted authors) into the same legacy shape TweetDeck's fromJSONObject consumes.
-window.OTDparseTweet = parseTweet;
+// Everything xlr.js takes from interception, on one namespace. The remote upstream
+// interception (OTDalwaysUseLocalFiles = "0") doesn't set it, and xlr switches off what
+// depends on it.
+//   parseTweet: rebuild a quoted tweet X stripped from search/list results (muted authors)
+//     into the legacy shape TweetDeck's fromJSONObject consumes
+//   userByScreenName: list/mute/block-by-handle and hover cards resolve users through this
+//     one UserByScreenName cache, not a second copy
+//   birdwatch: community-note pivots by tweet id, drawn onto rendered tweets
+window.OTD = { parseTweet, userByScreenName: fetchUserByScreenName, birdwatch: birdwatchById };
 
 function parseTweet(res) {
     try {

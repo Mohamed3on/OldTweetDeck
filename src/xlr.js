@@ -1,4 +1,9 @@
 (() => {
+  // interception.js's exports (see window.OTD there). Absent under the remote upstream
+  // interception: community notes, muted-quote recovery and user lookups are then off.
+  const OTD = window.OTD;
+  if (!OTD) console.warn('OTD: upstream interception.js is loaded; community notes, muted-quote recovery and user lookups are off');
+
   const myId = () => document.cookie.match(/twid=u%3D(\d+)/)?.[1];
   let lists = null, listsByName = null;
   const buildByName = (ls) => Object.fromEntries(ls.map(l => [l.name.toLowerCase(), l.id]));
@@ -31,10 +36,11 @@
   const userIdInflight = {};
   const resolveUser = async (name) => {
     if (userIds[name]) return userIds[name];
+    if (!OTD) return;
     if (userIdInflight[name]) return userIdInflight[name];
     userIdInflight[name] = (async () => {
       try {
-        const user = await window.OTDuserByScreenName?.(name);
+        const user = await OTD.userByScreenName(name);
         const id = user?.id_str;
         if (id) { userIds[name] = id; persistUserIds(); }
         return id;
@@ -898,7 +904,7 @@
     const anchor = inCard ? hcAnchor : e.target.closest('img') || link;
     const ctx = inCard ? hcCtx : link;
     const open = hc.classList.contains('xlr-hc-open'), delay = open && !inCard ? 0 : 350;
-    const user = window.OTDuserByScreenName?.(name);
+    const user = OTD?.userByScreenName(name);
     user?.then((u) => { if (u) new Image().src = hcAvatar(u); }, () => {});   // avatar loads during the delay
     // Follow state and "Followed by" (which needs the user's id) take ~300ms on top of the user's
     // ~250ms, so they start once the hover has lasted 200ms, and the card waits up to 250ms past its
@@ -1275,8 +1281,8 @@
       const j = await (await XApi.gql('TweetResultByRestId', { tweetId: id, withCommunity: false, includePromotedContent: false, withVoice: false })).json();
       let r = j?.data?.tweetResult?.result;
       if (r?.tweet) r = r.tweet;
-      if (!r || !r.legacy || !window.OTDparseTweet) return null;
-      return window.OTDparseTweet(r) || null;
+      if (!r || !r.legacy) return null;
+      return OTD.parseTweet(r) || null;
     } catch { return null; }
   })());
 
@@ -1317,7 +1323,7 @@
   }
 
   // Community notes: interception.js indexes birdwatch pivots by tweet id in
-  // window.OTDbirdwatch (the legacy chirp shape can't carry them through
+  // OTD.birdwatch (the legacy chirp shape can't carry them through
   // fromJSONObject). Decorate rendered tweets from that map — a note under the
   // tweet body / detail view, and a short-titled one inside quote boxes.
   const noteSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm2 5.2h10V10H7V8.2zm0 3.5h10v1.8H7v-1.8zm0 3.5h6.5V17H7v-1.8z"/></svg>';
@@ -1354,7 +1360,7 @@
     return box;
   };
   function injectNotes(article) {
-    const map = window.OTDbirdwatch || {};
+    const map = OTD.birdwatch;
     // Stream and detail articles both carry the main tweet's id (for RTs, the
     // retweeted status) in data-tweet-id.
     if (!article.dataset.xlrNotes) {
@@ -1557,7 +1563,7 @@
 
   let scanQueued = false;
   const scan = () => {
-    document.querySelectorAll('article.stream-item').forEach((a) => { process(a); recoverMutedQuote(a); injectNotes(a); });
+    document.querySelectorAll('article.stream-item').forEach((a) => { process(a); if (OTD) { recoverMutedQuote(a); injectNotes(a); } });
     document.querySelectorAll('.prf-actions').forEach(processProfile);
     document.querySelectorAll('.prf-bio').forEach(linkifyBio);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
