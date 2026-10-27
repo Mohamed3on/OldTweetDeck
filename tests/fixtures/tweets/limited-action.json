@@ -1,0 +1,1466 @@
+{
+ "source": "@BBCBreaking UserTweetsAndReplies",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "TweetWithVisibilityResults",
+  "limitedActionResults": {
+   "limited_actions": [
+    {
+     "action": "Reply",
+     "prompt": {
+      "__typename": "CtaLimitedActionPrompt",
+      "cta_type": "SeeConversation",
+      "headline": {
+       "entities": [],
+       "text": "Who can reply?"
+      },
+      "subtext": {
+       "entities": [],
+       "text": "Only some accounts can reply."
+      }
+     }
+    }
+   ]
+  },
+  "tweet": {
+   "card": {
+    "legacy": {
+     "binding_values": [
+      {
+       "key": "photo_image_full_size_large",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 419,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=800x419",
+         "width": 800
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "thumbnail_image",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 150,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=280x150",
+         "width": 267
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "description",
+       "value": {
+        "string_value": "Two men have been charged with national security offences after an incident near RAF Fairford last month, the Crown Prosecution Service has said.",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "domain",
+       "value": {
+        "string_value": "www.bbc.co.uk",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "thumbnail_image_large",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 320,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=800x320_1",
+         "width": 569
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "summary_photo_image_small",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 202,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=386x202",
+         "width": 386
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "thumbnail_image_original",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 675,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=orig",
+         "width": 1200
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "site",
+       "value": {
+        "scribe_key": "publisher_id",
+        "type": "USER",
+        "user_value": {
+         "id_str": "612473",
+         "path": []
+        }
+       }
+      },
+      {
+       "key": "photo_image_full_size_small",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 202,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=386x202",
+         "width": 386
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "summary_photo_image_large",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 419,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=800x419",
+         "width": 800
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "thumbnail_image_small",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 81,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=144x144",
+         "width": 144
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "creator",
+       "value": {
+        "type": "USER",
+        "user_value": {
+         "id_str": "612473",
+         "path": []
+        }
+       }
+      },
+      {
+       "key": "thumbnail_image_x_large",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 675,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=png&name=2048x2048_2_exp",
+         "width": 1200
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "photo_image_full_size_original",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 675,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=orig",
+         "width": 1200
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "photo_image_full_size_alt_text",
+       "value": {
+        "string_value": "Red breaking news banner",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "vanity_url",
+       "value": {
+        "scribe_key": "vanity_url",
+        "string_value": "bbc.co.uk",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "photo_image_full_size",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 314,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=600x314",
+         "width": 600
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "summary_photo_image_alt_text",
+       "value": {
+        "string_value": "Red breaking news banner",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "thumbnail_image_color",
+       "value": {
+        "image_color_value": {
+         "palette": [
+          {
+           "percentage": 89,
+           "rgb": {
+            "blue": 0,
+            "green": 0,
+            "red": 184
+           }
+          },
+          {
+           "percentage": 7.2,
+           "rgb": {
+            "blue": 249,
+            "green": 249,
+            "red": 253
+           }
+          },
+          {
+           "percentage": 2.66,
+           "rgb": {
+            "blue": 111,
+            "green": 111,
+            "red": 213
+           }
+          },
+          {
+           "percentage": 0.69,
+           "rgb": {
+            "blue": 154,
+            "green": 154,
+            "red": 226
+           }
+          },
+          {
+           "percentage": 0.42,
+           "rgb": {
+            "blue": 62,
+            "green": 62,
+            "red": 201
+           }
+          }
+         ]
+        },
+        "type": "IMAGE_COLOR"
+       }
+      },
+      {
+       "key": "title",
+       "value": {
+        "string_value": "Two men charged under National Security Act after RAF Fairford incident",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "summary_photo_image_color",
+       "value": {
+        "image_color_value": {
+         "palette": [
+          {
+           "percentage": 89,
+           "rgb": {
+            "blue": 0,
+            "green": 0,
+            "red": 184
+           }
+          },
+          {
+           "percentage": 7.2,
+           "rgb": {
+            "blue": 249,
+            "green": 249,
+            "red": 253
+           }
+          },
+          {
+           "percentage": 2.66,
+           "rgb": {
+            "blue": 111,
+            "green": 111,
+            "red": 213
+           }
+          },
+          {
+           "percentage": 0.69,
+           "rgb": {
+            "blue": 154,
+            "green": 154,
+            "red": 226
+           }
+          },
+          {
+           "percentage": 0.42,
+           "rgb": {
+            "blue": 62,
+            "green": 62,
+            "red": 201
+           }
+          }
+         ]
+        },
+        "type": "IMAGE_COLOR"
+       }
+      },
+      {
+       "key": "summary_photo_image_x_large",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 675,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=png&name=2048x2048_2_exp",
+         "width": 1200
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "summary_photo_image",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 314,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=600x314",
+         "width": 600
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "photo_image_full_size_color",
+       "value": {
+        "image_color_value": {
+         "palette": [
+          {
+           "percentage": 89,
+           "rgb": {
+            "blue": 0,
+            "green": 0,
+            "red": 184
+           }
+          },
+          {
+           "percentage": 7.2,
+           "rgb": {
+            "blue": 249,
+            "green": 249,
+            "red": 253
+           }
+          },
+          {
+           "percentage": 2.66,
+           "rgb": {
+            "blue": 111,
+            "green": 111,
+            "red": 213
+           }
+          },
+          {
+           "percentage": 0.69,
+           "rgb": {
+            "blue": 154,
+            "green": 154,
+            "red": 226
+           }
+          },
+          {
+           "percentage": 0.42,
+           "rgb": {
+            "blue": 62,
+            "green": 62,
+            "red": 201
+           }
+          }
+         ]
+        },
+        "type": "IMAGE_COLOR"
+       }
+      },
+      {
+       "key": "photo_image_full_size_x_large",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 675,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=png&name=2048x2048_2_exp",
+         "width": 1200
+        },
+        "type": "IMAGE"
+       }
+      },
+      {
+       "key": "card_url",
+       "value": {
+        "scribe_key": "card_url",
+        "string_value": "https://t.co/4ENNlEkC4D",
+        "type": "STRING"
+       }
+      },
+      {
+       "key": "summary_photo_image_original",
+       "value": {
+        "image_value": {
+         "alt": "Red breaking news banner",
+         "height": 675,
+         "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=orig",
+         "width": 1200
+        },
+        "type": "IMAGE"
+       }
+      }
+     ],
+     "card_platform": {
+      "platform": {
+       "audience": {
+        "name": "production"
+       },
+       "device": {
+        "name": "Swift",
+        "version": "12"
+       }
+      }
+     },
+     "name": "summary_large_image",
+     "url": "https://t.co/4ENNlEkC4D",
+     "user_refs_results": [
+      {
+       "result": {
+        "__typename": "User",
+        "affiliates_highlighted_label": {},
+        "avatar": {
+         "image_url": "https://pbs.twimg.com/profile_images/1529107486271225859/03qcVNIk_normal.jpg"
+        },
+        "core": {
+         "created_at": "Mon Jan 08 08:05:57 +0000 2007",
+         "name": "BBC News (UK)",
+         "screen_name": "BBCNews"
+        },
+        "dm_permissions": {
+         "can_dm": false
+        },
+        "follow_request_sent": false,
+        "has_graduated_access": true,
+        "id": "VXNlcjo2MTI0NzM=",
+        "is_blue_verified": true,
+        "legacy": {
+         "default_profile": false,
+         "default_profile_image": false,
+         "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews",
+         "entities": {
+          "description": {},
+          "url": {
+           "urls": [
+            {
+             "display_url": "bbc.co.uk/news",
+             "expanded_url": "http://www.bbc.co.uk/news",
+             "indices": [
+              0,
+              23
+             ],
+             "url": "https://t.co/9WpHz3Aebw"
+            }
+           ]
+          }
+         },
+         "fast_followers_count": 0,
+         "favourites_count": 3,
+         "follow_request_sent": false,
+         "followers_count": 15153791,
+         "friends_count": 85,
+         "has_custom_timelines": true,
+         "is_translator": false,
+         "listed_count": 50211,
+         "media_count": 49019,
+         "needs_phone_verification": false,
+         "normal_followers_count": 15153791,
+         "notifications": false,
+         "possibly_sensitive": false,
+         "profile_banner_url": "https://pbs.twimg.com/profile_banners/612473/1663662081",
+         "profile_interstitial_type": "",
+         "statuses_count": 625005,
+         "time_zone": "",
+         "translator_type": "regular",
+         "url": "https://t.co/9WpHz3Aebw",
+         "utc_offset": 0,
+         "want_retweets": false,
+         "withheld_description": "",
+         "withheld_scope": ""
+        },
+        "location": {
+         "location": "London"
+        },
+        "media_permissions": {
+         "can_media_tag": true
+        },
+        "parody_commentary_fan_label": "None",
+        "privacy": {
+         "protected": false
+        },
+        "profile_bio": {
+         "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews"
+        },
+        "profile_description_language": "en",
+        "profile_image_shape": "Square",
+        "relationship_perspectives": {
+         "blocked_by": false,
+         "blocking": false,
+         "followed_by": false,
+         "following": false,
+         "muting": false
+        },
+        "rest_id": "612473",
+        "super_follow_eligible": false,
+        "super_followed_by": false,
+        "super_following": false,
+        "verification": {
+         "verified": false,
+         "verified_type": "Business"
+        }
+       }
+      },
+      {
+       "result": {
+        "__typename": "User",
+        "affiliates_highlighted_label": {},
+        "avatar": {
+         "image_url": "https://pbs.twimg.com/profile_images/1529107486271225859/03qcVNIk_normal.jpg"
+        },
+        "core": {
+         "created_at": "Mon Jan 08 08:05:57 +0000 2007",
+         "name": "BBC News (UK)",
+         "screen_name": "BBCNews"
+        },
+        "dm_permissions": {
+         "can_dm": false
+        },
+        "follow_request_sent": false,
+        "has_graduated_access": true,
+        "id": "VXNlcjo2MTI0NzM=",
+        "is_blue_verified": true,
+        "legacy": {
+         "default_profile": false,
+         "default_profile_image": false,
+         "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews",
+         "entities": {
+          "description": {},
+          "url": {
+           "urls": [
+            {
+             "display_url": "bbc.co.uk/news",
+             "expanded_url": "http://www.bbc.co.uk/news",
+             "indices": [
+              0,
+              23
+             ],
+             "url": "https://t.co/9WpHz3Aebw"
+            }
+           ]
+          }
+         },
+         "fast_followers_count": 0,
+         "favourites_count": 3,
+         "follow_request_sent": false,
+         "followers_count": 15153791,
+         "friends_count": 85,
+         "has_custom_timelines": true,
+         "is_translator": false,
+         "listed_count": 50211,
+         "media_count": 49019,
+         "needs_phone_verification": false,
+         "normal_followers_count": 15153791,
+         "notifications": false,
+         "possibly_sensitive": false,
+         "profile_banner_url": "https://pbs.twimg.com/profile_banners/612473/1663662081",
+         "profile_interstitial_type": "",
+         "statuses_count": 625005,
+         "time_zone": "",
+         "translator_type": "regular",
+         "url": "https://t.co/9WpHz3Aebw",
+         "utc_offset": 0,
+         "want_retweets": false,
+         "withheld_description": "",
+         "withheld_scope": ""
+        },
+        "location": {
+         "location": "London"
+        },
+        "media_permissions": {
+         "can_media_tag": true
+        },
+        "parody_commentary_fan_label": "None",
+        "privacy": {
+         "protected": false
+        },
+        "profile_bio": {
+         "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews"
+        },
+        "profile_description_language": "en",
+        "profile_image_shape": "Square",
+        "relationship_perspectives": {
+         "blocked_by": false,
+         "blocking": false,
+         "followed_by": false,
+         "following": false,
+         "muting": false
+        },
+        "rest_id": "612473",
+        "super_follow_eligible": false,
+        "super_followed_by": false,
+        "super_following": false,
+        "verification": {
+         "verified": false,
+         "verified_type": "Business"
+        }
+       }
+      }
+     ]
+    },
+    "rest_id": "https://t.co/4ENNlEkC4D"
+   },
+   "cashtag_attachments": [],
+   "core": {
+    "user_results": {
+     "result": {
+      "__typename": "User",
+      "affiliates_highlighted_label": {
+       "label": {
+        "badge": {
+         "url": "https://pbs.twimg.com/profile_images/1529107486271225859/03qcVNIk_bigger.jpg"
+        },
+        "description": "BBC News (UK)",
+        "url": {
+         "url": "https://twitter.com/BBCNews",
+         "urlType": "DeepLink"
+        },
+        "userLabelDisplayType": "Badge",
+        "userLabelType": "BusinessLabel"
+       }
+      },
+      "avatar": {
+       "image_url": "https://pbs.twimg.com/profile_images/1150716997254209536/M7gkjsv5_normal.jpg"
+      },
+      "core": {
+       "created_at": "Sun Apr 22 14:42:37 +0000 2007",
+       "name": "BBC Breaking News",
+       "screen_name": "BBCBreaking"
+      },
+      "dm_permissions": {
+       "can_dm": false
+      },
+      "follow_request_sent": false,
+      "has_graduated_access": true,
+      "id": "VXNlcjo1NDAyNjEy",
+      "is_blue_verified": true,
+      "legacy": {
+       "default_profile": false,
+       "default_profile_image": false,
+       "description": "Breaking news alerts and updates from the BBC. For news, features, analysis follow @BBCWorld (international) or @BBCNews (UK). Latest sport news @BBCSport.",
+       "entities": {
+        "description": {},
+        "url": {
+         "urls": [
+          {
+           "display_url": "bbc.co.uk/news",
+           "expanded_url": "http://www.bbc.co.uk/news",
+           "indices": [
+            0,
+            23
+           ],
+           "url": "https://t.co/A7Clxaz0fX"
+          }
+         ]
+        }
+       },
+       "fast_followers_count": 0,
+       "favourites_count": 0,
+       "follow_request_sent": false,
+       "followers_count": 50197801,
+       "friends_count": 3,
+       "has_custom_timelines": true,
+       "is_translator": false,
+       "listed_count": 143857,
+       "media_count": 4570,
+       "needs_phone_verification": false,
+       "normal_followers_count": 50197801,
+       "notifications": false,
+       "possibly_sensitive": false,
+       "profile_banner_url": "https://pbs.twimg.com/profile_banners/5402612/1663658724",
+       "profile_interstitial_type": "",
+       "statuses_count": 44325,
+       "time_zone": "",
+       "translator_type": "none",
+       "url": "https://t.co/A7Clxaz0fX",
+       "utc_offset": 0,
+       "want_retweets": false,
+       "withheld_description": "",
+       "withheld_scope": ""
+      },
+      "location": {
+       "location": "London, UK"
+      },
+      "media_permissions": {
+       "can_media_tag": true
+      },
+      "parody_commentary_fan_label": "None",
+      "privacy": {
+       "protected": false
+      },
+      "profile_bio": {
+       "description": "Breaking news alerts and updates from the BBC. For news, features, analysis follow @BBCWorld (international) or @BBCNews (UK). Latest sport news @BBCSport."
+      },
+      "profile_description_language": "en",
+      "profile_image_shape": "Square",
+      "relationship_perspectives": {
+       "blocked_by": false,
+       "blocking": false,
+       "followed_by": false,
+       "following": false,
+       "muting": false
+      },
+      "rest_id": "5402612",
+      "super_follow_eligible": false,
+      "super_followed_by": false,
+      "super_following": false,
+      "verification": {
+       "verified": false,
+       "verified_type": "Business"
+      }
+     }
+    }
+   },
+   "edit_control": {
+    "edit_tweet_ids": [
+     "2115008727115878739"
+    ],
+    "editable_until_msecs": "1793095950000",
+    "edits_remaining": "5",
+    "is_edit_eligible": true
+   },
+   "grok_analysis_button": true,
+   "grok_annotations": {
+    "is_image_editable_by_grok": false
+   },
+   "grok_translated_post_with_availability": {
+    "is_available": false
+   },
+   "is_translatable": false,
+   "legacy": {
+    "bookmark_count": 39,
+    "bookmarked": false,
+    "conversation_control": {
+     "conversation_owner_results": {
+      "result": {
+       "__typename": "User",
+       "core": {
+        "screen_name": "BBCBreaking"
+       }
+      }
+     },
+     "policy": "ByInvitation"
+    },
+    "conversation_id_str": "2115008727115878739",
+    "created_at": "Tue Oct 27 09:12:30 +0000 2026",
+    "display_text_range": [
+     0,
+     117
+    ],
+    "entities": {
+     "urls": [
+      {
+       "display_url": "bbc.in/4BqsvwI",
+       "expanded_url": "https://bbc.in/4BqsvwI",
+       "indices": [
+        94,
+        117
+       ],
+       "url": "https://t.co/4ENNlEkC4D"
+      }
+     ]
+    },
+    "favorite_count": 334,
+    "favorited": false,
+    "full_text": "Two men charged with National Security Act offences following incident involving RAF Fairford https://t.co/4ENNlEkC4D",
+    "id_str": "2115008727115878739",
+    "is_quote_status": false,
+    "lang": "en",
+    "possibly_sensitive": false,
+    "possibly_sensitive_editable": true,
+    "quote_count": 44,
+    "reply_count": 0,
+    "retweet_count": 70,
+    "retweeted": false,
+    "user_id_str": "5402612"
+   },
+   "rest_id": "2115008727115878739",
+   "unmention_data": {},
+   "views": {
+    "count": "821599",
+    "state": "EnabledWithCount"
+   }
+  }
+ },
+ "expected": {
+  "bookmark_count": 39,
+  "bookmarked": false,
+  "card": {
+   "binding_values": {
+    "card_url": {
+     "scribe_key": "card_url",
+     "string_value": "https://t.co/4ENNlEkC4D",
+     "type": "STRING"
+    },
+    "creator": {
+     "type": "USER",
+     "user_value": {
+      "id_str": "612473",
+      "path": []
+     }
+    },
+    "description": {
+     "string_value": "Two men have been charged with national security offences after an incident near RAF Fairford last month, the Crown Prosecution Service has said.",
+     "type": "STRING"
+    },
+    "domain": {
+     "string_value": "www.bbc.co.uk",
+     "type": "STRING"
+    },
+    "photo_image_full_size": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 314,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=600x314",
+      "width": 600
+     },
+     "type": "IMAGE"
+    },
+    "photo_image_full_size_alt_text": {
+     "string_value": "Red breaking news banner",
+     "type": "STRING"
+    },
+    "photo_image_full_size_color": {
+     "image_color_value": {
+      "palette": [
+       {
+        "percentage": 89,
+        "rgb": {
+         "blue": 0,
+         "green": 0,
+         "red": 184
+        }
+       },
+       {
+        "percentage": 7.2,
+        "rgb": {
+         "blue": 249,
+         "green": 249,
+         "red": 253
+        }
+       },
+       {
+        "percentage": 2.66,
+        "rgb": {
+         "blue": 111,
+         "green": 111,
+         "red": 213
+        }
+       },
+       {
+        "percentage": 0.69,
+        "rgb": {
+         "blue": 154,
+         "green": 154,
+         "red": 226
+        }
+       },
+       {
+        "percentage": 0.42,
+        "rgb": {
+         "blue": 62,
+         "green": 62,
+         "red": 201
+        }
+       }
+      ]
+     },
+     "type": "IMAGE_COLOR"
+    },
+    "photo_image_full_size_large": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 419,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=800x419",
+      "width": 800
+     },
+     "type": "IMAGE"
+    },
+    "photo_image_full_size_original": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 675,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=orig",
+      "width": 1200
+     },
+     "type": "IMAGE"
+    },
+    "photo_image_full_size_small": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 202,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=386x202",
+      "width": 386
+     },
+     "type": "IMAGE"
+    },
+    "photo_image_full_size_x_large": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 675,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=png&name=2048x2048_2_exp",
+      "width": 1200
+     },
+     "type": "IMAGE"
+    },
+    "site": {
+     "scribe_key": "publisher_id",
+     "type": "USER",
+     "user_value": {
+      "id_str": "612473",
+      "path": []
+     }
+    },
+    "summary_photo_image": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 314,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=600x314",
+      "width": 600
+     },
+     "type": "IMAGE"
+    },
+    "summary_photo_image_alt_text": {
+     "string_value": "Red breaking news banner",
+     "type": "STRING"
+    },
+    "summary_photo_image_color": {
+     "image_color_value": {
+      "palette": [
+       {
+        "percentage": 89,
+        "rgb": {
+         "blue": 0,
+         "green": 0,
+         "red": 184
+        }
+       },
+       {
+        "percentage": 7.2,
+        "rgb": {
+         "blue": 249,
+         "green": 249,
+         "red": 253
+        }
+       },
+       {
+        "percentage": 2.66,
+        "rgb": {
+         "blue": 111,
+         "green": 111,
+         "red": 213
+        }
+       },
+       {
+        "percentage": 0.69,
+        "rgb": {
+         "blue": 154,
+         "green": 154,
+         "red": 226
+        }
+       },
+       {
+        "percentage": 0.42,
+        "rgb": {
+         "blue": 62,
+         "green": 62,
+         "red": 201
+        }
+       }
+      ]
+     },
+     "type": "IMAGE_COLOR"
+    },
+    "summary_photo_image_large": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 419,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=800x419",
+      "width": 800
+     },
+     "type": "IMAGE"
+    },
+    "summary_photo_image_original": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 675,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=orig",
+      "width": 1200
+     },
+     "type": "IMAGE"
+    },
+    "summary_photo_image_small": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 202,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=386x202",
+      "width": 386
+     },
+     "type": "IMAGE"
+    },
+    "summary_photo_image_x_large": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 675,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=png&name=2048x2048_2_exp",
+      "width": 1200
+     },
+     "type": "IMAGE"
+    },
+    "thumbnail_image": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 150,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=280x150",
+      "width": 267
+     },
+     "type": "IMAGE"
+    },
+    "thumbnail_image_color": {
+     "image_color_value": {
+      "palette": [
+       {
+        "percentage": 89,
+        "rgb": {
+         "blue": 0,
+         "green": 0,
+         "red": 184
+        }
+       },
+       {
+        "percentage": 7.2,
+        "rgb": {
+         "blue": 249,
+         "green": 249,
+         "red": 253
+        }
+       },
+       {
+        "percentage": 2.66,
+        "rgb": {
+         "blue": 111,
+         "green": 111,
+         "red": 213
+        }
+       },
+       {
+        "percentage": 0.69,
+        "rgb": {
+         "blue": 154,
+         "green": 154,
+         "red": 226
+        }
+       },
+       {
+        "percentage": 0.42,
+        "rgb": {
+         "blue": 62,
+         "green": 62,
+         "red": 201
+        }
+       }
+      ]
+     },
+     "type": "IMAGE_COLOR"
+    },
+    "thumbnail_image_large": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 320,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=800x320_1",
+      "width": 569
+     },
+     "type": "IMAGE"
+    },
+    "thumbnail_image_original": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 675,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=orig",
+      "width": 1200
+     },
+     "type": "IMAGE"
+    },
+    "thumbnail_image_small": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 81,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=jpg&name=144x144",
+      "width": 144
+     },
+     "type": "IMAGE"
+    },
+    "thumbnail_image_x_large": {
+     "image_value": {
+      "alt": "Red breaking news banner",
+      "height": 675,
+      "url": "https://pbs.twimg.com/card_img/2115007626673090560/zhJXjARJ?format=png&name=2048x2048_2_exp",
+      "width": 1200
+     },
+     "type": "IMAGE"
+    },
+    "title": {
+     "string_value": "Two men charged under National Security Act after RAF Fairford incident",
+     "type": "STRING"
+    },
+    "vanity_url": {
+     "scribe_key": "vanity_url",
+     "string_value": "bbc.co.uk",
+     "type": "STRING"
+    }
+   },
+   "card_platform": {
+    "platform": {
+     "audience": {
+      "name": "production"
+     },
+     "device": {
+      "name": "Swift",
+      "version": "12"
+     }
+    }
+   },
+   "name": "summary_large_image",
+   "url": "https://t.co/4ENNlEkC4D",
+   "user_refs_results": [
+    {
+     "result": {
+      "__typename": "User",
+      "affiliates_highlighted_label": {},
+      "avatar": {
+       "image_url": "https://pbs.twimg.com/profile_images/1529107486271225859/03qcVNIk_normal.jpg"
+      },
+      "core": {
+       "created_at": "Mon Jan 08 08:05:57 +0000 2007",
+       "name": "BBC News (UK)",
+       "screen_name": "BBCNews"
+      },
+      "dm_permissions": {
+       "can_dm": false
+      },
+      "follow_request_sent": false,
+      "has_graduated_access": true,
+      "id": "VXNlcjo2MTI0NzM=",
+      "is_blue_verified": true,
+      "legacy": {
+       "default_profile": false,
+       "default_profile_image": false,
+       "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews",
+       "entities": {
+        "description": {},
+        "url": {
+         "urls": [
+          {
+           "display_url": "bbc.co.uk/news",
+           "expanded_url": "http://www.bbc.co.uk/news",
+           "indices": [
+            0,
+            23
+           ],
+           "url": "https://t.co/9WpHz3Aebw"
+          }
+         ]
+        }
+       },
+       "fast_followers_count": 0,
+       "favourites_count": 3,
+       "follow_request_sent": false,
+       "followers_count": 15153791,
+       "friends_count": 85,
+       "has_custom_timelines": true,
+       "is_translator": false,
+       "listed_count": 50211,
+       "media_count": 49019,
+       "needs_phone_verification": false,
+       "normal_followers_count": 15153791,
+       "notifications": false,
+       "possibly_sensitive": false,
+       "profile_banner_url": "https://pbs.twimg.com/profile_banners/612473/1663662081",
+       "profile_interstitial_type": "",
+       "statuses_count": 625005,
+       "time_zone": "",
+       "translator_type": "regular",
+       "url": "https://t.co/9WpHz3Aebw",
+       "utc_offset": 0,
+       "want_retweets": false,
+       "withheld_description": "",
+       "withheld_scope": ""
+      },
+      "location": {
+       "location": "London"
+      },
+      "media_permissions": {
+       "can_media_tag": true
+      },
+      "parody_commentary_fan_label": "None",
+      "privacy": {
+       "protected": false
+      },
+      "profile_bio": {
+       "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews"
+      },
+      "profile_description_language": "en",
+      "profile_image_shape": "Square",
+      "relationship_perspectives": {
+       "blocked_by": false,
+       "blocking": false,
+       "followed_by": false,
+       "following": false,
+       "muting": false
+      },
+      "rest_id": "612473",
+      "super_follow_eligible": false,
+      "super_followed_by": false,
+      "super_following": false,
+      "verification": {
+       "verified": false,
+       "verified_type": "Business"
+      }
+     }
+    },
+    {
+     "result": {
+      "__typename": "User",
+      "affiliates_highlighted_label": {},
+      "avatar": {
+       "image_url": "https://pbs.twimg.com/profile_images/1529107486271225859/03qcVNIk_normal.jpg"
+      },
+      "core": {
+       "created_at": "Mon Jan 08 08:05:57 +0000 2007",
+       "name": "BBC News (UK)",
+       "screen_name": "BBCNews"
+      },
+      "dm_permissions": {
+       "can_dm": false
+      },
+      "follow_request_sent": false,
+      "has_graduated_access": true,
+      "id": "VXNlcjo2MTI0NzM=",
+      "is_blue_verified": true,
+      "legacy": {
+       "default_profile": false,
+       "default_profile_image": false,
+       "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews",
+       "entities": {
+        "description": {},
+        "url": {
+         "urls": [
+          {
+           "display_url": "bbc.co.uk/news",
+           "expanded_url": "http://www.bbc.co.uk/news",
+           "indices": [
+            0,
+            23
+           ],
+           "url": "https://t.co/9WpHz3Aebw"
+          }
+         ]
+        }
+       },
+       "fast_followers_count": 0,
+       "favourites_count": 3,
+       "follow_request_sent": false,
+       "followers_count": 15153791,
+       "friends_count": 85,
+       "has_custom_timelines": true,
+       "is_translator": false,
+       "listed_count": 50211,
+       "media_count": 49019,
+       "needs_phone_verification": false,
+       "normal_followers_count": 15153791,
+       "notifications": false,
+       "possibly_sensitive": false,
+       "profile_banner_url": "https://pbs.twimg.com/profile_banners/612473/1663662081",
+       "profile_interstitial_type": "",
+       "statuses_count": 625005,
+       "time_zone": "",
+       "translator_type": "regular",
+       "url": "https://t.co/9WpHz3Aebw",
+       "utc_offset": 0,
+       "want_retweets": false,
+       "withheld_description": "",
+       "withheld_scope": ""
+      },
+      "location": {
+       "location": "London"
+      },
+      "media_permissions": {
+       "can_media_tag": true
+      },
+      "parody_commentary_fan_label": "None",
+      "privacy": {
+       "protected": false
+      },
+      "profile_bio": {
+       "description": "News, features and analysis. For world news, follow @BBCWorld. Breaking news, follow @BBCBreaking. Latest sport news @BBCSport. Our Instagram: BBCNews"
+      },
+      "profile_description_language": "en",
+      "profile_image_shape": "Square",
+      "relationship_perspectives": {
+       "blocked_by": false,
+       "blocking": false,
+       "followed_by": false,
+       "following": false,
+       "muting": false
+      },
+      "rest_id": "612473",
+      "super_follow_eligible": false,
+      "super_followed_by": false,
+      "super_following": false,
+      "verification": {
+       "verified": false,
+       "verified_type": "Business"
+      }
+     }
+    }
+   ]
+  },
+  "conversation_control": {
+   "conversation_owner_results": {
+    "result": {
+     "__typename": "User",
+     "core": {
+      "screen_name": "BBCBreaking"
+     }
+    }
+   },
+   "policy": "ByInvitation"
+  },
+  "conversation_id": 2115008727115878700,
+  "conversation_id_str": "2115008727115878739",
+  "created_at": "Tue Oct 27 09:12:30 +0000 2026",
+  "display_text_range": [
+   0,
+   117
+  ],
+  "entities": {
+   "urls": [
+    {
+     "display_url": "bbc.in/4BqsvwI",
+     "expanded_url": "https://bbc.in/4BqsvwI",
+     "indices": [
+      94,
+      117
+     ],
+     "url": "https://t.co/4ENNlEkC4D"
+    }
+   ]
+  },
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": 821599
+     }
+    }
+   }
+  },
+  "favorite_count": 334,
+  "favorited": false,
+  "full_text": "Two men charged with National Security Act offences following incident involving RAF Fairford https://t.co/4ENNlEkC4D",
+  "id": 2115008727115878700,
+  "id_str": "2115008727115878739",
+  "is_quote_status": false,
+  "lang": "en",
+  "limited_actions_text": "Only some accounts can reply.",
+  "possibly_sensitive": false,
+  "possibly_sensitive_editable": true,
+  "quote_count": 44,
+  "reply_count": 0,
+  "retweet_count": 70,
+  "retweeted": false,
+  "text": "Two men charged with National Security Act offences following incident involving RAF Fairford https://t.co/4ENNlEkC4D",
+  "user": {
+   "created_at": "Sun Apr 22 14:42:37 +0000 2007",
+   "default_profile": false,
+   "default_profile_image": false,
+   "description": "Breaking news alerts and updates from the BBC. For news, features, analysis follow @BBCWorld (international) or @BBCNews (UK). Latest sport news @BBCSport.",
+   "entities": {
+    "description": {},
+    "url": {
+     "urls": [
+      {
+       "display_url": "bbc.co.uk/news",
+       "expanded_url": "http://www.bbc.co.uk/news",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/A7Clxaz0fX"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 0,
+   "follow_request_sent": false,
+   "followers_count": 50197801,
+   "friends_count": 3,
+   "has_custom_timelines": true,
+   "id": 5402612,
+   "id_str": "5402612",
+   "is_translator": false,
+   "listed_count": 143857,
+   "location": "London, UK",
+   "media_count": 4570,
+   "name": "BBC Breaking News",
+   "needs_phone_verification": false,
+   "normal_followers_count": 50197801,
+   "notifications": false,
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/5402612/1663658724",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/1150716997254209536/M7gkjsv5_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/1150716997254209536/M7gkjsv5_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "BBCBreaking",
+   "statuses_count": 44325,
+   "time_zone": "",
+   "translator_type": "none",
+   "url": "https://t.co/A7Clxaz0fX",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "5402612"
+ }
+}

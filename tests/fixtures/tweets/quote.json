@@ -1,0 +1,758 @@
+{
+ "source": "@elonmusk UserTweetsAndReplies",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "Tweet",
+  "cashtag_attachments": [],
+  "core": {
+   "user_results": {
+    "result": {
+     "__typename": "User",
+     "affiliates_highlighted_label": {
+      "label": {
+       "badge": {
+        "url": "https://pbs.twimg.com/profile_images/1955359038532653056/OSHY3ewP_bigger.jpg"
+       },
+       "description": "X",
+       "url": {
+        "url": "https://twitter.com/X",
+        "urlType": "DeepLink"
+       },
+       "userLabelDisplayType": "Badge",
+       "userLabelType": "BusinessLabel"
+      }
+     },
+     "avatar": {
+      "image_url": "https://pbs.twimg.com/profile_images/2103567689515954176/aR-Kjpp4_normal.jpg"
+     },
+     "core": {
+      "created_at": "Tue Jun 02 20:12:29 +0000 2009",
+      "name": "Elon Musk",
+      "screen_name": "elonmusk"
+     },
+     "dm_permissions": {
+      "can_dm": false
+     },
+     "follow_request_sent": false,
+     "has_graduated_access": true,
+     "id": "VXNlcjo0NDE5NjM5Nw==",
+     "is_blue_verified": true,
+     "legacy": {
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "https://t.co/ZdBx5WABYx",
+      "entities": {
+       "description": {
+        "urls": [
+         {
+          "display_url": "Terafab.AI",
+          "expanded_url": "http://Terafab.AI",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/ZdBx5WABYx"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 255722,
+      "follow_request_sent": false,
+      "followers_count": 241538972,
+      "friends_count": 1422,
+      "has_custom_timelines": true,
+      "is_translator": false,
+      "listed_count": 171167,
+      "media_count": 4748,
+      "needs_phone_verification": false,
+      "normal_followers_count": 241538972,
+      "notifications": false,
+      "pinned_tweet_ids_str": [
+       "2114765150431682772"
+      ],
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/44196397/1774145451",
+      "profile_interstitial_type": "",
+      "statuses_count": 111048,
+      "time_zone": "",
+      "translator_type": "none",
+      "url": "",
+      "utc_offset": 0,
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "location": {
+      "location": ""
+     },
+     "media_permissions": {
+      "can_media_tag": false
+     },
+     "parody_commentary_fan_label": "None",
+     "privacy": {
+      "protected": false
+     },
+     "professional": {
+      "category": [],
+      "professional_type": "Creator",
+      "rest_id": "1679729435447275522"
+     },
+     "profile_bio": {
+      "description": "https://t.co/ZdBx5WABYx"
+     },
+     "profile_image_shape": "Circle",
+     "relationship_perspectives": {
+      "blocked_by": false,
+      "blocking": false,
+      "followed_by": false,
+      "following": false,
+      "muting": true
+     },
+     "rest_id": "44196397",
+     "super_follow_eligible": true,
+     "super_followed_by": false,
+     "super_following": false,
+     "verification": {
+      "verified": false
+     }
+    }
+   }
+  },
+  "edit_control": {
+   "edit_tweet_ids": [
+    "2114765150431682772"
+   ],
+   "editable_until_msecs": "1793037876000",
+   "edits_remaining": "5",
+   "is_edit_eligible": true
+  },
+  "grok_analysis_button": true,
+  "grok_annotations": {
+   "is_image_editable_by_grok": false
+  },
+  "grok_translated_post_with_availability": {
+   "is_available": false
+  },
+  "is_translatable": false,
+  "legacy": {
+   "bookmark_count": 1493,
+   "bookmarked": false,
+   "conversation_id_str": "2114765150431682772",
+   "created_at": "Mon Oct 26 17:04:36 +0000 2026",
+   "display_text_range": [
+    0,
+    74
+   ],
+   "entities": {},
+   "favorite_count": 115958,
+   "favorited": false,
+   "full_text": "Remember when using the wrong pronoun got people canceled?\n\nThat was dumb.",
+   "id_str": "2114765150431682772",
+   "is_quote_status": true,
+   "lang": "en",
+   "quote_count": 297,
+   "quoted_status_id_str": "2114725666537283669",
+   "quoted_status_permalink": {
+    "display": "x.com/xfreeze/status…",
+    "expanded": "https://twitter.com/xfreeze/status/2114725666537283669",
+    "url": "https://t.co/XMKyu9a9S0"
+   },
+   "reply_count": 2972,
+   "retweet_count": 10656,
+   "retweeted": false,
+   "user_id_str": "44196397"
+  },
+  "quoted_status_result": {
+   "result": {
+    "__typename": "Tweet",
+    "core": {
+     "user_results": {
+      "result": {
+       "__typename": "User",
+       "affiliates_highlighted_label": {},
+       "avatar": {
+        "image_url": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg"
+       },
+       "core": {
+        "created_at": "Tue Jul 30 15:42:27 +0000 2024",
+        "name": "X Freeze",
+        "screen_name": "XFreeze"
+       },
+       "dm_permissions": {
+        "can_dm": true
+       },
+       "follow_request_sent": false,
+       "has_graduated_access": true,
+       "id": "VXNlcjoxODE4MzExMDA1Njk4Njc4Nzg0",
+       "is_blue_verified": true,
+       "legacy": {
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "",
+        "entities": {
+         "description": {},
+         "url": {
+          "urls": [
+           {
+            "display_url": "xfreeze.com",
+            "expanded_url": "http://xfreeze.com",
+            "indices": [
+             0,
+             23
+            ],
+            "url": "https://t.co/SBs8JZTvA9"
+           }
+          ]
+         }
+        },
+        "fast_followers_count": 0,
+        "favourites_count": 44718,
+        "follow_request_sent": false,
+        "followers_count": 291342,
+        "friends_count": 2119,
+        "has_custom_timelines": false,
+        "is_translator": false,
+        "listed_count": 1432,
+        "media_count": 9336,
+        "needs_phone_verification": false,
+        "normal_followers_count": 291342,
+        "notifications": false,
+        "possibly_sensitive": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1818311005698678784/1778551477",
+        "profile_interstitial_type": "",
+        "statuses_count": 30915,
+        "time_zone": "",
+        "translator_type": "none",
+        "url": "https://t.co/SBs8JZTvA9",
+        "utc_offset": 0,
+        "want_retweets": false,
+        "withheld_description": "",
+        "withheld_scope": ""
+       },
+       "location": {
+        "location": ""
+       },
+       "media_permissions": {
+        "can_media_tag": true
+       },
+       "parody_commentary_fan_label": "None",
+       "privacy": {
+        "protected": false
+       },
+       "professional": {
+        "category": [],
+        "professional_type": "Creator",
+        "rest_id": "1835442711370871202"
+       },
+       "profile_bio": {
+        "description": ""
+       },
+       "profile_image_shape": "Circle",
+       "relationship_perspectives": {
+        "blocked_by": false,
+        "blocking": false,
+        "followed_by": false,
+        "following": false,
+        "muting": false
+       },
+       "rest_id": "1818311005698678784",
+       "super_follow_eligible": true,
+       "super_followed_by": false,
+       "super_following": false,
+       "verification": {
+        "verified": false
+       }
+      }
+     }
+    },
+    "edit_control": {
+     "edit_tweet_ids": [
+      "2114725666537283669"
+     ],
+     "editable_until_msecs": "1793028463000",
+     "edits_remaining": "5",
+     "is_edit_eligible": true
+    },
+    "grok_analysis_button": true,
+    "grok_translated_post_with_availability": {
+     "is_available": false
+    },
+    "is_translatable": false,
+    "legacy": {
+     "bookmark_count": 483,
+     "bookmarked": false,
+     "conversation_id_str": "2114725666537283669",
+     "created_at": "Mon Oct 26 14:27:43 +0000 2026",
+     "display_text_range": [
+      0,
+      275
+     ],
+     "entities": {},
+     "favorite_count": 6806,
+     "favorited": false,
+     "full_text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\"",
+     "id_str": "2114725666537283669",
+     "is_quote_status": false,
+     "lang": "en",
+     "quote_count": 80,
+     "reply_count": 273,
+     "retweet_count": 953,
+     "retweeted": false,
+     "user_id_str": "1818311005698678784"
+    },
+    "note_tweet": {
+     "is_expandable": true,
+     "note_tweet_results": {
+      "result": {
+       "entity_set": {
+        "hashtags": [],
+        "smarttags": [],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": []
+       },
+       "id": "Tm90ZVR3ZWV0OjIxMTQ3MjU2NjY0NDkyMzU5Njg=",
+       "text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\" and “misinformation” used to shut people up\n• Heavy censorship of anyone who disagrees\n• Child mutilation and sterilization sold as “gender-affirming care”\n• Birth rates collapsing while governments deliberately import a replacement population that refuses to assimilate and poses a threat to citizens\n• DEI over competence and merit\n• Open borders + cultural self-hatred as policy\n\n​He called the woke mind virus anti-science, anti-merit, and anti-human for a reason. Without the fight he started, the damage would already be irreversible\n\nThe woke mind virus is like The Walking Dead... it never stops coming. The fight has to continue or we risk the collapse of entire Western civilization"
+      }
+     }
+    },
+    "rest_id": "2114725666537283669",
+    "unmention_data": {},
+    "views": {
+     "count": "4171496",
+     "state": "EnabledWithCount"
+    }
+   }
+  },
+  "rest_id": "2114765150431682772",
+  "unmention_data": {},
+  "views": {
+   "count": "4870567",
+   "state": "EnabledWithCount"
+  }
+ },
+ "expected": {
+  "bookmark_count": 1493,
+  "bookmarked": false,
+  "conversation_id": 2114765150431682800,
+  "conversation_id_str": "2114765150431682772",
+  "created_at": "Mon Oct 26 17:04:36 +0000 2026",
+  "display_text_range": [
+   0,
+   74
+  ],
+  "entities": {},
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": 4870567
+     }
+    }
+   }
+  },
+  "favorite_count": 115958,
+  "favorited": false,
+  "full_text": "Remember when using the wrong pronoun got people canceled?\n\nThat was dumb.",
+  "id": 2114765150431682800,
+  "id_str": "2114765150431682772",
+  "is_quote_status": true,
+  "lang": "en",
+  "quote_count": 297,
+  "quoted_status": {
+   "bookmark_count": 483,
+   "bookmarked": false,
+   "conversation_id": 2114725666537283600,
+   "conversation_id_str": "2114725666537283669",
+   "created_at": "Mon Oct 26 14:27:43 +0000 2026",
+   "entities": {
+    "hashtags": [],
+    "smarttags": [],
+    "symbols": [],
+    "urls": [],
+    "user_mentions": []
+   },
+   "ext": {
+    "views": {
+     "r": {
+      "ok": {
+       "count": 4171496
+      }
+     }
+    }
+   },
+   "favorite_count": 6806,
+   "favorited": false,
+   "full_text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\" and “misinformation” used to shut people up\n• Heavy censorship of anyone who disagrees\n• Child mutilation and sterilization sold as “gender-affirming care”\n• Birth rates collapsing while governments deliberately import a replacement population that refuses to assimilate and poses a threat to citizens\n• DEI over competence and merit\n• Open borders + cultural self-hatred as policy\n\n​He called the woke mind virus anti-science, anti-merit, and anti-human for a reason. Without the fight he started, the damage would already be irreversible\n\nThe woke mind virus is like The Walking Dead... it never stops coming. The fight has to continue or we risk the collapse of entire Western civilization",
+   "id": 2114725666537283600,
+   "id_str": "2114725666537283669",
+   "is_quote_status": false,
+   "lang": "en",
+   "quote_count": 80,
+   "reply_count": 273,
+   "retweet_count": 953,
+   "retweeted": false,
+   "text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\" and “misinformation” used to shut people up\n• Heavy censorship of anyone who disagrees\n• Child mutilation and sterilization sold as “gender-affirming care”\n• Birth rates collapsing while governments deliberately import a replacement population that refuses to assimilate and poses a threat to citizens\n• DEI over competence and merit\n• Open borders + cultural self-hatred as policy\n\n​He called the woke mind virus anti-science, anti-merit, and anti-human for a reason. Without the fight he started, the damage would already be irreversible\n\nThe woke mind virus is like The Walking Dead... it never stops coming. The fight has to continue or we risk the collapse of entire Western civilization",
+   "user": {
+    "created_at": "Tue Jul 30 15:42:27 +0000 2024",
+    "default_profile": true,
+    "default_profile_image": false,
+    "description": "",
+    "entities": {
+     "description": {},
+     "url": {
+      "urls": [
+       {
+        "display_url": "xfreeze.com",
+        "expanded_url": "http://xfreeze.com",
+        "indices": [
+         0,
+         23
+        ],
+        "url": "https://t.co/SBs8JZTvA9"
+       }
+      ]
+     }
+    },
+    "fast_followers_count": 0,
+    "favourites_count": 44718,
+    "follow_request_sent": false,
+    "followers_count": 291342,
+    "friends_count": 2119,
+    "has_custom_timelines": false,
+    "id": 1818311005698678800,
+    "id_str": "1818311005698678784",
+    "is_translator": false,
+    "listed_count": 1432,
+    "media_count": 9336,
+    "name": "X Freeze",
+    "needs_phone_verification": false,
+    "normal_followers_count": 291342,
+    "notifications": false,
+    "possibly_sensitive": false,
+    "profile_banner_url": "https://pbs.twimg.com/profile_banners/1818311005698678784/1778551477",
+    "profile_image_url": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg",
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg",
+    "profile_interstitial_type": "",
+    "screen_name": "XFreeze",
+    "statuses_count": 30915,
+    "time_zone": "",
+    "translator_type": "none",
+    "url": "https://t.co/SBs8JZTvA9",
+    "utc_offset": 0,
+    "verified": true,
+    "verified_type": "Blue",
+    "want_retweets": false,
+    "withheld_description": "",
+    "withheld_scope": ""
+   },
+   "user_id_str": "1818311005698678784"
+  },
+  "quoted_status_id_str": "2114725666537283669",
+  "quoted_status_permalink": {
+   "display": "x.com/xfreeze/status…",
+   "expanded": "https://twitter.com/xfreeze/status/2114725666537283669",
+   "url": "https://t.co/XMKyu9a9S0"
+  },
+  "quoted_status_result": {
+   "result": {
+    "__typename": "Tweet",
+    "core": {
+     "user_results": {
+      "result": {
+       "__typename": "User",
+       "affiliates_highlighted_label": {},
+       "avatar": {
+        "image_url": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg"
+       },
+       "core": {
+        "created_at": "Tue Jul 30 15:42:27 +0000 2024",
+        "name": "X Freeze",
+        "screen_name": "XFreeze"
+       },
+       "dm_permissions": {
+        "can_dm": true
+       },
+       "follow_request_sent": false,
+       "has_graduated_access": true,
+       "id": "VXNlcjoxODE4MzExMDA1Njk4Njc4Nzg0",
+       "is_blue_verified": true,
+       "legacy": {
+        "created_at": "Tue Jul 30 15:42:27 +0000 2024",
+        "default_profile": true,
+        "default_profile_image": false,
+        "description": "",
+        "entities": {
+         "description": {},
+         "url": {
+          "urls": [
+           {
+            "display_url": "xfreeze.com",
+            "expanded_url": "http://xfreeze.com",
+            "indices": [
+             0,
+             23
+            ],
+            "url": "https://t.co/SBs8JZTvA9"
+           }
+          ]
+         }
+        },
+        "fast_followers_count": 0,
+        "favourites_count": 44718,
+        "follow_request_sent": false,
+        "followers_count": 291342,
+        "friends_count": 2119,
+        "has_custom_timelines": false,
+        "id": 1818311005698678800,
+        "id_str": "1818311005698678784",
+        "is_translator": false,
+        "listed_count": 1432,
+        "media_count": 9336,
+        "name": "X Freeze",
+        "needs_phone_verification": false,
+        "normal_followers_count": 291342,
+        "notifications": false,
+        "possibly_sensitive": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/1818311005698678784/1778551477",
+        "profile_image_url": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg",
+        "profile_interstitial_type": "",
+        "screen_name": "XFreeze",
+        "statuses_count": 30915,
+        "time_zone": "",
+        "translator_type": "none",
+        "url": "https://t.co/SBs8JZTvA9",
+        "utc_offset": 0,
+        "verified": true,
+        "verified_type": "Blue",
+        "want_retweets": false,
+        "withheld_description": "",
+        "withheld_scope": ""
+       },
+       "location": {
+        "location": ""
+       },
+       "media_permissions": {
+        "can_media_tag": true
+       },
+       "parody_commentary_fan_label": "None",
+       "privacy": {
+        "protected": false
+       },
+       "professional": {
+        "category": [],
+        "professional_type": "Creator",
+        "rest_id": "1835442711370871202"
+       },
+       "profile_bio": {
+        "description": ""
+       },
+       "profile_image_shape": "Circle",
+       "relationship_perspectives": {
+        "blocked_by": false,
+        "blocking": false,
+        "followed_by": false,
+        "following": false,
+        "muting": false
+       },
+       "rest_id": "1818311005698678784",
+       "super_follow_eligible": true,
+       "super_followed_by": false,
+       "super_following": false,
+       "verification": {
+        "verified": false
+       }
+      }
+     }
+    },
+    "edit_control": {
+     "edit_tweet_ids": [
+      "2114725666537283669"
+     ],
+     "editable_until_msecs": "1793028463000",
+     "edits_remaining": "5",
+     "is_edit_eligible": true
+    },
+    "grok_analysis_button": true,
+    "grok_translated_post_with_availability": {
+     "is_available": false
+    },
+    "is_translatable": false,
+    "legacy": {
+     "bookmark_count": 483,
+     "bookmarked": false,
+     "conversation_id": 2114725666537283600,
+     "conversation_id_str": "2114725666537283669",
+     "created_at": "Mon Oct 26 14:27:43 +0000 2026",
+     "entities": {
+      "hashtags": [],
+      "smarttags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": []
+     },
+     "ext": {
+      "views": {
+       "r": {
+        "ok": {
+         "count": 4171496
+        }
+       }
+      }
+     },
+     "favorite_count": 6806,
+     "favorited": false,
+     "full_text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\" and “misinformation” used to shut people up\n• Heavy censorship of anyone who disagrees\n• Child mutilation and sterilization sold as “gender-affirming care”\n• Birth rates collapsing while governments deliberately import a replacement population that refuses to assimilate and poses a threat to citizens\n• DEI over competence and merit\n• Open borders + cultural self-hatred as policy\n\n​He called the woke mind virus anti-science, anti-merit, and anti-human for a reason. Without the fight he started, the damage would already be irreversible\n\nThe woke mind virus is like The Walking Dead... it never stops coming. The fight has to continue or we risk the collapse of entire Western civilization",
+     "id": 2114725666537283600,
+     "id_str": "2114725666537283669",
+     "is_quote_status": false,
+     "lang": "en",
+     "quote_count": 80,
+     "reply_count": 273,
+     "retweet_count": 953,
+     "retweeted": false,
+     "text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\" and “misinformation” used to shut people up\n• Heavy censorship of anyone who disagrees\n• Child mutilation and sterilization sold as “gender-affirming care”\n• Birth rates collapsing while governments deliberately import a replacement population that refuses to assimilate and poses a threat to citizens\n• DEI over competence and merit\n• Open borders + cultural self-hatred as policy\n\n​He called the woke mind virus anti-science, anti-merit, and anti-human for a reason. Without the fight he started, the damage would already be irreversible\n\nThe woke mind virus is like The Walking Dead... it never stops coming. The fight has to continue or we risk the collapse of entire Western civilization",
+     "user": {
+      "created_at": "Tue Jul 30 15:42:27 +0000 2024",
+      "default_profile": true,
+      "default_profile_image": false,
+      "description": "",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "xfreeze.com",
+          "expanded_url": "http://xfreeze.com",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/SBs8JZTvA9"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 44718,
+      "follow_request_sent": false,
+      "followers_count": 291342,
+      "friends_count": 2119,
+      "has_custom_timelines": false,
+      "id": 1818311005698678800,
+      "id_str": "1818311005698678784",
+      "is_translator": false,
+      "listed_count": 1432,
+      "media_count": 9336,
+      "name": "X Freeze",
+      "needs_phone_verification": false,
+      "normal_followers_count": 291342,
+      "notifications": false,
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/1818311005698678784/1778551477",
+      "profile_image_url": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/1876785200010539008/2_HFJjq9_normal.jpg",
+      "profile_interstitial_type": "",
+      "screen_name": "XFreeze",
+      "statuses_count": 30915,
+      "time_zone": "",
+      "translator_type": "none",
+      "url": "https://t.co/SBs8JZTvA9",
+      "utc_offset": 0,
+      "verified": true,
+      "verified_type": "Blue",
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "user_id_str": "1818311005698678784"
+    },
+    "note_tweet": {
+     "is_expandable": true,
+     "note_tweet_results": {
+      "result": {
+       "entity_set": {
+        "hashtags": [],
+        "smarttags": [],
+        "symbols": [],
+        "urls": [],
+        "user_mentions": []
+       },
+       "id": "Tm90ZVR3ZWV0OjIxMTQ3MjU2NjY0NDkyMzU5Njg=",
+       "text": "If Elon Musk hadn't bought Twitter and fought back against the insanity of the last few years, the West would be much further down a path of self-destruction, self-hatred, and moral corruption\n\n​• Pronouns treated like sacred scripture\n• State propaganda rebranded as \"truth\" and “misinformation” used to shut people up\n• Heavy censorship of anyone who disagrees\n• Child mutilation and sterilization sold as “gender-affirming care”\n• Birth rates collapsing while governments deliberately import a replacement population that refuses to assimilate and poses a threat to citizens\n• DEI over competence and merit\n• Open borders + cultural self-hatred as policy\n\n​He called the woke mind virus anti-science, anti-merit, and anti-human for a reason. Without the fight he started, the damage would already be irreversible\n\nThe woke mind virus is like The Walking Dead... it never stops coming. The fight has to continue or we risk the collapse of entire Western civilization"
+      }
+     }
+    },
+    "rest_id": "2114725666537283669",
+    "unmention_data": {},
+    "views": {
+     "count": "4171496",
+     "state": "EnabledWithCount"
+    }
+   }
+  },
+  "reply_count": 2972,
+  "retweet_count": 10656,
+  "retweeted": false,
+  "text": "Remember when using the wrong pronoun got people canceled?\n\nThat was dumb.",
+  "user": {
+   "created_at": "Tue Jun 02 20:12:29 +0000 2009",
+   "default_profile": false,
+   "default_profile_image": false,
+   "description": "https://t.co/ZdBx5WABYx",
+   "entities": {
+    "description": {
+     "urls": [
+      {
+       "display_url": "Terafab.AI",
+       "expanded_url": "http://Terafab.AI",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/ZdBx5WABYx"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 255722,
+   "follow_request_sent": false,
+   "followers_count": 241538972,
+   "friends_count": 1422,
+   "has_custom_timelines": true,
+   "id": 44196397,
+   "id_str": "44196397",
+   "is_translator": false,
+   "listed_count": 171167,
+   "media_count": 4748,
+   "muting": true,
+   "name": "Elon Musk",
+   "needs_phone_verification": false,
+   "normal_followers_count": 241538972,
+   "notifications": false,
+   "pinned_tweet_ids_str": [
+    "2114765150431682772"
+   ],
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/44196397/1774145451",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/2103567689515954176/aR-Kjpp4_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/2103567689515954176/aR-Kjpp4_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "elonmusk",
+   "statuses_count": 111048,
+   "time_zone": "",
+   "translator_type": "none",
+   "url": "",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "44196397"
+ }
+}

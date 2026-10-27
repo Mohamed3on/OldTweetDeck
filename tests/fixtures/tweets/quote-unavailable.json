@@ -1,0 +1,313 @@
+{
+ "source": "@paulg SearchTimeline",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "Tweet",
+  "card": {
+   "rest_id": "https://t.co/Q5XGXff8pp"
+  },
+  "cashtag_attachments": [],
+  "core": {
+   "user_results": {
+    "result": {
+     "__typename": "User",
+     "affiliates_highlighted_label": {},
+     "avatar": {
+      "image_url": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg"
+     },
+     "core": {
+      "created_at": "Fri Aug 27 20:13:59 +0000 2010",
+      "name": "Paul Graham",
+      "screen_name": "paulg"
+     },
+     "dm_permissions": {
+      "can_dm": false
+     },
+     "follow_request_sent": false,
+     "has_graduated_access": true,
+     "id": "VXNlcjoxODM3NDk1MTk=",
+     "is_blue_verified": true,
+     "legacy": {
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "paulgraham.com",
+          "expanded_url": "http://paulgraham.com",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/99lamCujcc"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 159488,
+      "follow_request_sent": false,
+      "followers_count": 5441999,
+      "friends_count": 804,
+      "has_custom_timelines": true,
+      "is_translator": false,
+      "listed_count": 20946,
+      "media_count": 2020,
+      "needs_phone_verification": false,
+      "normal_followers_count": 5441999,
+      "notifications": false,
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/183749519/1401332683",
+      "profile_interstitial_type": "",
+      "statuses_count": 55130,
+      "time_zone": "",
+      "translator_type": "none",
+      "url": "https://t.co/99lamCujcc",
+      "utc_offset": 0,
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "location": {
+      "location": ""
+     },
+     "media_permissions": {
+      "can_media_tag": true
+     },
+     "parody_commentary_fan_label": "None",
+     "privacy": {
+      "protected": false
+     },
+     "profile_bio": {
+      "description": ""
+     },
+     "profile_description_language": "und",
+     "profile_image_shape": "Circle",
+     "relationship_perspectives": {
+      "blocked_by": false,
+      "blocking": false,
+      "followed_by": false,
+      "following": false,
+      "muting": false
+     },
+     "rest_id": "183749519",
+     "super_follow_eligible": false,
+     "super_followed_by": false,
+     "super_following": false,
+     "verification": {
+      "verified": false
+     }
+    }
+   }
+  },
+  "edit_control": {
+   "edit_tweet_ids": [
+    "738080788223164416"
+   ],
+   "editable_until_msecs": "1464808947447",
+   "edits_remaining": "5",
+   "is_edit_eligible": true
+  },
+  "grok_analysis_button": true,
+  "grok_annotations": {},
+  "grok_translated_post_with_availability": {
+   "is_available": false
+  },
+  "is_translatable": false,
+  "legacy": {
+   "bookmark_count": 0,
+   "bookmarked": false,
+   "conversation_id_str": "738080788223164416",
+   "created_at": "Wed Jun 01 18:52:27 +0000 2016",
+   "display_text_range": [
+    8,
+    95
+   ],
+   "entities": {
+    "urls": [
+     {
+      "display_url": "x.com/BrianCronin/st…",
+      "expanded_url": "https://x.com/BrianCronin/status/738079095393685504",
+      "indices": [
+       72,
+       95
+      ],
+      "url": "https://t.co/Q5XGXff8pp"
+     }
+    ],
+    "user_mentions": [
+     {
+      "id_str": "15080332",
+      "indices": [
+       0,
+       7
+      ],
+      "name": "FMB",
+      "screen_name": "fmbutt"
+     }
+    ]
+   },
+   "favorite_count": 3,
+   "favorited": false,
+   "full_text": "@fmbutt What do you think of Baby Donald? This may be the best so far. \nhttps://t.co/Q5XGXff8pp",
+   "id_str": "738080788223164416",
+   "in_reply_to_screen_name": "fmbutt",
+   "in_reply_to_status_id_str": "738080263394066432",
+   "in_reply_to_user_id_str": "15080332",
+   "is_quote_status": true,
+   "lang": "en",
+   "possibly_sensitive": false,
+   "possibly_sensitive_editable": true,
+   "quote_count": 0,
+   "quoted_status_id_str": "738079095393685504",
+   "quoted_status_permalink": {
+    "display": "x.com/BrianCronin/st…",
+    "expanded": "https://twitter.com/BrianCronin/status/738079095393685504",
+    "url": "https://t.co/Q5XGXff8pp"
+   },
+   "reply_count": 0,
+   "retweet_count": 0,
+   "retweeted": false,
+   "user_id_str": "183749519"
+  },
+  "quoted_status_result": {
+   "result": {
+    "__typename": "TweetUnavailable"
+   }
+  },
+  "rest_id": "738080788223164416",
+  "unmention_data": {},
+  "views": {
+   "state": "Enabled"
+  }
+ },
+ "expected": {
+  "bookmark_count": 0,
+  "bookmarked": false,
+  "conversation_id": 738080788223164400,
+  "conversation_id_str": "738080788223164416",
+  "created_at": "Wed Jun 01 18:52:27 +0000 2016",
+  "display_text_range": [
+   8,
+   95
+  ],
+  "entities": {
+   "urls": [
+    {
+     "display_url": "x.com/BrianCronin/st…",
+     "expanded_url": "https://x.com/BrianCronin/status/738079095393685504",
+     "indices": [
+      72,
+      95
+     ],
+     "url": "https://t.co/Q5XGXff8pp"
+    }
+   ],
+   "user_mentions": [
+    {
+     "id_str": "15080332",
+     "indices": [
+      0,
+      7
+     ],
+     "name": "FMB",
+     "screen_name": "fmbutt"
+    }
+   ]
+  },
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": null
+     }
+    }
+   }
+  },
+  "favorite_count": 3,
+  "favorited": false,
+  "full_text": "@fmbutt What do you think of Baby Donald? This may be the best so far. \nhttps://t.co/Q5XGXff8pp",
+  "id": 738080788223164400,
+  "id_str": "738080788223164416",
+  "in_reply_to_screen_name": "fmbutt",
+  "in_reply_to_status_id_str": "738080263394066432",
+  "in_reply_to_user_id_str": "15080332",
+  "is_quote_status": true,
+  "lang": "en",
+  "possibly_sensitive": false,
+  "possibly_sensitive_editable": true,
+  "quote_count": 0,
+  "quoted_status_id_str": "738079095393685504",
+  "quoted_status_permalink": {
+   "display": "x.com/BrianCronin/st…",
+   "expanded": "https://twitter.com/BrianCronin/status/738079095393685504",
+   "url": "https://t.co/Q5XGXff8pp"
+  },
+  "quoted_status_result": {
+   "result": {
+    "__typename": "TweetUnavailable"
+   }
+  },
+  "reply_count": 0,
+  "retweet_count": 0,
+  "retweeted": false,
+  "text": "@fmbutt What do you think of Baby Donald? This may be the best so far. \nhttps://t.co/Q5XGXff8pp",
+  "user": {
+   "created_at": "Fri Aug 27 20:13:59 +0000 2010",
+   "default_profile": false,
+   "default_profile_image": false,
+   "description": "",
+   "entities": {
+    "description": {},
+    "url": {
+     "urls": [
+      {
+       "display_url": "paulgraham.com",
+       "expanded_url": "http://paulgraham.com",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/99lamCujcc"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 159488,
+   "follow_request_sent": false,
+   "followers_count": 5441999,
+   "friends_count": 804,
+   "has_custom_timelines": true,
+   "id": 183749519,
+   "id_str": "183749519",
+   "is_translator": false,
+   "listed_count": 20946,
+   "media_count": 2020,
+   "name": "Paul Graham",
+   "needs_phone_verification": false,
+   "normal_followers_count": 5441999,
+   "notifications": false,
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/183749519/1401332683",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/1824002576/pg-railsconf_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "paulg",
+   "statuses_count": 55130,
+   "time_zone": "",
+   "translator_type": "none",
+   "url": "https://t.co/99lamCujcc",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "183749519"
+ }
+}

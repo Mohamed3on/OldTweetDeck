@@ -56,7 +56,7 @@ async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
-    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js, layout_js] =
+    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js, layout_js, tweet_js] =
         await Promise.allSettled([
             fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
@@ -68,6 +68,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/xlr.css")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/xapi.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/layout.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/tweet.js")).then(r => r.text()),
         ]);
     if (localStorage.OTDalwaysUseLocalFiles === "0") {
         const [
@@ -127,6 +128,7 @@ async function main() {
                 remote_interception_js.value.length > 30
             ) {
                 interception_js = remote_interception_js;
+                tweet_js = null; // upstream's interception carries its own parseTweet
                 console.log("Using remote interception.js");
             }
             if (
@@ -182,6 +184,13 @@ async function main() {
     let xapi_js_script = document.createElement("script");
     xapi_js_script.textContent = xapi_js.value;
     document.head.appendChild(xapi_js_script);
+
+    // Tweet adapter, for the local interception only.
+    if (tweet_js) {
+        let tweet_js_script = document.createElement("script");
+        tweet_js_script.textContent = tweet_js.value;
+        document.head.appendChild(tweet_js_script);
+    }
 
     let interception_js_script = document.createElement("script");
     interception_js_script.innerHTML = interception_js.value;

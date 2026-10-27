@@ -1,0 +1,2011 @@
+{
+ "source": "@EmmanuelMacron UserTweetsAndReplies",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "Tweet",
+  "cashtag_attachments": [],
+  "core": {
+   "user_results": {
+    "result": {
+     "__typename": "User",
+     "affiliates_highlighted_label": {},
+     "avatar": {
+      "image_url": "https://pbs.twimg.com/profile_images/1550535324501164032/0lTW_4tj_normal.jpg"
+     },
+     "core": {
+      "created_at": "Sun Oct 20 19:35:28 +0000 2013",
+      "name": "Emmanuel Macron",
+      "screen_name": "EmmanuelMacron"
+     },
+     "dm_permissions": {
+      "can_dm": false
+     },
+     "follow_request_sent": false,
+     "has_graduated_access": true,
+     "id": "VXNlcjoxOTc2MTQzMDY4",
+     "is_blue_verified": true,
+     "legacy": {
+      "default_profile": true,
+      "default_profile_image": false,
+      "description": "Président de la République française.",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "elysee.fr",
+          "expanded_url": "http://elysee.fr",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/n76au37OVm"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 513,
+      "follow_request_sent": false,
+      "followers_count": 11090042,
+      "friends_count": 708,
+      "has_custom_timelines": true,
+      "is_translator": false,
+      "listed_count": 16732,
+      "media_count": 7611,
+      "needs_phone_verification": false,
+      "normal_followers_count": 11090042,
+      "notifications": false,
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/1976143068/1723452442",
+      "profile_interstitial_type": "",
+      "statuses_count": 16027,
+      "time_zone": "",
+      "translator_type": "none",
+      "url": "https://t.co/n76au37OVm",
+      "utc_offset": 0,
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "location": {
+      "location": "France"
+     },
+     "media_permissions": {
+      "can_media_tag": true
+     },
+     "parody_commentary_fan_label": "None",
+     "privacy": {
+      "protected": false
+     },
+     "profile_bio": {
+      "description": "Président de la République française."
+     },
+     "profile_description_language": "fr",
+     "profile_image_shape": "Circle",
+     "relationship_perspectives": {
+      "blocked_by": false,
+      "blocking": false,
+      "followed_by": false,
+      "following": false,
+      "muting": false
+     },
+     "rest_id": "1976143068",
+     "super_follow_eligible": false,
+     "super_followed_by": false,
+     "super_following": false,
+     "verification": {
+      "verified": false,
+      "verified_type": "Government"
+     }
+    }
+   }
+  },
+  "edit_control": {
+   "edit_tweet_ids": [
+    "2114751577684672623"
+   ],
+   "editable_until_msecs": "1793034640000",
+   "edits_remaining": "5",
+   "is_edit_eligible": true
+  },
+  "grok_analysis_button": true,
+  "grok_annotations": {
+   "is_image_editable_by_grok": false
+  },
+  "grok_translated_post_with_availability": {
+   "data": {
+    "associated_data": {},
+    "destination_language": "en",
+    "entities": {
+     "hashtags": [],
+     "symbols": [],
+     "urls": [],
+     "user_mentions": []
+    },
+    "preview_translation": "This morning in Marseille, I came to express the Nation's solidarity with all those who were struck by the violence of October 17.\n\nI met with the mayor, the elected officials of the territory, the prefectural authorities, shopkeepers, residents, and the internal security forces.",
+    "source_language": "fr",
+    "translation": "This morning in Marseille, I came to express the Nation's solidarity with all those who were struck by the violence of October 17.\n\nI met with the mayor, the elected officials of the territory, the prefectural authorities, shopkeepers, residents, and the internal security forces.\n\nWe have drawn lessons from October 17. This Saturday, October 24, the right to demonstrate was preserved, and republican order was maintained. I warmly thank our law enforcement forces for their commitment alongside the elected officials.\n\nOur determination is unwavering to ensure that calm endures.\n\nWe will maintain the necessary security measures and work to establish permanent demonstration routes outside the city center, to reconcile the freedom to demonstrate, the safety of residents, and the resumption of economic activity.\n\nOur priority: preserve calm, allow shops to reopen, and let life fully resume its course.\n\nTo support shopkeepers who suffered looting or were forced to close, various forms of aid, including a support fund, have been put in place, in partnership with local authorities and the private sector. We are working with insurers and banks to accelerate compensation, help finance new orders, and support those who have experienced revenue losses.\n\nBehind every business, there are women and men who work, jobs, families, and years of effort. This is the economic life of our country. We must protect it and enable them to resume their activities.\n\nMarseille needs it. Our fellow citizens need it. The State is by their side and will remain so.\n\nI also know the angers that are being expressed. The high cost of living, the concerns of our high school and college students about their future: these are legitimate preoccupations that call for concrete responses. The Government will announce measures as early as this afternoon.\n\nBut no anger can justify violence, looting, or attacks on our institutions. Demonstrating is a right. Destroying never will be.\n\nSix months before the presidential election, our country needs a democratic debate, not a spiral of violence. Disagreements must be able to be expressed, proposals confronted, and the French people freely choose their future.\n\nWe will rise to the challenge of this collective responsibility: guaranteeing republican order, enabling democratic debate, and preserving what unites us.\n\nMarseillais, shopkeepers, elected officials, security forces: you can count on the Government and on my commitment. We will be there."
+   },
+   "is_available": true
+  },
+  "is_translatable": true,
+  "legacy": {
+   "bookmark_count": 73,
+   "bookmarked": false,
+   "conversation_id_str": "2114751577684672623",
+   "created_at": "Mon Oct 26 16:10:40 +0000 2026",
+   "display_text_range": [
+    0,
+    279
+   ],
+   "entities": {
+    "media": [
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 128,
+          "w": 128,
+          "x": 884,
+          "y": 540
+         },
+         {
+          "h": 276,
+          "w": 276,
+          "x": 1380,
+          "y": 46
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 75,
+          "w": 75,
+          "x": 517,
+          "y": 316
+         },
+         {
+          "h": 161,
+          "w": 161,
+          "x": 808,
+          "y": 26
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 128,
+          "w": 128,
+          "x": 884,
+          "y": 540
+         },
+         {
+          "h": 276,
+          "w": 276,
+          "x": 1380,
+          "y": 46
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 42,
+          "w": 42,
+          "x": 293,
+          "y": 179
+         },
+         {
+          "h": 91,
+          "w": 91,
+          "x": 458,
+          "y": 15
+         }
+        ]
+       }
+      },
+      "id_str": "2114751568989888512",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568989888512",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568989888512"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWPnXoAA-xhz.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     },
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": []
+       },
+       "medium": {
+        "faces": []
+       },
+       "orig": {
+        "faces": []
+       },
+       "small": {
+        "faces": []
+       }
+      },
+      "id_str": "2114751568608219136",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568608219136",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568608219136"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWOMX0AAckBG.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 119,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     },
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 78,
+          "w": 78,
+          "x": 938,
+          "y": 428
+         },
+         {
+          "h": 70,
+          "w": 70,
+          "x": 656,
+          "y": 436
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 904,
+          "y": 438
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 1056,
+          "y": 468
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 45,
+          "w": 45,
+          "x": 549,
+          "y": 250
+         },
+         {
+          "h": 41,
+          "w": 41,
+          "x": 384,
+          "y": 255
+         },
+         {
+          "h": 39,
+          "w": 39,
+          "x": 529,
+          "y": 256
+         },
+         {
+          "h": 39,
+          "w": 39,
+          "x": 618,
+          "y": 274
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 78,
+          "w": 78,
+          "x": 938,
+          "y": 428
+         },
+         {
+          "h": 70,
+          "w": 70,
+          "x": 656,
+          "y": 436
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 904,
+          "y": 438
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 1056,
+          "y": 468
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 25,
+          "w": 25,
+          "x": 311,
+          "y": 142
+         },
+         {
+          "h": 23,
+          "w": 23,
+          "x": 217,
+          "y": 144
+         },
+         {
+          "h": 22,
+          "w": 22,
+          "x": 300,
+          "y": 145
+         },
+         {
+          "h": 22,
+          "w": 22,
+          "x": 350,
+          "y": 155
+         }
+        ]
+       }
+      },
+      "id_str": "2114751568629116928",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568629116928",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568629116928"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWORWsAA2yC4.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 341,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 425,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 683,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     },
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 82,
+          "w": 82,
+          "x": 1612,
+          "y": 1054
+         },
+         {
+          "h": 86,
+          "w": 86,
+          "x": 164,
+          "y": 1240
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 48,
+          "w": 48,
+          "x": 944,
+          "y": 617
+         },
+         {
+          "h": 50,
+          "w": 50,
+          "x": 96,
+          "y": 726
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 82,
+          "w": 82,
+          "x": 1612,
+          "y": 1054
+         },
+         {
+          "h": 86,
+          "w": 86,
+          "x": 164,
+          "y": 1240
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 27,
+          "w": 27,
+          "x": 535,
+          "y": 349
+         },
+         {
+          "h": 28,
+          "w": 28,
+          "x": 54,
+          "y": 411
+         }
+        ]
+       }
+      },
+      "id_str": "2114751568633266177",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568633266177",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568633266177"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWOSWAAEi6fc.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 219
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 682,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 850,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 1365,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     }
+    ]
+   },
+   "extended_entities": {
+    "media": [
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 128,
+          "w": 128,
+          "x": 884,
+          "y": 540
+         },
+         {
+          "h": 276,
+          "w": 276,
+          "x": 1380,
+          "y": 46
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 75,
+          "w": 75,
+          "x": 517,
+          "y": 316
+         },
+         {
+          "h": 161,
+          "w": 161,
+          "x": 808,
+          "y": 26
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 128,
+          "w": 128,
+          "x": 884,
+          "y": 540
+         },
+         {
+          "h": 276,
+          "w": 276,
+          "x": 1380,
+          "y": 46
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 42,
+          "w": 42,
+          "x": 293,
+          "y": 179
+         },
+         {
+          "h": 91,
+          "w": 91,
+          "x": 458,
+          "y": 15
+         }
+        ]
+       }
+      },
+      "id_str": "2114751568989888512",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568989888512",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568989888512"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWPnXoAA-xhz.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     },
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": []
+       },
+       "medium": {
+        "faces": []
+       },
+       "orig": {
+        "faces": []
+       },
+       "small": {
+        "faces": []
+       }
+      },
+      "id_str": "2114751568608219136",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568608219136",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568608219136"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWOMX0AAckBG.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 119,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     },
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 78,
+          "w": 78,
+          "x": 938,
+          "y": 428
+         },
+         {
+          "h": 70,
+          "w": 70,
+          "x": 656,
+          "y": 436
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 904,
+          "y": 438
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 1056,
+          "y": 468
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 45,
+          "w": 45,
+          "x": 549,
+          "y": 250
+         },
+         {
+          "h": 41,
+          "w": 41,
+          "x": 384,
+          "y": 255
+         },
+         {
+          "h": 39,
+          "w": 39,
+          "x": 529,
+          "y": 256
+         },
+         {
+          "h": 39,
+          "w": 39,
+          "x": 618,
+          "y": 274
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 78,
+          "w": 78,
+          "x": 938,
+          "y": 428
+         },
+         {
+          "h": 70,
+          "w": 70,
+          "x": 656,
+          "y": 436
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 904,
+          "y": 438
+         },
+         {
+          "h": 68,
+          "w": 68,
+          "x": 1056,
+          "y": 468
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 25,
+          "w": 25,
+          "x": 311,
+          "y": 142
+         },
+         {
+          "h": 23,
+          "w": 23,
+          "x": 217,
+          "y": 144
+         },
+         {
+          "h": 22,
+          "w": 22,
+          "x": 300,
+          "y": 145
+         },
+         {
+          "h": 22,
+          "w": 22,
+          "x": 350,
+          "y": 155
+         }
+        ]
+       }
+      },
+      "id_str": "2114751568629116928",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568629116928",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568629116928"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWORWsAA2yC4.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 341,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 425,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 683,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     },
+     {
+      "display_url": "pic.x.com/fJDvPlVHWc",
+      "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 82,
+          "w": 82,
+          "x": 1612,
+          "y": 1054
+         },
+         {
+          "h": 86,
+          "w": 86,
+          "x": 164,
+          "y": 1240
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 48,
+          "w": 48,
+          "x": 944,
+          "y": 617
+         },
+         {
+          "h": 50,
+          "w": 50,
+          "x": 96,
+          "y": 726
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 82,
+          "w": 82,
+          "x": 1612,
+          "y": 1054
+         },
+         {
+          "h": 86,
+          "w": 86,
+          "x": 164,
+          "y": 1240
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 27,
+          "w": 27,
+          "x": 535,
+          "y": 349
+         },
+         {
+          "h": 28,
+          "w": 28,
+          "x": 54,
+          "y": 411
+         }
+        ]
+       }
+      },
+      "id_str": "2114751568633266177",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "3_2114751568633266177",
+      "media_results": {
+       "result": {
+        "media_key": "3_2114751568633266177"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVkbWOSWAAEi6fc.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 219
+        },
+        {
+         "h": 1366,
+         "w": 1366,
+         "x": 682,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 1198,
+         "x": 850,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 683,
+         "x": 1365,
+         "y": 0
+        },
+        {
+         "h": 1366,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1366,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1366,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 454,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/fJDvPlVHWc"
+     }
+    ]
+   },
+   "favorite_count": 1703,
+   "favorited": false,
+   "full_text": "À Marseille ce matin, je suis venu témoigner de la solidarité de la Nation à tous ceux qui ont été frappés par les violences du 17 octobre.\n\nJ’ai échangé avec le maire, les élus du territoire, les autorités préfectorales, des commerçants, des habitants, et les forces de sécurité https://t.co/fJDvPlVHWc",
+   "id_str": "2114751577684672623",
+   "is_quote_status": false,
+   "lang": "fr",
+   "possibly_sensitive": false,
+   "possibly_sensitive_editable": true,
+   "quote_count": 64,
+   "reply_count": 833,
+   "retweet_count": 311,
+   "retweeted": false,
+   "user_id_str": "1976143068"
+  },
+  "note_tweet": {
+   "is_expandable": true,
+   "note_tweet_results": {
+    "result": {
+     "entity_set": {
+      "hashtags": [],
+      "smarttags": [],
+      "symbols": [],
+      "urls": [],
+      "user_mentions": []
+     },
+     "id": "Tm90ZVR3ZWV0OjIxMTQ3NTE1Nzc0NDEzNTM3Mjk=",
+     "text": "À Marseille ce matin, je suis venu témoigner de la solidarité de la Nation à tous ceux qui ont été frappés par les violences du 17 octobre.\n\nJ’ai échangé avec le maire, les élus du territoire, les autorités préfectorales, des commerçants, des habitants, et les forces de sécurité intérieure.\n\nNous avons tiré les leçons du 17 octobre. Ce samedi 24, le droit de manifester a été préservé et l’ordre républicain a été tenu. Je remercie vivement nos forces de l’ordre pour leur engagement aux côtés des élus.\n\nNotre détermination est entière pour que le calme demeure. \n\nNous maintiendrons les dispositifs de sécurité nécessaires et travaillerons à pérenniser des parcours de manifestation en dehors du centre-ville, pour concilier la liberté de manifester, la sécurité des habitants et la reprise de l’activité économique.\n\nNotre priorité : préserver le calme, permettre aux commerces de rouvrir et à la vie de reprendre pleinement ses droits.\n\nPour soutenir les commerçants qui ont subi des pillages ou qui ont été contraints de fermer, différentes aides dont un fonds de soutien ont été mises en place, en lien avec les collectivités territoriales et le secteur privé. Nous travaillons avec les assureurs et les banques pour accélérer les indemnisations, aider à financer les nouvelles commandes et accompagner ceux qui ont subi des pertes de revenus.\n\nDerrière chaque commerce, il y a des femmes et des hommes qui travaillent, des emplois, des familles, des années d’efforts. C’est la vie économique de notre pays. Nous devons la protéger et leur permettre de reprendre leur activité.\n\nMarseille en a besoin. Nos compatriotes en ont besoin. L’État est à leurs côtés et le restera.\n\nJe sais aussi les colères qui s’expriment. La vie chère, les inquiétudes de nos lycéens et de nos étudiants pour leur avenir : ces préoccupations sont légitimes et appellent des réponses concrètes. Le Gouvernement annoncera dès cet après-midi des mesures.\n\nMais aucune colère ne saurait justifier les violences, les pillages ou les attaques contre nos institutions. Manifester est un droit. Détruire n’en sera jamais un.\n\nÀ six mois de l’élection présidentielle, notre pays a besoin d’un débat démocratique, pas d’une spirale de violences. Les désaccords doivent pouvoir s’exprimer, les propositions se confronter et les Français choisir librement leur avenir.\n\nNous serons au rendez-vous de cette responsabilité collective : garantir l’ordre républicain, permettre le débat démocratique et préserver ce qui nous unit.\n\nMarseillais, commerçants, élus, forces de sécurité : vous pouvez compter sur le Gouvernement et sur mon engagement. Nous serons là."
+    }
+   }
+  },
+  "rest_id": "2114751577684672623",
+  "unmention_data": {},
+  "views": {
+   "count": "203539",
+   "state": "EnabledWithCount"
+  }
+ },
+ "expected": {
+  "bookmark_count": 73,
+  "bookmarked": false,
+  "conversation_id": 2114751577684672500,
+  "conversation_id_str": "2114751577684672623",
+  "created_at": "Mon Oct 26 16:10:40 +0000 2026",
+  "entities": {
+   "hashtags": [],
+   "smarttags": [],
+   "symbols": [],
+   "urls": [],
+   "user_mentions": []
+  },
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": 203539
+     }
+    }
+   }
+  },
+  "extended_entities": {
+   "media": [
+    {
+     "display_url": "pic.x.com/fJDvPlVHWc",
+     "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+     "ext_media_availability": {
+      "status": "Available"
+     },
+     "features": {
+      "large": {
+       "faces": [
+        {
+         "h": 128,
+         "w": 128,
+         "x": 884,
+         "y": 540
+        },
+        {
+         "h": 276,
+         "w": 276,
+         "x": 1380,
+         "y": 46
+        }
+       ]
+      },
+      "medium": {
+       "faces": [
+        {
+         "h": 75,
+         "w": 75,
+         "x": 517,
+         "y": 316
+        },
+        {
+         "h": 161,
+         "w": 161,
+         "x": 808,
+         "y": 26
+        }
+       ]
+      },
+      "orig": {
+       "faces": [
+        {
+         "h": 128,
+         "w": 128,
+         "x": 884,
+         "y": 540
+        },
+        {
+         "h": 276,
+         "w": 276,
+         "x": 1380,
+         "y": 46
+        }
+       ]
+      },
+      "small": {
+       "faces": [
+        {
+         "h": 42,
+         "w": 42,
+         "x": 293,
+         "y": 179
+        },
+        {
+         "h": 91,
+         "w": 91,
+         "x": 458,
+         "y": 15
+        }
+       ]
+      }
+     },
+     "id_str": "2114751568989888512",
+     "indices": [
+      2487,
+      2487
+     ],
+     "media_key": "3_2114751568989888512",
+     "media_results": {
+      "result": {
+       "media_key": "3_2114751568989888512"
+      }
+     },
+     "media_url_https": "https://pbs.twimg.com/media/HVkbWPnXoAA-xhz.jpg",
+     "original_info": {
+      "focus_rects": [
+       {
+        "h": 1147,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1366,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1198,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 683,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "height": 1366,
+      "width": 2048
+     },
+     "sizes": {
+      "large": {
+       "h": 1366,
+       "resize": "fit",
+       "w": 2048
+      },
+      "medium": {
+       "h": 800,
+       "resize": "fit",
+       "w": 1200
+      },
+      "small": {
+       "h": 454,
+       "resize": "fit",
+       "w": 680
+      },
+      "thumb": {
+       "h": 150,
+       "resize": "crop",
+       "w": 150
+      }
+     },
+     "type": "photo",
+     "url": "https://t.co/fJDvPlVHWc"
+    },
+    {
+     "display_url": "pic.x.com/fJDvPlVHWc",
+     "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+     "ext_media_availability": {
+      "status": "Available"
+     },
+     "features": {
+      "large": {
+       "faces": []
+      },
+      "medium": {
+       "faces": []
+      },
+      "orig": {
+       "faces": []
+      },
+      "small": {
+       "faces": []
+      }
+     },
+     "id_str": "2114751568608219136",
+     "indices": [
+      2487,
+      2487
+     ],
+     "media_key": "3_2114751568608219136",
+     "media_results": {
+      "result": {
+       "media_key": "3_2114751568608219136"
+      }
+     },
+     "media_url_https": "https://pbs.twimg.com/media/HVkbWOMX0AAckBG.jpg",
+     "original_info": {
+      "focus_rects": [
+       {
+        "h": 1147,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1366,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1198,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 683,
+        "x": 119,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "height": 1366,
+      "width": 2048
+     },
+     "sizes": {
+      "large": {
+       "h": 1366,
+       "resize": "fit",
+       "w": 2048
+      },
+      "medium": {
+       "h": 800,
+       "resize": "fit",
+       "w": 1200
+      },
+      "small": {
+       "h": 454,
+       "resize": "fit",
+       "w": 680
+      },
+      "thumb": {
+       "h": 150,
+       "resize": "crop",
+       "w": 150
+      }
+     },
+     "type": "photo",
+     "url": "https://t.co/fJDvPlVHWc"
+    },
+    {
+     "display_url": "pic.x.com/fJDvPlVHWc",
+     "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+     "ext_media_availability": {
+      "status": "Available"
+     },
+     "features": {
+      "large": {
+       "faces": [
+        {
+         "h": 78,
+         "w": 78,
+         "x": 938,
+         "y": 428
+        },
+        {
+         "h": 70,
+         "w": 70,
+         "x": 656,
+         "y": 436
+        },
+        {
+         "h": 68,
+         "w": 68,
+         "x": 904,
+         "y": 438
+        },
+        {
+         "h": 68,
+         "w": 68,
+         "x": 1056,
+         "y": 468
+        }
+       ]
+      },
+      "medium": {
+       "faces": [
+        {
+         "h": 45,
+         "w": 45,
+         "x": 549,
+         "y": 250
+        },
+        {
+         "h": 41,
+         "w": 41,
+         "x": 384,
+         "y": 255
+        },
+        {
+         "h": 39,
+         "w": 39,
+         "x": 529,
+         "y": 256
+        },
+        {
+         "h": 39,
+         "w": 39,
+         "x": 618,
+         "y": 274
+        }
+       ]
+      },
+      "orig": {
+       "faces": [
+        {
+         "h": 78,
+         "w": 78,
+         "x": 938,
+         "y": 428
+        },
+        {
+         "h": 70,
+         "w": 70,
+         "x": 656,
+         "y": 436
+        },
+        {
+         "h": 68,
+         "w": 68,
+         "x": 904,
+         "y": 438
+        },
+        {
+         "h": 68,
+         "w": 68,
+         "x": 1056,
+         "y": 468
+        }
+       ]
+      },
+      "small": {
+       "faces": [
+        {
+         "h": 25,
+         "w": 25,
+         "x": 311,
+         "y": 142
+        },
+        {
+         "h": 23,
+         "w": 23,
+         "x": 217,
+         "y": 144
+        },
+        {
+         "h": 22,
+         "w": 22,
+         "x": 300,
+         "y": 145
+        },
+        {
+         "h": 22,
+         "w": 22,
+         "x": 350,
+         "y": 155
+        }
+       ]
+      }
+     },
+     "id_str": "2114751568629116928",
+     "indices": [
+      2487,
+      2487
+     ],
+     "media_key": "3_2114751568629116928",
+     "media_results": {
+      "result": {
+       "media_key": "3_2114751568629116928"
+      }
+     },
+     "media_url_https": "https://pbs.twimg.com/media/HVkbWORWsAA2yC4.jpg",
+     "original_info": {
+      "focus_rects": [
+       {
+        "h": 1147,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1366,
+        "x": 341,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1198,
+        "x": 425,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 683,
+        "x": 683,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "height": 1366,
+      "width": 2048
+     },
+     "sizes": {
+      "large": {
+       "h": 1366,
+       "resize": "fit",
+       "w": 2048
+      },
+      "medium": {
+       "h": 800,
+       "resize": "fit",
+       "w": 1200
+      },
+      "small": {
+       "h": 454,
+       "resize": "fit",
+       "w": 680
+      },
+      "thumb": {
+       "h": 150,
+       "resize": "crop",
+       "w": 150
+      }
+     },
+     "type": "photo",
+     "url": "https://t.co/fJDvPlVHWc"
+    },
+    {
+     "display_url": "pic.x.com/fJDvPlVHWc",
+     "expanded_url": "https://x.com/EmmanuelMacron/status/2114751577684672623/photo/1",
+     "ext_media_availability": {
+      "status": "Available"
+     },
+     "features": {
+      "large": {
+       "faces": [
+        {
+         "h": 82,
+         "w": 82,
+         "x": 1612,
+         "y": 1054
+        },
+        {
+         "h": 86,
+         "w": 86,
+         "x": 164,
+         "y": 1240
+        }
+       ]
+      },
+      "medium": {
+       "faces": [
+        {
+         "h": 48,
+         "w": 48,
+         "x": 944,
+         "y": 617
+        },
+        {
+         "h": 50,
+         "w": 50,
+         "x": 96,
+         "y": 726
+        }
+       ]
+      },
+      "orig": {
+       "faces": [
+        {
+         "h": 82,
+         "w": 82,
+         "x": 1612,
+         "y": 1054
+        },
+        {
+         "h": 86,
+         "w": 86,
+         "x": 164,
+         "y": 1240
+        }
+       ]
+      },
+      "small": {
+       "faces": [
+        {
+         "h": 27,
+         "w": 27,
+         "x": 535,
+         "y": 349
+        },
+        {
+         "h": 28,
+         "w": 28,
+         "x": 54,
+         "y": 411
+        }
+       ]
+      }
+     },
+     "id_str": "2114751568633266177",
+     "indices": [
+      2487,
+      2487
+     ],
+     "media_key": "3_2114751568633266177",
+     "media_results": {
+      "result": {
+       "media_key": "3_2114751568633266177"
+      }
+     },
+     "media_url_https": "https://pbs.twimg.com/media/HVkbWOSWAAEi6fc.jpg",
+     "original_info": {
+      "focus_rects": [
+       {
+        "h": 1147,
+        "w": 2048,
+        "x": 0,
+        "y": 219
+       },
+       {
+        "h": 1366,
+        "w": 1366,
+        "x": 682,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 1198,
+        "x": 850,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 683,
+        "x": 1365,
+        "y": 0
+       },
+       {
+        "h": 1366,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "height": 1366,
+      "width": 2048
+     },
+     "sizes": {
+      "large": {
+       "h": 1366,
+       "resize": "fit",
+       "w": 2048
+      },
+      "medium": {
+       "h": 800,
+       "resize": "fit",
+       "w": 1200
+      },
+      "small": {
+       "h": 454,
+       "resize": "fit",
+       "w": 680
+      },
+      "thumb": {
+       "h": 150,
+       "resize": "crop",
+       "w": 150
+      }
+     },
+     "type": "photo",
+     "url": "https://t.co/fJDvPlVHWc"
+    }
+   ]
+  },
+  "favorite_count": 1703,
+  "favorited": false,
+  "full_text": "This morning in Marseille, I came to express the Nation's solidarity with all those who were struck by the violence of October 17.\n\nI met with the mayor, the elected officials of the territory, the prefectural authorities, shopkeepers, residents, and the internal security forces.\n\nWe have drawn lessons from October 17. This Saturday, October 24, the right to demonstrate was preserved, and republican order was maintained. I warmly thank our law enforcement forces for their commitment alongside the elected officials.\n\nOur determination is unwavering to ensure that calm endures.\n\nWe will maintain the necessary security measures and work to establish permanent demonstration routes outside the city center, to reconcile the freedom to demonstrate, the safety of residents, and the resumption of economic activity.\n\nOur priority: preserve calm, allow shops to reopen, and let life fully resume its course.\n\nTo support shopkeepers who suffered looting or were forced to close, various forms of aid, including a support fund, have been put in place, in partnership with local authorities and the private sector. We are working with insurers and banks to accelerate compensation, help finance new orders, and support those who have experienced revenue losses.\n\nBehind every business, there are women and men who work, jobs, families, and years of effort. This is the economic life of our country. We must protect it and enable them to resume their activities.\n\nMarseille needs it. Our fellow citizens need it. The State is by their side and will remain so.\n\nI also know the angers that are being expressed. The high cost of living, the concerns of our high school and college students about their future: these are legitimate preoccupations that call for concrete responses. The Government will announce measures as early as this afternoon.\n\nBut no anger can justify violence, looting, or attacks on our institutions. Demonstrating is a right. Destroying never will be.\n\nSix months before the presidential election, our country needs a democratic debate, not a spiral of violence. Disagreements must be able to be expressed, proposals confronted, and the French people freely choose their future.\n\nWe will rise to the challenge of this collective responsibility: guaranteeing republican order, enabling democratic debate, and preserving what unites us.\n\nMarseillais, shopkeepers, elected officials, security forces: you can count on the Government and on my commitment. We will be there.",
+  "id": 2114751577684672500,
+  "id_str": "2114751577684672623",
+  "is_quote_status": false,
+  "lang": "en",
+  "possibly_sensitive": false,
+  "possibly_sensitive_editable": true,
+  "quote_count": 64,
+  "reply_count": 833,
+  "retweet_count": 311,
+  "retweeted": false,
+  "text": "This morning in Marseille, I came to express the Nation's solidarity with all those who were struck by the violence of October 17.\n\nI met with the mayor, the elected officials of the territory, the prefectural authorities, shopkeepers, residents, and the internal security forces.\n\nWe have drawn lessons from October 17. This Saturday, October 24, the right to demonstrate was preserved, and republican order was maintained. I warmly thank our law enforcement forces for their commitment alongside the elected officials.\n\nOur determination is unwavering to ensure that calm endures.\n\nWe will maintain the necessary security measures and work to establish permanent demonstration routes outside the city center, to reconcile the freedom to demonstrate, the safety of residents, and the resumption of economic activity.\n\nOur priority: preserve calm, allow shops to reopen, and let life fully resume its course.\n\nTo support shopkeepers who suffered looting or were forced to close, various forms of aid, including a support fund, have been put in place, in partnership with local authorities and the private sector. We are working with insurers and banks to accelerate compensation, help finance new orders, and support those who have experienced revenue losses.\n\nBehind every business, there are women and men who work, jobs, families, and years of effort. This is the economic life of our country. We must protect it and enable them to resume their activities.\n\nMarseille needs it. Our fellow citizens need it. The State is by their side and will remain so.\n\nI also know the angers that are being expressed. The high cost of living, the concerns of our high school and college students about their future: these are legitimate preoccupations that call for concrete responses. The Government will announce measures as early as this afternoon.\n\nBut no anger can justify violence, looting, or attacks on our institutions. Demonstrating is a right. Destroying never will be.\n\nSix months before the presidential election, our country needs a democratic debate, not a spiral of violence. Disagreements must be able to be expressed, proposals confronted, and the French people freely choose their future.\n\nWe will rise to the challenge of this collective responsibility: guaranteeing republican order, enabling democratic debate, and preserving what unites us.\n\nMarseillais, shopkeepers, elected officials, security forces: you can count on the Government and on my commitment. We will be there.",
+  "user": {
+   "created_at": "Sun Oct 20 19:35:28 +0000 2013",
+   "default_profile": true,
+   "default_profile_image": false,
+   "description": "Président de la République française.",
+   "entities": {
+    "description": {},
+    "url": {
+     "urls": [
+      {
+       "display_url": "elysee.fr",
+       "expanded_url": "http://elysee.fr",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/n76au37OVm"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 513,
+   "follow_request_sent": false,
+   "followers_count": 11090042,
+   "friends_count": 708,
+   "has_custom_timelines": true,
+   "id": 1976143068,
+   "id_str": "1976143068",
+   "is_translator": false,
+   "listed_count": 16732,
+   "location": "France",
+   "media_count": 7611,
+   "name": "Emmanuel Macron",
+   "needs_phone_verification": false,
+   "normal_followers_count": 11090042,
+   "notifications": false,
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/1976143068/1723452442",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/1550535324501164032/0lTW_4tj_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/1550535324501164032/0lTW_4tj_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "EmmanuelMacron",
+   "statuses_count": 16027,
+   "time_zone": "",
+   "translator_type": "none",
+   "url": "https://t.co/n76au37OVm",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "1976143068"
+ }
+}

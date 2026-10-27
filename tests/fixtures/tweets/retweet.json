@@ -1,0 +1,1287 @@
+{
+ "source": "@NASA UserTweetsAndReplies",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "Tweet",
+  "cashtag_attachments": [],
+  "core": {
+   "user_results": {
+    "result": {
+     "__typename": "User",
+     "affiliates_highlighted_label": {},
+     "avatar": {
+      "image_url": "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg"
+     },
+     "core": {
+      "created_at": "Wed Dec 19 20:20:32 +0000 2007",
+      "name": "NASA",
+      "screen_name": "NASA"
+     },
+     "dm_permissions": {
+      "can_dm": false
+     },
+     "follow_request_sent": false,
+     "has_graduated_access": true,
+     "id": "VXNlcjoxMTM0ODI4Mg==",
+     "is_blue_verified": true,
+     "legacy": {
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "Making the seemingly impossible, possible. ✨",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "nasa.gov",
+          "expanded_url": "http://www.nasa.gov/",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/9NkQJKAnuU"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 17048,
+      "follow_request_sent": false,
+      "followers_count": 92311382,
+      "friends_count": 115,
+      "has_custom_timelines": true,
+      "is_translator": false,
+      "listed_count": 96852,
+      "media_count": 28211,
+      "needs_phone_verification": false,
+      "normal_followers_count": 92311382,
+      "notifications": false,
+      "pinned_tweet_ids_str": [
+       "2113776971603689874"
+      ],
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/11348282/1788992290",
+      "profile_interstitial_type": "",
+      "statuses_count": 74461,
+      "time_zone": "",
+      "translator_type": "regular",
+      "url": "https://t.co/9NkQJKAnuU",
+      "utc_offset": 0,
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "location": {
+      "location": "Pale Blue Dot"
+     },
+     "media_permissions": {
+      "can_media_tag": true
+     },
+     "parody_commentary_fan_label": "None",
+     "privacy": {
+      "protected": false
+     },
+     "profile_bio": {
+      "description": "Making the seemingly impossible, possible. ✨"
+     },
+     "profile_description_language": "en",
+     "profile_image_shape": "Square",
+     "relationship_perspectives": {
+      "blocked_by": false,
+      "blocking": false,
+      "followed_by": false,
+      "following": false,
+      "muting": false
+     },
+     "rest_id": "11348282",
+     "super_follow_eligible": false,
+     "super_followed_by": false,
+     "super_following": false,
+     "verification": {
+      "verified": false,
+      "verified_type": "Government"
+     }
+    }
+   }
+  },
+  "edit_control": {
+   "edit_tweet_ids": [
+    "2114463017043624059"
+   ],
+   "editable_until_msecs": "1792965842743",
+   "edits_remaining": "5",
+   "is_edit_eligible": false
+  },
+  "grok_analysis_button": true,
+  "grok_annotations": {},
+  "grok_translated_post_with_availability": {
+   "is_available": false
+  },
+  "is_translatable": false,
+  "legacy": {
+   "bookmark_count": 0,
+   "bookmarked": false,
+   "conversation_id_str": "2114463017043624059",
+   "created_at": "Sun Oct 25 21:04:02 +0000 2026",
+   "display_text_range": [
+    0,
+    139
+   ],
+   "entities": {
+    "user_mentions": [
+     {
+      "id_str": "17033995",
+      "indices": [
+       3,
+       10
+      ],
+      "name": "Nasdaq",
+      "screen_name": "Nasdaq"
+     },
+     {
+      "id_str": "11348282",
+      "indices": [
+       118,
+       123
+      ],
+      "name": "NASA",
+      "screen_name": "NASA"
+     }
+    ]
+   },
+   "favorite_count": 0,
+   "favorited": false,
+   "full_text": "RT @Nasdaq: 28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance…",
+   "id_str": "2114463017043624059",
+   "is_quote_status": false,
+   "lang": "en",
+   "quote_count": 0,
+   "reply_count": 0,
+   "retweet_count": 76,
+   "retweeted": false,
+   "retweeted_status_result": {
+    "result": {
+     "__typename": "Tweet",
+     "cashtag_attachments": [],
+     "content_disclosure": {
+      "ai_generated_disclosure": {
+       "can_edit": true,
+       "has_ai_generated_media": false
+      }
+     },
+     "core": {
+      "user_results": {
+       "result": {
+        "__typename": "User",
+        "affiliates_highlighted_label": {},
+        "avatar": {
+         "image_url": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg"
+        },
+        "core": {
+         "created_at": "Wed Oct 29 02:19:31 +0000 2008",
+         "name": "Nasdaq",
+         "screen_name": "Nasdaq"
+        },
+        "dm_permissions": {
+         "can_dm": false
+        },
+        "follow_request_sent": false,
+        "has_graduated_access": true,
+        "id": "VXNlcjoxNzAzMzk5NQ==",
+        "is_blue_verified": true,
+        "legacy": {
+         "default_profile": false,
+         "default_profile_image": false,
+         "description": "Powering the world's economies.",
+         "entities": {
+          "description": {},
+          "url": {
+           "urls": [
+            {
+             "display_url": "nasdaq.com",
+             "expanded_url": "http://www.nasdaq.com",
+             "indices": [
+              0,
+              23
+             ],
+             "url": "https://t.co/AH0YuzjL31"
+            }
+           ]
+          }
+         },
+         "fast_followers_count": 0,
+         "favourites_count": 3112,
+         "follow_request_sent": false,
+         "followers_count": 240458,
+         "friends_count": 6678,
+         "has_custom_timelines": true,
+         "is_translator": false,
+         "listed_count": 1737,
+         "media_count": 4455,
+         "needs_phone_verification": false,
+         "normal_followers_count": 240458,
+         "notifications": false,
+         "possibly_sensitive": false,
+         "profile_banner_url": "https://pbs.twimg.com/profile_banners/17033995/1693995951",
+         "profile_interstitial_type": "",
+         "statuses_count": 11619,
+         "time_zone": "",
+         "translator_type": "regular",
+         "url": "https://t.co/AH0YuzjL31",
+         "utc_offset": 0,
+         "want_retweets": false,
+         "withheld_description": "",
+         "withheld_scope": ""
+        },
+        "location": {
+         "location": "Global"
+        },
+        "media_permissions": {
+         "can_media_tag": true
+        },
+        "parody_commentary_fan_label": "None",
+        "privacy": {
+         "protected": false
+        },
+        "profile_bio": {
+         "description": "Powering the world's economies."
+        },
+        "profile_description_language": "en",
+        "profile_image_shape": "Square",
+        "relationship_perspectives": {
+         "blocked_by": false,
+         "blocking": false,
+         "followed_by": false,
+         "following": false,
+         "muting": false
+        },
+        "rest_id": "17033995",
+        "super_follow_eligible": false,
+        "super_followed_by": false,
+        "super_following": false,
+        "verification": {
+         "verified": false,
+         "verified_type": "Business"
+        }
+       }
+      }
+     },
+     "edit_control": {
+      "edit_tweet_ids": [
+       "2113981790897463375"
+      ],
+      "editable_until_msecs": "1792851109000",
+      "edits_remaining": "5",
+      "is_edit_eligible": true
+     },
+     "grok_analysis_button": true,
+     "grok_translated_post_with_availability": {
+      "is_available": false
+     },
+     "is_translatable": false,
+     "legacy": {
+      "bookmark_count": 26,
+      "bookmarked": false,
+      "conversation_id_str": "2113981790897463375",
+      "created_at": "Sat Oct 24 13:11:49 +0000 2026",
+      "display_text_range": [
+       0,
+       279
+      ],
+      "entities": {
+       "media": [
+        {
+         "additional_media_info": {
+          "monetizable": false
+         },
+         "display_url": "pic.x.com/isacEvXKxb",
+         "expanded_url": "https://x.com/Nasdaq/status/2113981790897463375/video/1",
+         "ext_media_availability": {
+          "status": "Available"
+         },
+         "id_str": "2113981749839515648",
+         "indices": [
+          280,
+          303
+         ],
+         "media_key": "13_2113981749839515648",
+         "media_results": {
+          "result": {
+           "media_key": "13_2113981749839515648"
+          }
+         },
+         "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2113981749839515648/img/pcg1Y8bHjQSBcVyI.jpg",
+         "original_info": {
+          "focus_rects": [],
+          "height": 1920,
+          "width": 1080
+         },
+         "sizes": {
+          "large": {
+           "h": 1920,
+           "resize": "fit",
+           "w": 1080
+          },
+          "medium": {
+           "h": 1200,
+           "resize": "fit",
+           "w": 675
+          },
+          "small": {
+           "h": 680,
+           "resize": "fit",
+           "w": 383
+          },
+          "thumb": {
+           "h": 150,
+           "resize": "crop",
+           "w": 150
+          }
+         },
+         "type": "video",
+         "url": "https://t.co/isacEvXKxb",
+         "video_info": {
+          "aspect_ratio": [
+           9,
+           16
+          ],
+          "duration_millis": 32157,
+          "variants": [
+           {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/pl/N6PGvV5c8OHPLfSH.m3u8?tag=16&v=cfc"
+           },
+           {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/320x568/Xi7hVDZcOmwJSIot.mp4?tag=16"
+           },
+           {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/480x852/XiHTSTuFq0ATRoxq.mp4?tag=16"
+           },
+           {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/720x1280/h9TyLNaMtcO6WZLq.mp4?tag=16"
+           },
+           {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/1080x1920/O7AVYPF-_q6jj8Hw.mp4?tag=16"
+           }
+          ]
+         }
+        }
+       ],
+       "user_mentions": [
+        {
+         "id_str": "11348282",
+         "indices": [
+          106,
+          111
+         ],
+         "name": "NASA",
+         "screen_name": "NASA"
+        },
+        {
+         "id_str": "11348282",
+         "indices": [
+          242,
+          247
+         ],
+         "name": "NASA",
+         "screen_name": "NASA"
+        },
+        {
+         "id_str": "19802879",
+         "indices": [
+          252,
+          260
+         ],
+         "name": "NASA JPL",
+         "screen_name": "NASAJPL"
+        }
+       ]
+      },
+      "extended_entities": {
+       "media": [
+        {
+         "additional_media_info": {
+          "monetizable": false
+         },
+         "display_url": "pic.x.com/isacEvXKxb",
+         "expanded_url": "https://x.com/Nasdaq/status/2113981790897463375/video/1",
+         "ext_media_availability": {
+          "status": "Available"
+         },
+         "id_str": "2113981749839515648",
+         "indices": [
+          280,
+          303
+         ],
+         "media_key": "13_2113981749839515648",
+         "media_results": {
+          "result": {
+           "media_key": "13_2113981749839515648"
+          }
+         },
+         "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2113981749839515648/img/pcg1Y8bHjQSBcVyI.jpg",
+         "original_info": {
+          "focus_rects": [],
+          "height": 1920,
+          "width": 1080
+         },
+         "sizes": {
+          "large": {
+           "h": 1920,
+           "resize": "fit",
+           "w": 1080
+          },
+          "medium": {
+           "h": 1200,
+           "resize": "fit",
+           "w": 675
+          },
+          "small": {
+           "h": 680,
+           "resize": "fit",
+           "w": 383
+          },
+          "thumb": {
+           "h": 150,
+           "resize": "crop",
+           "w": 150
+          }
+         },
+         "type": "video",
+         "url": "https://t.co/isacEvXKxb",
+         "video_info": {
+          "aspect_ratio": [
+           9,
+           16
+          ],
+          "duration_millis": 32157,
+          "variants": [
+           {
+            "content_type": "application/x-mpegURL",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/pl/N6PGvV5c8OHPLfSH.m3u8?tag=16&v=cfc"
+           },
+           {
+            "bitrate": 632000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/320x568/Xi7hVDZcOmwJSIot.mp4?tag=16"
+           },
+           {
+            "bitrate": 950000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/480x852/XiHTSTuFq0ATRoxq.mp4?tag=16"
+           },
+           {
+            "bitrate": 2176000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/720x1280/h9TyLNaMtcO6WZLq.mp4?tag=16"
+           },
+           {
+            "bitrate": 10368000,
+            "content_type": "video/mp4",
+            "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/1080x1920/O7AVYPF-_q6jj8Hw.mp4?tag=16"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      "favorite_count": 476,
+      "favorited": false,
+      "full_text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing https://t.co/isacEvXKxb",
+      "id_str": "2113981790897463375",
+      "is_quote_status": false,
+      "lang": "en",
+      "possibly_sensitive": false,
+      "possibly_sensitive_editable": true,
+      "quote_count": 9,
+      "reply_count": 19,
+      "retweet_count": 76,
+      "retweeted": false,
+      "user_id_str": "17033995"
+     },
+     "note_tweet": {
+      "is_expandable": true,
+      "note_tweet_results": {
+       "result": {
+        "entity_set": {
+         "hashtags": [],
+         "smarttags": [],
+         "symbols": [],
+         "timestamps": [],
+         "urls": [],
+         "user_mentions": [
+          {
+           "id_str": "11348282",
+           "indices": [
+            106,
+            111
+           ],
+           "name": "NASA",
+           "screen_name": "NASA"
+          },
+          {
+           "id_str": "11348282",
+           "indices": [
+            242,
+            247
+           ],
+           "name": "NASA",
+           "screen_name": "NASA"
+          },
+          {
+           "id_str": "19802879",
+           "indices": [
+            252,
+            260
+           ],
+           "name": "NASA JPL",
+           "screen_name": "NASAJPL"
+          }
+         ]
+        },
+        "id": "Tm90ZVR3ZWV0OjIxMTM5ODE3OTA4MjE5NTM1MzY=",
+        "text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing boundaries, on Earth and beyond."
+       }
+      }
+     },
+     "rest_id": "2113981790897463375",
+     "unmention_data": {},
+     "views": {
+      "count": "204523",
+      "state": "EnabledWithCount"
+     }
+    }
+   },
+   "user_id_str": "11348282"
+  },
+  "rest_id": "2114463017043624059",
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "unmention_data": {},
+  "views": {
+   "count": "52160",
+   "state": "EnabledWithCount"
+  }
+ },
+ "expected": {
+  "bookmark_count": 0,
+  "bookmarked": false,
+  "conversation_id": 2114463017043624000,
+  "conversation_id_str": "2114463017043624059",
+  "created_at": "Sun Oct 25 21:04:02 +0000 2026",
+  "display_text_range": [
+   0,
+   139
+  ],
+  "entities": {
+   "user_mentions": [
+    {
+     "id_str": "17033995",
+     "indices": [
+      3,
+      10
+     ],
+     "name": "Nasdaq",
+     "screen_name": "Nasdaq"
+    },
+    {
+     "id_str": "11348282",
+     "indices": [
+      118,
+      123
+     ],
+     "name": "NASA",
+     "screen_name": "NASA"
+    }
+   ]
+  },
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": 52160
+     }
+    }
+   }
+  },
+  "favorite_count": 0,
+  "favorited": false,
+  "full_text": "RT @Nasdaq: 28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance…",
+  "id": 2114463017043624000,
+  "id_str": "2114463017043624059",
+  "is_quote_status": false,
+  "lang": "en",
+  "quote_count": 0,
+  "reply_count": 0,
+  "retweet_count": 76,
+  "retweeted": false,
+  "retweeted_status": {
+   "bookmark_count": 26,
+   "bookmarked": false,
+   "conversation_id": 2113981790897463300,
+   "conversation_id_str": "2113981790897463375",
+   "created_at": "Sat Oct 24 13:11:49 +0000 2026",
+   "entities": {
+    "hashtags": [],
+    "smarttags": [],
+    "symbols": [],
+    "timestamps": [],
+    "urls": [],
+    "user_mentions": [
+     {
+      "id_str": "11348282",
+      "indices": [
+       106,
+       111
+      ],
+      "name": "NASA",
+      "screen_name": "NASA"
+     },
+     {
+      "id_str": "11348282",
+      "indices": [
+       242,
+       247
+      ],
+      "name": "NASA",
+      "screen_name": "NASA"
+     },
+     {
+      "id_str": "19802879",
+      "indices": [
+       252,
+       260
+      ],
+      "name": "NASA JPL",
+      "screen_name": "NASAJPL"
+     }
+    ]
+   },
+   "ext": {
+    "views": {
+     "r": {
+      "ok": {
+       "count": 204523
+      }
+     }
+    }
+   },
+   "extended_entities": {
+    "media": [
+     {
+      "additional_media_info": {
+       "monetizable": false
+      },
+      "display_url": "pic.x.com/isacEvXKxb",
+      "expanded_url": "https://x.com/Nasdaq/status/2113981790897463375/video/1",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "id_str": "2113981749839515648",
+      "indices": [
+       280,
+       303
+      ],
+      "media_key": "13_2113981749839515648",
+      "media_results": {
+       "result": {
+        "media_key": "13_2113981749839515648"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2113981749839515648/img/pcg1Y8bHjQSBcVyI.jpg",
+      "original_info": {
+       "focus_rects": [],
+       "height": 1920,
+       "width": 1080
+      },
+      "sizes": {
+       "large": {
+        "h": 1920,
+        "resize": "fit",
+        "w": 1080
+       },
+       "medium": {
+        "h": 1200,
+        "resize": "fit",
+        "w": 675
+       },
+       "small": {
+        "h": 680,
+        "resize": "fit",
+        "w": 383
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "video",
+      "url": "https://t.co/isacEvXKxb",
+      "video_info": {
+       "aspect_ratio": [
+        9,
+        16
+       ],
+       "duration_millis": 32157,
+       "variants": [
+        {
+         "content_type": "application/x-mpegURL",
+         "url": "https://video.twimg.com/amplify_video/2113981749839515648/pl/N6PGvV5c8OHPLfSH.m3u8?tag=16&v=cfc"
+        },
+        {
+         "bitrate": 632000,
+         "content_type": "video/mp4",
+         "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/320x568/Xi7hVDZcOmwJSIot.mp4?tag=16"
+        },
+        {
+         "bitrate": 950000,
+         "content_type": "video/mp4",
+         "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/480x852/XiHTSTuFq0ATRoxq.mp4?tag=16"
+        },
+        {
+         "bitrate": 2176000,
+         "content_type": "video/mp4",
+         "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/720x1280/h9TyLNaMtcO6WZLq.mp4?tag=16"
+        },
+        {
+         "bitrate": 10368000,
+         "content_type": "video/mp4",
+         "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/1080x1920/O7AVYPF-_q6jj8Hw.mp4?tag=16"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "favorite_count": 476,
+   "favorited": false,
+   "full_text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing boundaries, on Earth and beyond.",
+   "id": 2113981790897463300,
+   "id_str": "2113981790897463375",
+   "is_quote_status": false,
+   "lang": "en",
+   "possibly_sensitive": false,
+   "possibly_sensitive_editable": true,
+   "quote_count": 9,
+   "reply_count": 19,
+   "retweet_count": 76,
+   "retweeted": false,
+   "text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing https://t.co/isacEvXKxb",
+   "user": {
+    "created_at": "Wed Oct 29 02:19:31 +0000 2008",
+    "default_profile": false,
+    "default_profile_image": false,
+    "description": "Powering the world's economies.",
+    "entities": {
+     "description": {},
+     "url": {
+      "urls": [
+       {
+        "display_url": "nasdaq.com",
+        "expanded_url": "http://www.nasdaq.com",
+        "indices": [
+         0,
+         23
+        ],
+        "url": "https://t.co/AH0YuzjL31"
+       }
+      ]
+     }
+    },
+    "fast_followers_count": 0,
+    "favourites_count": 3112,
+    "follow_request_sent": false,
+    "followers_count": 240458,
+    "friends_count": 6678,
+    "has_custom_timelines": true,
+    "id": 17033995,
+    "id_str": "17033995",
+    "is_translator": false,
+    "listed_count": 1737,
+    "location": "Global",
+    "media_count": 4455,
+    "name": "Nasdaq",
+    "needs_phone_verification": false,
+    "normal_followers_count": 240458,
+    "notifications": false,
+    "possibly_sensitive": false,
+    "profile_banner_url": "https://pbs.twimg.com/profile_banners/17033995/1693995951",
+    "profile_image_url": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg",
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg",
+    "profile_interstitial_type": "",
+    "screen_name": "Nasdaq",
+    "statuses_count": 11619,
+    "time_zone": "",
+    "translator_type": "regular",
+    "url": "https://t.co/AH0YuzjL31",
+    "utc_offset": 0,
+    "verified": true,
+    "verified_type": "Blue",
+    "want_retweets": false,
+    "withheld_description": "",
+    "withheld_scope": ""
+   },
+   "user_id_str": "17033995"
+  },
+  "retweeted_status_result": {
+   "result": {
+    "__typename": "Tweet",
+    "cashtag_attachments": [],
+    "content_disclosure": {
+     "ai_generated_disclosure": {
+      "can_edit": true,
+      "has_ai_generated_media": false
+     }
+    },
+    "core": {
+     "user_results": {
+      "result": {
+       "__typename": "User",
+       "affiliates_highlighted_label": {},
+       "avatar": {
+        "image_url": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg"
+       },
+       "core": {
+        "created_at": "Wed Oct 29 02:19:31 +0000 2008",
+        "name": "Nasdaq",
+        "screen_name": "Nasdaq"
+       },
+       "dm_permissions": {
+        "can_dm": false
+       },
+       "follow_request_sent": false,
+       "has_graduated_access": true,
+       "id": "VXNlcjoxNzAzMzk5NQ==",
+       "is_blue_verified": true,
+       "legacy": {
+        "created_at": "Wed Oct 29 02:19:31 +0000 2008",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Powering the world's economies.",
+        "entities": {
+         "description": {},
+         "url": {
+          "urls": [
+           {
+            "display_url": "nasdaq.com",
+            "expanded_url": "http://www.nasdaq.com",
+            "indices": [
+             0,
+             23
+            ],
+            "url": "https://t.co/AH0YuzjL31"
+           }
+          ]
+         }
+        },
+        "fast_followers_count": 0,
+        "favourites_count": 3112,
+        "follow_request_sent": false,
+        "followers_count": 240458,
+        "friends_count": 6678,
+        "has_custom_timelines": true,
+        "id": 17033995,
+        "id_str": "17033995",
+        "is_translator": false,
+        "listed_count": 1737,
+        "location": "Global",
+        "media_count": 4455,
+        "name": "Nasdaq",
+        "needs_phone_verification": false,
+        "normal_followers_count": 240458,
+        "notifications": false,
+        "possibly_sensitive": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/17033995/1693995951",
+        "profile_image_url": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg",
+        "profile_interstitial_type": "",
+        "screen_name": "Nasdaq",
+        "statuses_count": 11619,
+        "time_zone": "",
+        "translator_type": "regular",
+        "url": "https://t.co/AH0YuzjL31",
+        "utc_offset": 0,
+        "verified": true,
+        "verified_type": "Blue",
+        "want_retweets": false,
+        "withheld_description": "",
+        "withheld_scope": ""
+       },
+       "location": {
+        "location": "Global"
+       },
+       "media_permissions": {
+        "can_media_tag": true
+       },
+       "parody_commentary_fan_label": "None",
+       "privacy": {
+        "protected": false
+       },
+       "profile_bio": {
+        "description": "Powering the world's economies."
+       },
+       "profile_description_language": "en",
+       "profile_image_shape": "Square",
+       "relationship_perspectives": {
+        "blocked_by": false,
+        "blocking": false,
+        "followed_by": false,
+        "following": false,
+        "muting": false
+       },
+       "rest_id": "17033995",
+       "super_follow_eligible": false,
+       "super_followed_by": false,
+       "super_following": false,
+       "verification": {
+        "verified": false,
+        "verified_type": "Business"
+       }
+      }
+     }
+    },
+    "edit_control": {
+     "edit_tweet_ids": [
+      "2113981790897463375"
+     ],
+     "editable_until_msecs": "1792851109000",
+     "edits_remaining": "5",
+     "is_edit_eligible": true
+    },
+    "grok_analysis_button": true,
+    "grok_translated_post_with_availability": {
+     "is_available": false
+    },
+    "is_translatable": false,
+    "legacy": {
+     "bookmark_count": 26,
+     "bookmarked": false,
+     "conversation_id": 2113981790897463300,
+     "conversation_id_str": "2113981790897463375",
+     "created_at": "Sat Oct 24 13:11:49 +0000 2026",
+     "entities": {
+      "hashtags": [],
+      "smarttags": [],
+      "symbols": [],
+      "timestamps": [],
+      "urls": [],
+      "user_mentions": [
+       {
+        "id_str": "11348282",
+        "indices": [
+         106,
+         111
+        ],
+        "name": "NASA",
+        "screen_name": "NASA"
+       },
+       {
+        "id_str": "11348282",
+        "indices": [
+         242,
+         247
+        ],
+        "name": "NASA",
+        "screen_name": "NASA"
+       },
+       {
+        "id_str": "19802879",
+        "indices": [
+         252,
+         260
+        ],
+        "name": "NASA JPL",
+        "screen_name": "NASAJPL"
+       }
+      ]
+     },
+     "ext": {
+      "views": {
+       "r": {
+        "ok": {
+         "count": 204523
+        }
+       }
+      }
+     },
+     "extended_entities": {
+      "media": [
+       {
+        "additional_media_info": {
+         "monetizable": false
+        },
+        "display_url": "pic.x.com/isacEvXKxb",
+        "expanded_url": "https://x.com/Nasdaq/status/2113981790897463375/video/1",
+        "ext_media_availability": {
+         "status": "Available"
+        },
+        "id_str": "2113981749839515648",
+        "indices": [
+         280,
+         303
+        ],
+        "media_key": "13_2113981749839515648",
+        "media_results": {
+         "result": {
+          "media_key": "13_2113981749839515648"
+         }
+        },
+        "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/2113981749839515648/img/pcg1Y8bHjQSBcVyI.jpg",
+        "original_info": {
+         "focus_rects": [],
+         "height": 1920,
+         "width": 1080
+        },
+        "sizes": {
+         "large": {
+          "h": 1920,
+          "resize": "fit",
+          "w": 1080
+         },
+         "medium": {
+          "h": 1200,
+          "resize": "fit",
+          "w": 675
+         },
+         "small": {
+          "h": 680,
+          "resize": "fit",
+          "w": 383
+         },
+         "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+         }
+        },
+        "type": "video",
+        "url": "https://t.co/isacEvXKxb",
+        "video_info": {
+         "aspect_ratio": [
+          9,
+          16
+         ],
+         "duration_millis": 32157,
+         "variants": [
+          {
+           "content_type": "application/x-mpegURL",
+           "url": "https://video.twimg.com/amplify_video/2113981749839515648/pl/N6PGvV5c8OHPLfSH.m3u8?tag=16&v=cfc"
+          },
+          {
+           "bitrate": 632000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/320x568/Xi7hVDZcOmwJSIot.mp4?tag=16"
+          },
+          {
+           "bitrate": 950000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/480x852/XiHTSTuFq0ATRoxq.mp4?tag=16"
+          },
+          {
+           "bitrate": 2176000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/720x1280/h9TyLNaMtcO6WZLq.mp4?tag=16"
+          },
+          {
+           "bitrate": 10368000,
+           "content_type": "video/mp4",
+           "url": "https://video.twimg.com/amplify_video/2113981749839515648/vid/avc1/1080x1920/O7AVYPF-_q6jj8Hw.mp4?tag=16"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "favorite_count": 476,
+     "favorited": false,
+     "full_text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing boundaries, on Earth and beyond.",
+     "id": 2113981790897463300,
+     "id_str": "2113981790897463375",
+     "is_quote_status": false,
+     "lang": "en",
+     "possibly_sensitive": false,
+     "possibly_sensitive_editable": true,
+     "quote_count": 9,
+     "reply_count": 19,
+     "retweet_count": 76,
+     "retweeted": false,
+     "text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing https://t.co/isacEvXKxb",
+     "user": {
+      "created_at": "Wed Oct 29 02:19:31 +0000 2008",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "Powering the world's economies.",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "nasdaq.com",
+          "expanded_url": "http://www.nasdaq.com",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/AH0YuzjL31"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 3112,
+      "follow_request_sent": false,
+      "followers_count": 240458,
+      "friends_count": 6678,
+      "has_custom_timelines": true,
+      "id": 17033995,
+      "id_str": "17033995",
+      "is_translator": false,
+      "listed_count": 1737,
+      "location": "Global",
+      "media_count": 4455,
+      "name": "Nasdaq",
+      "needs_phone_verification": false,
+      "normal_followers_count": 240458,
+      "notifications": false,
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/17033995/1693995951",
+      "profile_image_url": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/1521140484512620544/Ev6EIPlD_normal.jpg",
+      "profile_interstitial_type": "",
+      "screen_name": "Nasdaq",
+      "statuses_count": 11619,
+      "time_zone": "",
+      "translator_type": "regular",
+      "url": "https://t.co/AH0YuzjL31",
+      "utc_offset": 0,
+      "verified": true,
+      "verified_type": "Blue",
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "user_id_str": "17033995"
+    },
+    "note_tweet": {
+     "is_expandable": true,
+     "note_tweet_results": {
+      "result": {
+       "entity_set": {
+        "hashtags": [],
+        "smarttags": [],
+        "symbols": [],
+        "timestamps": [],
+        "urls": [],
+        "user_mentions": [
+         {
+          "id_str": "11348282",
+          "indices": [
+           106,
+           111
+          ],
+          "name": "NASA",
+          "screen_name": "NASA"
+         },
+         {
+          "id_str": "11348282",
+          "indices": [
+           242,
+           247
+          ],
+          "name": "NASA",
+          "screen_name": "NASA"
+         },
+         {
+          "id_str": "19802879",
+          "indices": [
+           252,
+           260
+          ],
+          "name": "NASA JPL",
+          "screen_name": "NASAJPL"
+         }
+        ]
+       },
+       "id": "Tm90ZVR3ZWV0OjIxMTM5ODE3OTA4MjE5NTM1MzY=",
+       "text": "28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance rover continues to show what’s possible when science, technology, and exploration come together.\n \nCongratulations @NASA and @NASAJPL. Here’s to pushing boundaries, on Earth and beyond."
+      }
+     }
+    },
+    "rest_id": "2113981790897463375",
+    "unmention_data": {},
+    "views": {
+     "count": "204523",
+     "state": "EnabledWithCount"
+    }
+   }
+  },
+  "source": "<a href=\"https://mobile.twitter.com\" rel=\"nofollow\">Twitter Web App</a>",
+  "text": "RT @Nasdaq: 28.1 miles. A new off-world record on Mars.\n \nAfter more than 2,000 Martian days exploring Jezero Crater, @NASA’s Perseverance…",
+  "user": {
+   "created_at": "Wed Dec 19 20:20:32 +0000 2007",
+   "default_profile": false,
+   "default_profile_image": false,
+   "description": "Making the seemingly impossible, possible. ✨",
+   "entities": {
+    "description": {},
+    "url": {
+     "urls": [
+      {
+       "display_url": "nasa.gov",
+       "expanded_url": "http://www.nasa.gov/",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/9NkQJKAnuU"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 17048,
+   "follow_request_sent": false,
+   "followers_count": 92311382,
+   "friends_count": 115,
+   "has_custom_timelines": true,
+   "id": 11348282,
+   "id_str": "11348282",
+   "is_translator": false,
+   "listed_count": 96852,
+   "location": "Pale Blue Dot",
+   "media_count": 28211,
+   "name": "NASA",
+   "needs_phone_verification": false,
+   "normal_followers_count": 92311382,
+   "notifications": false,
+   "pinned_tweet_ids_str": [
+    "2113776971603689874"
+   ],
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/11348282/1788992290",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "NASA",
+   "statuses_count": 74461,
+   "time_zone": "",
+   "translator_type": "regular",
+   "url": "https://t.co/9NkQJKAnuU",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "11348282"
+ }
+}

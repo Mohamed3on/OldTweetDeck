@@ -1,0 +1,1299 @@
+{
+ "source": "@naval UserTweetsAndReplies",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "Tweet",
+  "cashtag_attachments": [],
+  "core": {
+   "user_results": {
+    "result": {
+     "__typename": "User",
+     "affiliates_highlighted_label": {},
+     "avatar": {
+      "image_url": "https://pbs.twimg.com/profile_images/1256841238298292232/ycqwaMI2_normal.jpg"
+     },
+     "core": {
+      "created_at": "Thu Feb 01 23:05:04 +0000 2007",
+      "name": "Naval",
+      "screen_name": "naval"
+     },
+     "dm_permissions": {
+      "can_dm": false
+     },
+     "follow_request_sent": false,
+     "has_graduated_access": true,
+     "id": "VXNlcjo3NDUyNzM=",
+     "is_blue_verified": true,
+     "legacy": {
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "Incompressible",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "nav.al",
+          "expanded_url": "https://nav.al",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/diCVEyXHd9"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 308244,
+      "follow_request_sent": false,
+      "followers_count": 4137903,
+      "friends_count": 0,
+      "has_custom_timelines": true,
+      "is_translator": false,
+      "listed_count": 30375,
+      "media_count": 338,
+      "needs_phone_verification": false,
+      "normal_followers_count": 4137903,
+      "notifications": false,
+      "pinned_tweet_ids_str": [
+       "1002103360646823936"
+      ],
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/745273/1588490328",
+      "profile_interstitial_type": "",
+      "statuses_count": 27186,
+      "time_zone": "",
+      "translator_type": "none",
+      "url": "https://t.co/diCVEyXHd9",
+      "utc_offset": 0,
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "location": {
+      "location": ""
+     },
+     "media_permissions": {
+      "can_media_tag": false
+     },
+     "parody_commentary_fan_label": "None",
+     "privacy": {
+      "protected": false
+     },
+     "profile_bio": {
+      "description": "Incompressible"
+     },
+     "profile_image_shape": "Circle",
+     "relationship_perspectives": {
+      "blocked_by": false,
+      "blocking": false,
+      "followed_by": false,
+      "following": false,
+      "muting": false
+     },
+     "rest_id": "745273",
+     "super_follow_eligible": false,
+     "super_followed_by": false,
+     "super_following": false,
+     "verification": {
+      "verified": false
+     }
+    }
+   }
+  },
+  "edit_control": {
+   "edit_tweet_ids": [
+    "2114660248984203296"
+   ],
+   "editable_until_msecs": "1793012866502",
+   "edits_remaining": "5",
+   "is_edit_eligible": false
+  },
+  "grok_analysis_button": true,
+  "grok_annotations": {},
+  "grok_translated_post_with_availability": {
+   "is_available": false
+  },
+  "is_translatable": false,
+  "legacy": {
+   "bookmark_count": 0,
+   "bookmarked": false,
+   "conversation_id_str": "2114660248984203296",
+   "created_at": "Mon Oct 26 10:07:46 +0000 2026",
+   "display_text_range": [
+    0,
+    140
+   ],
+   "entities": {
+    "user_mentions": [
+     {
+      "id_str": "23395456",
+      "indices": [
+       3,
+       16
+      ],
+      "name": "Spencer Pratt",
+      "screen_name": "spencerpratt"
+     }
+    ]
+   },
+   "favorite_count": 0,
+   "favorited": false,
+   "full_text": "RT @spencerpratt: This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not b…",
+   "id_str": "2114660248984203296",
+   "is_quote_status": true,
+   "lang": "en",
+   "quote_count": 0,
+   "quoted_status_id_str": "2114232104464835065",
+   "quoted_status_permalink": {
+    "display": "x.com/stevehiltonx/s…",
+    "expanded": "https://twitter.com/stevehiltonx/status/2114232104464835065",
+    "url": "https://t.co/NDRBiHpJSe"
+   },
+   "reply_count": 0,
+   "retweet_count": 7453,
+   "retweeted": false,
+   "retweeted_status_result": {
+    "result": {
+     "__typename": "Tweet",
+     "cashtag_attachments": [],
+     "core": {
+      "user_results": {
+       "result": {
+        "__typename": "User",
+        "affiliates_highlighted_label": {},
+        "avatar": {
+         "image_url": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg"
+        },
+        "core": {
+         "created_at": "Mon Mar 09 03:17:15 +0000 2009",
+         "name": "Spencer Pratt",
+         "screen_name": "spencerpratt"
+        },
+        "dm_permissions": {
+         "can_dm": true
+        },
+        "follow_request_sent": false,
+        "has_graduated_access": true,
+        "id": "VXNlcjoyMzM5NTQ1Ng==",
+        "is_blue_verified": true,
+        "legacy": {
+         "default_profile": false,
+         "default_profile_image": false,
+         "description": "Defending America. Destroying communists.",
+         "entities": {
+          "description": {},
+          "url": {
+           "urls": [
+            {
+             "display_url": "spencerpratt.com",
+             "expanded_url": "https://spencerpratt.com",
+             "indices": [
+              0,
+              23
+             ],
+             "url": "https://t.co/KSqzyQYt7D"
+            }
+           ]
+          }
+         },
+         "fast_followers_count": 0,
+         "favourites_count": 54425,
+         "follow_request_sent": false,
+         "followers_count": 1452842,
+         "friends_count": 1779,
+         "has_custom_timelines": true,
+         "is_translator": false,
+         "listed_count": 4877,
+         "media_count": 4073,
+         "needs_phone_verification": false,
+         "normal_followers_count": 1452842,
+         "notifications": false,
+         "pinned_tweet_ids_str": [
+          "2111177860325228999"
+         ],
+         "possibly_sensitive": false,
+         "profile_banner_url": "",
+         "profile_interstitial_type": "",
+         "statuses_count": 68969,
+         "time_zone": "",
+         "translator_type": "none",
+         "url": "https://t.co/KSqzyQYt7D",
+         "utc_offset": 0,
+         "want_retweets": false,
+         "withheld_description": "",
+         "withheld_scope": ""
+        },
+        "location": {
+         "location": "Pacific Palisades "
+        },
+        "media_permissions": {
+         "can_media_tag": true
+        },
+        "parody_commentary_fan_label": "None",
+        "privacy": {
+         "protected": false
+        },
+        "professional": {
+         "category": [],
+         "professional_type": "Creator",
+         "rest_id": "1855716115617378591"
+        },
+        "profile_bio": {
+         "description": "Defending America. Destroying communists."
+        },
+        "profile_image_shape": "Circle",
+        "relationship_perspectives": {
+         "blocked_by": false,
+         "blocking": false,
+         "followed_by": false,
+         "following": false,
+         "muting": false
+        },
+        "rest_id": "23395456",
+        "super_follow_eligible": true,
+        "super_followed_by": false,
+        "super_following": false,
+        "verification": {
+         "verified": false
+        }
+       }
+      }
+     },
+     "edit_control": {
+      "edit_tweet_ids": [
+       "2114439590060622327"
+      ],
+      "editable_until_msecs": "1792960257000",
+      "edits_remaining": "5",
+      "is_edit_eligible": true
+     },
+     "grok_analysis_button": true,
+     "grok_translated_post_with_availability": {
+      "is_available": false
+     },
+     "is_translatable": false,
+     "legacy": {
+      "bookmark_count": 224,
+      "bookmarked": false,
+      "conversation_id_str": "2114439590060622327",
+      "created_at": "Sun Oct 25 19:30:57 +0000 2026",
+      "display_text_range": [
+       0,
+       275
+      ],
+      "entities": {},
+      "favorite_count": 37824,
+      "favorited": false,
+      "full_text": "This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not by voting for Bass in some cynical gambit, but by getting Steve Hilton in as governor to keep a lid on how crazy Nithya gets and intervene on her failures.",
+      "id_str": "2114439590060622327",
+      "is_quote_status": true,
+      "lang": "en",
+      "quote_count": 50,
+      "quoted_status_id_str": "2114232104464835065",
+      "quoted_status_permalink": {
+       "display": "x.com/stevehiltonx/s…",
+       "expanded": "https://twitter.com/stevehiltonx/status/2114232104464835065",
+       "url": "https://t.co/NDRBiHpJSe"
+      },
+      "reply_count": 265,
+      "retweet_count": 7453,
+      "retweeted": false,
+      "user_id_str": "23395456"
+     },
+     "quoted_status_result": {
+      "result": {
+       "__typename": "Tweet",
+       "core": {
+        "user_results": {
+         "result": {
+          "__typename": "User",
+          "affiliates_highlighted_label": {},
+          "avatar": {
+           "image_url": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg"
+          },
+          "core": {
+           "created_at": "Fri Aug 29 23:23:37 +0000 2014",
+           "name": "Steve Hilton",
+           "screen_name": "SteveHiltonx"
+          },
+          "dm_permissions": {
+           "can_dm": true
+          },
+          "follow_request_sent": false,
+          "has_graduated_access": true,
+          "id": "VXNlcjoyNzc5Mzg5NTgy",
+          "is_blue_verified": true,
+          "legacy": {
+           "default_profile": false,
+           "default_profile_image": false,
+           "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!",
+           "entities": {
+            "description": {},
+            "url": {
+             "urls": [
+              {
+               "display_url": "SteveHiltonForGovernor.com",
+               "expanded_url": "http://SteveHiltonForGovernor.com",
+               "indices": [
+                0,
+                23
+               ],
+               "url": "https://t.co/9NuOFVMQPv"
+              }
+             ]
+            }
+           },
+           "fast_followers_count": 0,
+           "favourites_count": 271,
+           "follow_request_sent": false,
+           "followers_count": 468307,
+           "friends_count": 303,
+           "has_custom_timelines": true,
+           "is_translator": false,
+           "listed_count": 1175,
+           "media_count": 6233,
+           "needs_phone_verification": false,
+           "normal_followers_count": 468307,
+           "notifications": false,
+           "pinned_tweet_ids_str": [
+            "2092323018127056912"
+           ],
+           "possibly_sensitive": false,
+           "profile_banner_url": "https://pbs.twimg.com/profile_banners/2779389582/1780971025",
+           "profile_interstitial_type": "",
+           "statuses_count": 46397,
+           "time_zone": "",
+           "translator_type": "none",
+           "url": "https://t.co/9NuOFVMQPv",
+           "utc_offset": 0,
+           "want_retweets": false,
+           "withheld_description": "",
+           "withheld_scope": ""
+          },
+          "location": {
+           "location": "California"
+          },
+          "media_permissions": {
+           "can_media_tag": true
+          },
+          "parody_commentary_fan_label": "None",
+          "privacy": {
+           "protected": false
+          },
+          "profile_bio": {
+           "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!"
+          },
+          "profile_description_language": "en",
+          "profile_image_shape": "Circle",
+          "relationship_perspectives": {
+           "blocked_by": false,
+           "blocking": false,
+           "followed_by": false,
+           "following": false,
+           "muting": false
+          },
+          "rest_id": "2779389582",
+          "super_follow_eligible": false,
+          "super_followed_by": false,
+          "super_following": false,
+          "verification": {
+           "verified": false
+          }
+         }
+        }
+       },
+       "edit_control": {
+        "edit_tweet_ids": [
+         "2114232104464835065"
+        ],
+        "editable_until_msecs": "1792910788000",
+        "edits_remaining": "5",
+        "is_edit_eligible": true
+       },
+       "grok_analysis_button": true,
+       "grok_translated_post_with_availability": {
+        "is_available": false
+       },
+       "is_translatable": false,
+       "legacy": {
+        "bookmark_count": 114,
+        "bookmarked": false,
+        "conversation_id_str": "2114232104464835065",
+        "created_at": "Sun Oct 25 05:46:28 +0000 2026",
+        "display_text_range": [
+         0,
+         279
+        ],
+        "entities": {},
+        "favorite_count": 13229,
+        "favorited": false,
+        "full_text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+        "id_str": "2114232104464835065",
+        "is_quote_status": false,
+        "lang": "en",
+        "quote_count": 36,
+        "reply_count": 347,
+        "retweet_count": 1837,
+        "retweeted": false,
+        "user_id_str": "2779389582"
+       },
+       "rest_id": "2114232104464835065",
+       "unmention_data": {},
+       "views": {
+        "count": "457605",
+        "state": "EnabledWithCount"
+       }
+      }
+     },
+     "rest_id": "2114439590060622327",
+     "unmention_data": {},
+     "views": {
+      "count": "334885",
+      "state": "EnabledWithCount"
+     }
+    }
+   },
+   "user_id_str": "745273"
+  },
+  "rest_id": "2114660248984203296",
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "unmention_data": {},
+  "views": {
+   "count": "35609",
+   "state": "EnabledWithCount"
+  }
+ },
+ "expected": {
+  "bookmark_count": 0,
+  "bookmarked": false,
+  "conversation_id": 2114660248984203300,
+  "conversation_id_str": "2114660248984203296",
+  "created_at": "Mon Oct 26 10:07:46 +0000 2026",
+  "display_text_range": [
+   0,
+   164
+  ],
+  "entities": {
+   "urls": [
+    {
+     "display_url": "x.com/stevehiltonx/s…",
+     "expanded_url": "https://twitter.com/stevehiltonx/status/2114232104464835065",
+     "indices": [
+      141,
+      164
+     ],
+     "url": "https://t.co/NDRBiHpJSe"
+    }
+   ],
+   "user_mentions": [
+    {
+     "id_str": "23395456",
+     "indices": [
+      3,
+      16
+     ],
+     "name": "Spencer Pratt",
+     "screen_name": "spencerpratt"
+    }
+   ]
+  },
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": 35609
+     }
+    }
+   }
+  },
+  "favorite_count": 0,
+  "favorited": false,
+  "full_text": "RT @spencerpratt: This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not b… https://t.co/NDRBiHpJSe",
+  "id": 2114660248984203300,
+  "id_str": "2114660248984203296",
+  "is_quote_status": true,
+  "lang": "en",
+  "quote_count": 0,
+  "quoted_status_id_str": "2114232104464835065",
+  "quoted_status_permalink": {
+   "display": "x.com/stevehiltonx/s…",
+   "expanded": "https://twitter.com/stevehiltonx/status/2114232104464835065",
+   "url": "https://t.co/NDRBiHpJSe"
+  },
+  "reply_count": 0,
+  "retweet_count": 7453,
+  "retweeted": false,
+  "retweeted_status": {
+   "bookmark_count": 224,
+   "bookmarked": false,
+   "conversation_id": 2114439590060622300,
+   "conversation_id_str": "2114439590060622327",
+   "created_at": "Sun Oct 25 19:30:57 +0000 2026",
+   "display_text_range": [
+    0,
+    275
+   ],
+   "entities": {},
+   "ext": {
+    "views": {
+     "r": {
+      "ok": {
+       "count": 334885
+      }
+     }
+    }
+   },
+   "favorite_count": 37824,
+   "favorited": false,
+   "full_text": "This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not by voting for Bass in some cynical gambit, but by getting Steve Hilton in as governor to keep a lid on how crazy Nithya gets and intervene on her failures.",
+   "id": 2114439590060622300,
+   "id_str": "2114439590060622327",
+   "is_quote_status": true,
+   "lang": "en",
+   "quote_count": 50,
+   "quoted_status": {
+    "bookmark_count": 114,
+    "bookmarked": false,
+    "conversation_id": 2114232104464835000,
+    "conversation_id_str": "2114232104464835065",
+    "created_at": "Sun Oct 25 05:46:28 +0000 2026",
+    "display_text_range": [
+     0,
+     279
+    ],
+    "entities": {},
+    "favorite_count": 13229,
+    "favorited": false,
+    "full_text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+    "id": 2114232104464835000,
+    "id_str": "2114232104464835065",
+    "is_quote_status": false,
+    "lang": "en",
+    "quote_count": 36,
+    "reply_count": 347,
+    "retweet_count": 1837,
+    "retweeted": false,
+    "text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+    "user": {
+     "created_at": "Fri Aug 29 23:23:37 +0000 2014",
+     "default_profile": false,
+     "default_profile_image": false,
+     "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!",
+     "entities": {
+      "description": {},
+      "url": {
+       "urls": [
+        {
+         "display_url": "SteveHiltonForGovernor.com",
+         "expanded_url": "http://SteveHiltonForGovernor.com",
+         "indices": [
+          0,
+          23
+         ],
+         "url": "https://t.co/9NuOFVMQPv"
+        }
+       ]
+      }
+     },
+     "fast_followers_count": 0,
+     "favourites_count": 271,
+     "follow_request_sent": false,
+     "followers_count": 468307,
+     "friends_count": 303,
+     "has_custom_timelines": true,
+     "id": 2779389582,
+     "id_str": "2779389582",
+     "is_translator": false,
+     "listed_count": 1175,
+     "location": "California",
+     "media_count": 6233,
+     "name": "Steve Hilton",
+     "needs_phone_verification": false,
+     "normal_followers_count": 468307,
+     "notifications": false,
+     "pinned_tweet_ids_str": [
+      "2092323018127056912"
+     ],
+     "possibly_sensitive": false,
+     "profile_banner_url": "https://pbs.twimg.com/profile_banners/2779389582/1780971025",
+     "profile_image_url": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+     "profile_image_url_https": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+     "profile_interstitial_type": "",
+     "screen_name": "SteveHiltonx",
+     "statuses_count": 46397,
+     "time_zone": "",
+     "translator_type": "none",
+     "url": "https://t.co/9NuOFVMQPv",
+     "utc_offset": 0,
+     "verified": true,
+     "verified_type": "Blue",
+     "want_retweets": false,
+     "withheld_description": "",
+     "withheld_scope": ""
+    },
+    "user_id_str": "2779389582"
+   },
+   "quoted_status_id_str": "2114232104464835065",
+   "quoted_status_permalink": {
+    "display": "x.com/stevehiltonx/s…",
+    "expanded": "https://twitter.com/stevehiltonx/status/2114232104464835065",
+    "url": "https://t.co/NDRBiHpJSe"
+   },
+   "reply_count": 265,
+   "retweet_count": 7453,
+   "retweeted": false,
+   "text": "This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not by voting for Bass in some cynical gambit, but by getting Steve Hilton in as governor to keep a lid on how crazy Nithya gets and intervene on her failures.",
+   "user": {
+    "created_at": "Mon Mar 09 03:17:15 +0000 2009",
+    "default_profile": false,
+    "default_profile_image": false,
+    "description": "Defending America. Destroying communists.",
+    "entities": {
+     "description": {},
+     "url": {
+      "urls": [
+       {
+        "display_url": "spencerpratt.com",
+        "expanded_url": "https://spencerpratt.com",
+        "indices": [
+         0,
+         23
+        ],
+        "url": "https://t.co/KSqzyQYt7D"
+       }
+      ]
+     }
+    },
+    "fast_followers_count": 0,
+    "favourites_count": 54425,
+    "follow_request_sent": false,
+    "followers_count": 1452842,
+    "friends_count": 1779,
+    "has_custom_timelines": true,
+    "id": 23395456,
+    "id_str": "23395456",
+    "is_translator": false,
+    "listed_count": 4877,
+    "location": "Pacific Palisades ",
+    "media_count": 4073,
+    "name": "Spencer Pratt",
+    "needs_phone_verification": false,
+    "normal_followers_count": 1452842,
+    "notifications": false,
+    "pinned_tweet_ids_str": [
+     "2111177860325228999"
+    ],
+    "possibly_sensitive": false,
+    "profile_banner_url": "",
+    "profile_image_url": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg",
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg",
+    "profile_interstitial_type": "",
+    "screen_name": "spencerpratt",
+    "statuses_count": 68969,
+    "time_zone": "",
+    "translator_type": "none",
+    "url": "https://t.co/KSqzyQYt7D",
+    "utc_offset": 0,
+    "verified": true,
+    "verified_type": "Blue",
+    "want_retweets": false,
+    "withheld_description": "",
+    "withheld_scope": ""
+   },
+   "user_id_str": "23395456"
+  },
+  "retweeted_status_result": {
+   "result": {
+    "__typename": "Tweet",
+    "cashtag_attachments": [],
+    "core": {
+     "user_results": {
+      "result": {
+       "__typename": "User",
+       "affiliates_highlighted_label": {},
+       "avatar": {
+        "image_url": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg"
+       },
+       "core": {
+        "created_at": "Mon Mar 09 03:17:15 +0000 2009",
+        "name": "Spencer Pratt",
+        "screen_name": "spencerpratt"
+       },
+       "dm_permissions": {
+        "can_dm": true
+       },
+       "follow_request_sent": false,
+       "has_graduated_access": true,
+       "id": "VXNlcjoyMzM5NTQ1Ng==",
+       "is_blue_verified": true,
+       "legacy": {
+        "created_at": "Mon Mar 09 03:17:15 +0000 2009",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Defending America. Destroying communists.",
+        "entities": {
+         "description": {},
+         "url": {
+          "urls": [
+           {
+            "display_url": "spencerpratt.com",
+            "expanded_url": "https://spencerpratt.com",
+            "indices": [
+             0,
+             23
+            ],
+            "url": "https://t.co/KSqzyQYt7D"
+           }
+          ]
+         }
+        },
+        "fast_followers_count": 0,
+        "favourites_count": 54425,
+        "follow_request_sent": false,
+        "followers_count": 1452842,
+        "friends_count": 1779,
+        "has_custom_timelines": true,
+        "id": 23395456,
+        "id_str": "23395456",
+        "is_translator": false,
+        "listed_count": 4877,
+        "location": "Pacific Palisades ",
+        "media_count": 4073,
+        "name": "Spencer Pratt",
+        "needs_phone_verification": false,
+        "normal_followers_count": 1452842,
+        "notifications": false,
+        "pinned_tweet_ids_str": [
+         "2111177860325228999"
+        ],
+        "possibly_sensitive": false,
+        "profile_banner_url": "",
+        "profile_image_url": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg",
+        "profile_interstitial_type": "",
+        "screen_name": "spencerpratt",
+        "statuses_count": 68969,
+        "time_zone": "",
+        "translator_type": "none",
+        "url": "https://t.co/KSqzyQYt7D",
+        "utc_offset": 0,
+        "verified": true,
+        "verified_type": "Blue",
+        "want_retweets": false,
+        "withheld_description": "",
+        "withheld_scope": ""
+       },
+       "location": {
+        "location": "Pacific Palisades "
+       },
+       "media_permissions": {
+        "can_media_tag": true
+       },
+       "parody_commentary_fan_label": "None",
+       "privacy": {
+        "protected": false
+       },
+       "professional": {
+        "category": [],
+        "professional_type": "Creator",
+        "rest_id": "1855716115617378591"
+       },
+       "profile_bio": {
+        "description": "Defending America. Destroying communists."
+       },
+       "profile_image_shape": "Circle",
+       "relationship_perspectives": {
+        "blocked_by": false,
+        "blocking": false,
+        "followed_by": false,
+        "following": false,
+        "muting": false
+       },
+       "rest_id": "23395456",
+       "super_follow_eligible": true,
+       "super_followed_by": false,
+       "super_following": false,
+       "verification": {
+        "verified": false
+       }
+      }
+     }
+    },
+    "edit_control": {
+     "edit_tweet_ids": [
+      "2114439590060622327"
+     ],
+     "editable_until_msecs": "1792960257000",
+     "edits_remaining": "5",
+     "is_edit_eligible": true
+    },
+    "grok_analysis_button": true,
+    "grok_translated_post_with_availability": {
+     "is_available": false
+    },
+    "is_translatable": false,
+    "legacy": {
+     "bookmark_count": 224,
+     "bookmarked": false,
+     "conversation_id": 2114439590060622300,
+     "conversation_id_str": "2114439590060622327",
+     "created_at": "Sun Oct 25 19:30:57 +0000 2026",
+     "display_text_range": [
+      0,
+      275
+     ],
+     "entities": {},
+     "ext": {
+      "views": {
+       "r": {
+        "ok": {
+         "count": 334885
+        }
+       }
+      }
+     },
+     "favorite_count": 37824,
+     "favorited": false,
+     "full_text": "This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not by voting for Bass in some cynical gambit, but by getting Steve Hilton in as governor to keep a lid on how crazy Nithya gets and intervene on her failures.",
+     "id": 2114439590060622300,
+     "id_str": "2114439590060622327",
+     "is_quote_status": true,
+     "lang": "en",
+     "quote_count": 50,
+     "quoted_status": {
+      "bookmark_count": 114,
+      "bookmarked": false,
+      "conversation_id": 2114232104464835000,
+      "conversation_id_str": "2114232104464835065",
+      "created_at": "Sun Oct 25 05:46:28 +0000 2026",
+      "display_text_range": [
+       0,
+       279
+      ],
+      "entities": {},
+      "favorite_count": 13229,
+      "favorited": false,
+      "full_text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+      "id": 2114232104464835000,
+      "id_str": "2114232104464835065",
+      "is_quote_status": false,
+      "lang": "en",
+      "quote_count": 36,
+      "reply_count": 347,
+      "retweet_count": 1837,
+      "retweeted": false,
+      "text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+      "user": {
+       "created_at": "Fri Aug 29 23:23:37 +0000 2014",
+       "default_profile": false,
+       "default_profile_image": false,
+       "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!",
+       "entities": {
+        "description": {},
+        "url": {
+         "urls": [
+          {
+           "display_url": "SteveHiltonForGovernor.com",
+           "expanded_url": "http://SteveHiltonForGovernor.com",
+           "indices": [
+            0,
+            23
+           ],
+           "url": "https://t.co/9NuOFVMQPv"
+          }
+         ]
+        }
+       },
+       "fast_followers_count": 0,
+       "favourites_count": 271,
+       "follow_request_sent": false,
+       "followers_count": 468307,
+       "friends_count": 303,
+       "has_custom_timelines": true,
+       "id": 2779389582,
+       "id_str": "2779389582",
+       "is_translator": false,
+       "listed_count": 1175,
+       "location": "California",
+       "media_count": 6233,
+       "name": "Steve Hilton",
+       "needs_phone_verification": false,
+       "normal_followers_count": 468307,
+       "notifications": false,
+       "pinned_tweet_ids_str": [
+        "2092323018127056912"
+       ],
+       "possibly_sensitive": false,
+       "profile_banner_url": "https://pbs.twimg.com/profile_banners/2779389582/1780971025",
+       "profile_image_url": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+       "profile_image_url_https": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+       "profile_interstitial_type": "",
+       "screen_name": "SteveHiltonx",
+       "statuses_count": 46397,
+       "time_zone": "",
+       "translator_type": "none",
+       "url": "https://t.co/9NuOFVMQPv",
+       "utc_offset": 0,
+       "verified": true,
+       "verified_type": "Blue",
+       "want_retweets": false,
+       "withheld_description": "",
+       "withheld_scope": ""
+      },
+      "user_id_str": "2779389582"
+     },
+     "quoted_status_id_str": "2114232104464835065",
+     "quoted_status_permalink": {
+      "display": "x.com/stevehiltonx/s…",
+      "expanded": "https://twitter.com/stevehiltonx/status/2114232104464835065",
+      "url": "https://t.co/NDRBiHpJSe"
+     },
+     "reply_count": 265,
+     "retweet_count": 7453,
+     "retweeted": false,
+     "text": "This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not by voting for Bass in some cynical gambit, but by getting Steve Hilton in as governor to keep a lid on how crazy Nithya gets and intervene on her failures.",
+     "user": {
+      "created_at": "Mon Mar 09 03:17:15 +0000 2009",
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "Defending America. Destroying communists.",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "spencerpratt.com",
+          "expanded_url": "https://spencerpratt.com",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/KSqzyQYt7D"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 54425,
+      "follow_request_sent": false,
+      "followers_count": 1452842,
+      "friends_count": 1779,
+      "has_custom_timelines": true,
+      "id": 23395456,
+      "id_str": "23395456",
+      "is_translator": false,
+      "listed_count": 4877,
+      "location": "Pacific Palisades ",
+      "media_count": 4073,
+      "name": "Spencer Pratt",
+      "needs_phone_verification": false,
+      "normal_followers_count": 1452842,
+      "notifications": false,
+      "pinned_tweet_ids_str": [
+       "2111177860325228999"
+      ],
+      "possibly_sensitive": false,
+      "profile_banner_url": "",
+      "profile_image_url": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg",
+      "profile_image_url_https": "https://pbs.twimg.com/profile_images/2087563439225159680/pRMJRkqz_normal.jpg",
+      "profile_interstitial_type": "",
+      "screen_name": "spencerpratt",
+      "statuses_count": 68969,
+      "time_zone": "",
+      "translator_type": "none",
+      "url": "https://t.co/KSqzyQYt7D",
+      "utc_offset": 0,
+      "verified": true,
+      "verified_type": "Blue",
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "user_id_str": "23395456"
+    },
+    "quoted_status_result": {
+     "result": {
+      "__typename": "Tweet",
+      "core": {
+       "user_results": {
+        "result": {
+         "__typename": "User",
+         "affiliates_highlighted_label": {},
+         "avatar": {
+          "image_url": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg"
+         },
+         "core": {
+          "created_at": "Fri Aug 29 23:23:37 +0000 2014",
+          "name": "Steve Hilton",
+          "screen_name": "SteveHiltonx"
+         },
+         "dm_permissions": {
+          "can_dm": true
+         },
+         "follow_request_sent": false,
+         "has_graduated_access": true,
+         "id": "VXNlcjoyNzc5Mzg5NTgy",
+         "is_blue_verified": true,
+         "legacy": {
+          "created_at": "Fri Aug 29 23:23:37 +0000 2014",
+          "default_profile": false,
+          "default_profile_image": false,
+          "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!",
+          "entities": {
+           "description": {},
+           "url": {
+            "urls": [
+             {
+              "display_url": "SteveHiltonForGovernor.com",
+              "expanded_url": "http://SteveHiltonForGovernor.com",
+              "indices": [
+               0,
+               23
+              ],
+              "url": "https://t.co/9NuOFVMQPv"
+             }
+            ]
+           }
+          },
+          "fast_followers_count": 0,
+          "favourites_count": 271,
+          "follow_request_sent": false,
+          "followers_count": 468307,
+          "friends_count": 303,
+          "has_custom_timelines": true,
+          "id": 2779389582,
+          "id_str": "2779389582",
+          "is_translator": false,
+          "listed_count": 1175,
+          "location": "California",
+          "media_count": 6233,
+          "name": "Steve Hilton",
+          "needs_phone_verification": false,
+          "normal_followers_count": 468307,
+          "notifications": false,
+          "pinned_tweet_ids_str": [
+           "2092323018127056912"
+          ],
+          "possibly_sensitive": false,
+          "profile_banner_url": "https://pbs.twimg.com/profile_banners/2779389582/1780971025",
+          "profile_image_url": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+          "profile_image_url_https": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+          "profile_interstitial_type": "",
+          "screen_name": "SteveHiltonx",
+          "statuses_count": 46397,
+          "time_zone": "",
+          "translator_type": "none",
+          "url": "https://t.co/9NuOFVMQPv",
+          "utc_offset": 0,
+          "verified": true,
+          "verified_type": "Blue",
+          "want_retweets": false,
+          "withheld_description": "",
+          "withheld_scope": ""
+         },
+         "location": {
+          "location": "California"
+         },
+         "media_permissions": {
+          "can_media_tag": true
+         },
+         "parody_commentary_fan_label": "None",
+         "privacy": {
+          "protected": false
+         },
+         "profile_bio": {
+          "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!"
+         },
+         "profile_description_language": "en",
+         "profile_image_shape": "Circle",
+         "relationship_perspectives": {
+          "blocked_by": false,
+          "blocking": false,
+          "followed_by": false,
+          "following": false,
+          "muting": false
+         },
+         "rest_id": "2779389582",
+         "super_follow_eligible": false,
+         "super_followed_by": false,
+         "super_following": false,
+         "verification": {
+          "verified": false
+         }
+        }
+       }
+      },
+      "edit_control": {
+       "edit_tweet_ids": [
+        "2114232104464835065"
+       ],
+       "editable_until_msecs": "1792910788000",
+       "edits_remaining": "5",
+       "is_edit_eligible": true
+      },
+      "grok_analysis_button": true,
+      "grok_translated_post_with_availability": {
+       "is_available": false
+      },
+      "is_translatable": false,
+      "legacy": {
+       "bookmark_count": 114,
+       "bookmarked": false,
+       "conversation_id": 2114232104464835000,
+       "conversation_id_str": "2114232104464835065",
+       "created_at": "Sun Oct 25 05:46:28 +0000 2026",
+       "display_text_range": [
+        0,
+        279
+       ],
+       "entities": {},
+       "favorite_count": 13229,
+       "favorited": false,
+       "full_text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+       "id": 2114232104464835000,
+       "id_str": "2114232104464835065",
+       "is_quote_status": false,
+       "lang": "en",
+       "quote_count": 36,
+       "reply_count": 347,
+       "retweet_count": 1837,
+       "retweeted": false,
+       "text": "Voting Karen Bass is morally unacceptable. She has been a complete disaster. There must be accountability. You cannot reward her with your vote.\n\nYes, Nithya Raman is a DSA extremist. But she would be no worse than Bass. Do not vote for either.\n\nLos Angeles: I am your only hope.",
+       "user": {
+        "created_at": "Fri Aug 29 23:23:37 +0000 2014",
+        "default_profile": false,
+        "default_profile_image": false,
+        "description": "Candidate for California governor. Fighting for working people and small business.\n\n$3 gas. First $150k tax free. $73 vehicle registration. Just Try It!",
+        "entities": {
+         "description": {},
+         "url": {
+          "urls": [
+           {
+            "display_url": "SteveHiltonForGovernor.com",
+            "expanded_url": "http://SteveHiltonForGovernor.com",
+            "indices": [
+             0,
+             23
+            ],
+            "url": "https://t.co/9NuOFVMQPv"
+           }
+          ]
+         }
+        },
+        "fast_followers_count": 0,
+        "favourites_count": 271,
+        "follow_request_sent": false,
+        "followers_count": 468307,
+        "friends_count": 303,
+        "has_custom_timelines": true,
+        "id": 2779389582,
+        "id_str": "2779389582",
+        "is_translator": false,
+        "listed_count": 1175,
+        "location": "California",
+        "media_count": 6233,
+        "name": "Steve Hilton",
+        "needs_phone_verification": false,
+        "normal_followers_count": 468307,
+        "notifications": false,
+        "pinned_tweet_ids_str": [
+         "2092323018127056912"
+        ],
+        "possibly_sensitive": false,
+        "profile_banner_url": "https://pbs.twimg.com/profile_banners/2779389582/1780971025",
+        "profile_image_url": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+        "profile_image_url_https": "https://pbs.twimg.com/profile_images/2063837237305810944/DHkZxDTI_normal.jpg",
+        "profile_interstitial_type": "",
+        "screen_name": "SteveHiltonx",
+        "statuses_count": 46397,
+        "time_zone": "",
+        "translator_type": "none",
+        "url": "https://t.co/9NuOFVMQPv",
+        "utc_offset": 0,
+        "verified": true,
+        "verified_type": "Blue",
+        "want_retweets": false,
+        "withheld_description": "",
+        "withheld_scope": ""
+       },
+       "user_id_str": "2779389582"
+      },
+      "rest_id": "2114232104464835065",
+      "unmention_data": {},
+      "views": {
+       "count": "457605",
+       "state": "EnabledWithCount"
+      }
+     }
+    },
+    "rest_id": "2114439590060622327",
+    "unmention_data": {},
+    "views": {
+     "count": "334885",
+     "state": "EnabledWithCount"
+    }
+   }
+  },
+  "source": "<a href=\"http://twitter.com/download/iphone\" rel=\"nofollow\">Twitter for iPhone</a>",
+  "text": "RT @spencerpratt: This is correct. Everyone who voted for me should remember that you actually still can impact the LA Mayor outcome. Not b… https://t.co/NDRBiHpJSe",
+  "user": {
+   "created_at": "Thu Feb 01 23:05:04 +0000 2007",
+   "default_profile": false,
+   "default_profile_image": false,
+   "description": "Incompressible",
+   "entities": {
+    "description": {},
+    "url": {
+     "urls": [
+      {
+       "display_url": "nav.al",
+       "expanded_url": "https://nav.al",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/diCVEyXHd9"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 308244,
+   "follow_request_sent": false,
+   "followers_count": 4137903,
+   "friends_count": 0,
+   "has_custom_timelines": true,
+   "id": 745273,
+   "id_str": "745273",
+   "is_translator": false,
+   "listed_count": 30375,
+   "media_count": 338,
+   "name": "Naval",
+   "needs_phone_verification": false,
+   "normal_followers_count": 4137903,
+   "notifications": false,
+   "pinned_tweet_ids_str": [
+    "1002103360646823936"
+   ],
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/745273/1588490328",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/1256841238298292232/ycqwaMI2_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/1256841238298292232/ycqwaMI2_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "naval",
+   "statuses_count": 27186,
+   "time_zone": "",
+   "translator_type": "none",
+   "url": "https://t.co/diCVEyXHd9",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "745273"
+ }
+}

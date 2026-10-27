@@ -1,0 +1,813 @@
+{
+ "source": "@NASA UserTweetsAndReplies",
+ "autoExpand": "1",
+ "raw": {
+  "__typename": "Tweet",
+  "cashtag_attachments": [],
+  "content_disclosure": {
+   "ai_generated_disclosure": {
+    "can_edit": true,
+    "has_ai_generated_media": false
+   }
+  },
+  "core": {
+   "user_results": {
+    "result": {
+     "__typename": "User",
+     "affiliates_highlighted_label": {},
+     "avatar": {
+      "image_url": "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg"
+     },
+     "core": {
+      "created_at": "Wed Dec 19 20:20:32 +0000 2007",
+      "name": "NASA",
+      "screen_name": "NASA"
+     },
+     "dm_permissions": {
+      "can_dm": false
+     },
+     "follow_request_sent": false,
+     "has_graduated_access": true,
+     "id": "VXNlcjoxMTM0ODI4Mg==",
+     "is_blue_verified": true,
+     "legacy": {
+      "default_profile": false,
+      "default_profile_image": false,
+      "description": "Making the seemingly impossible, possible. ✨",
+      "entities": {
+       "description": {},
+       "url": {
+        "urls": [
+         {
+          "display_url": "nasa.gov",
+          "expanded_url": "http://www.nasa.gov/",
+          "indices": [
+           0,
+           23
+          ],
+          "url": "https://t.co/9NkQJKAnuU"
+         }
+        ]
+       }
+      },
+      "fast_followers_count": 0,
+      "favourites_count": 17048,
+      "follow_request_sent": false,
+      "followers_count": 92311382,
+      "friends_count": 115,
+      "has_custom_timelines": true,
+      "is_translator": false,
+      "listed_count": 96852,
+      "media_count": 28211,
+      "needs_phone_verification": false,
+      "normal_followers_count": 92311382,
+      "notifications": false,
+      "pinned_tweet_ids_str": [
+       "2113776971603689874"
+      ],
+      "possibly_sensitive": false,
+      "profile_banner_url": "https://pbs.twimg.com/profile_banners/11348282/1788992290",
+      "profile_interstitial_type": "",
+      "statuses_count": 74461,
+      "time_zone": "",
+      "translator_type": "regular",
+      "url": "https://t.co/9NkQJKAnuU",
+      "utc_offset": 0,
+      "want_retweets": false,
+      "withheld_description": "",
+      "withheld_scope": ""
+     },
+     "location": {
+      "location": "Pale Blue Dot"
+     },
+     "media_permissions": {
+      "can_media_tag": true
+     },
+     "parody_commentary_fan_label": "None",
+     "privacy": {
+      "protected": false
+     },
+     "profile_bio": {
+      "description": "Making the seemingly impossible, possible. ✨"
+     },
+     "profile_description_language": "en",
+     "profile_image_shape": "Square",
+     "relationship_perspectives": {
+      "blocked_by": false,
+      "blocking": false,
+      "followed_by": false,
+      "following": false,
+      "muting": false
+     },
+     "rest_id": "11348282",
+     "super_follow_eligible": false,
+     "super_followed_by": false,
+     "super_following": false,
+     "verification": {
+      "verified": false,
+      "verified_type": "Government"
+     }
+    }
+   }
+  },
+  "edit_control": {
+   "edit_tweet_ids": [
+    "2115129428158087498"
+   ],
+   "editable_until_msecs": "1793124727000",
+   "edits_remaining": "5",
+   "is_edit_eligible": true
+  },
+  "grok_analysis_button": true,
+  "grok_annotations": {
+   "is_image_editable_by_grok": true
+  },
+  "grok_translated_post_with_availability": {
+   "is_available": false
+  },
+  "is_translatable": false,
+  "legacy": {
+   "bookmark_count": 39,
+   "bookmarked": false,
+   "conversation_id_str": "2115129428158087498",
+   "created_at": "Tue Oct 27 17:12:07 +0000 2026",
+   "display_text_range": [
+    0,
+    233
+   ],
+   "entities": {
+    "media": [
+     {
+      "display_url": "pic.x.com/T33BGuaR8Y",
+      "expanded_url": "https://x.com/NASA/status/2115129428158087498/photo/1",
+      "ext_alt_text": "A photo of ESA (European Space Agency) astronaut Sophie Adenot tethered to the International Space Station during a spacewalk. She is wearing a white spacesuit used for spacewalks, and it matches the surrounding space station hardware in appearance. Earth's horizon is visible in the background of the scene.",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 130,
+          "w": 130,
+          "x": 814,
+          "y": 136
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 76,
+          "w": 76,
+          "x": 476,
+          "y": 79
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 130,
+          "w": 130,
+          "x": 814,
+          "y": 136
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 43,
+          "w": 43,
+          "x": 270,
+          "y": 45
+         }
+        ]
+       }
+      },
+      "id_str": "2115129424496451584",
+      "indices": [
+       234,
+       257
+      ],
+      "media_key": "3_2115129424496451584",
+      "media_results": {
+       "result": {
+        "media_key": "3_2115129424496451584"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVpzAVEWYAARbtt.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 1365,
+         "x": 393,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 1197,
+         "x": 477,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 683,
+         "x": 734,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1365,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1365,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 453,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/T33BGuaR8Y"
+     }
+    ],
+    "user_mentions": [
+     {
+      "id_str": "1456357980216066048",
+      "indices": [
+       52,
+       63
+      ],
+      "name": "Anil Menon",
+      "screen_name": "astro_anil"
+     },
+     {
+      "id_str": "798240312908910593",
+      "indices": [
+       68,
+       81
+      ],
+      "name": "Joshua Kutryk",
+      "screen_name": "Astro_Kutryk"
+     },
+     {
+      "id_str": "1451773004",
+      "indices": [
+       218,
+       232
+      ],
+      "name": "International Space Station",
+      "screen_name": "Space_Station"
+     }
+    ]
+   },
+   "extended_entities": {
+    "media": [
+     {
+      "display_url": "pic.x.com/T33BGuaR8Y",
+      "expanded_url": "https://x.com/NASA/status/2115129428158087498/photo/1",
+      "ext_alt_text": "A photo of ESA (European Space Agency) astronaut Sophie Adenot tethered to the International Space Station during a spacewalk. She is wearing a white spacesuit used for spacewalks, and it matches the surrounding space station hardware in appearance. Earth's horizon is visible in the background of the scene.",
+      "ext_media_availability": {
+       "status": "Available"
+      },
+      "features": {
+       "large": {
+        "faces": [
+         {
+          "h": 130,
+          "w": 130,
+          "x": 814,
+          "y": 136
+         }
+        ]
+       },
+       "medium": {
+        "faces": [
+         {
+          "h": 76,
+          "w": 76,
+          "x": 476,
+          "y": 79
+         }
+        ]
+       },
+       "orig": {
+        "faces": [
+         {
+          "h": 130,
+          "w": 130,
+          "x": 814,
+          "y": 136
+         }
+        ]
+       },
+       "small": {
+        "faces": [
+         {
+          "h": 43,
+          "w": 43,
+          "x": 270,
+          "y": 45
+         }
+        ]
+       }
+      },
+      "id_str": "2115129424496451584",
+      "indices": [
+       234,
+       257
+      ],
+      "media_key": "3_2115129424496451584",
+      "media_results": {
+       "result": {
+        "media_key": "3_2115129424496451584"
+       }
+      },
+      "media_url_https": "https://pbs.twimg.com/media/HVpzAVEWYAARbtt.jpg",
+      "original_info": {
+       "focus_rects": [
+        {
+         "h": 1147,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 1365,
+         "x": 393,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 1197,
+         "x": 477,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 683,
+         "x": 734,
+         "y": 0
+        },
+        {
+         "h": 1365,
+         "w": 2048,
+         "x": 0,
+         "y": 0
+        }
+       ],
+       "height": 1365,
+       "width": 2048
+      },
+      "sizes": {
+       "large": {
+        "h": 1365,
+        "resize": "fit",
+        "w": 2048
+       },
+       "medium": {
+        "h": 800,
+        "resize": "fit",
+        "w": 1200
+       },
+       "small": {
+        "h": 453,
+        "resize": "fit",
+        "w": 680
+       },
+       "thumb": {
+        "h": 150,
+        "resize": "crop",
+        "w": 150
+       }
+      },
+      "type": "photo",
+      "url": "https://t.co/T33BGuaR8Y"
+     }
+    ]
+   },
+   "favorite_count": 1007,
+   "favorited": false,
+   "full_text": "Are you stepping into a spacesuit this week? So are @astro_anil and @astro_kutryk — but not for Halloween!\n\nTune in here on Oct. 29 at 6:30am ET (1030 UTC) to watch these two astronauts deploy a new solar array on the @Space_Station. https://t.co/T33BGuaR8Y",
+   "id_str": "2115129428158087498",
+   "is_quote_status": false,
+   "lang": "en",
+   "possibly_sensitive": false,
+   "possibly_sensitive_editable": true,
+   "quote_count": 9,
+   "reply_count": 98,
+   "retweet_count": 134,
+   "retweeted": false,
+   "user_id_str": "11348282"
+  },
+  "rest_id": "2115129428158087498",
+  "unmention_data": {},
+  "views": {
+   "count": "345645",
+   "state": "EnabledWithCount"
+  }
+ },
+ "expected": {
+  "bookmark_count": 39,
+  "bookmarked": false,
+  "conversation_id": 2115129428158087400,
+  "conversation_id_str": "2115129428158087498",
+  "created_at": "Tue Oct 27 17:12:07 +0000 2026",
+  "display_text_range": [
+   0,
+   233
+  ],
+  "entities": {
+   "media": [
+    {
+     "display_url": "pic.x.com/T33BGuaR8Y",
+     "expanded_url": "https://x.com/NASA/status/2115129428158087498/photo/1",
+     "ext_alt_text": "A photo of ESA (European Space Agency) astronaut Sophie Adenot tethered to the International Space Station during a spacewalk. She is wearing a white spacesuit used for spacewalks, and it matches the surrounding space station hardware in appearance. Earth's horizon is visible in the background of the scene.",
+     "ext_media_availability": {
+      "status": "Available"
+     },
+     "features": {
+      "large": {
+       "faces": [
+        {
+         "h": 130,
+         "w": 130,
+         "x": 814,
+         "y": 136
+        }
+       ]
+      },
+      "medium": {
+       "faces": [
+        {
+         "h": 76,
+         "w": 76,
+         "x": 476,
+         "y": 79
+        }
+       ]
+      },
+      "orig": {
+       "faces": [
+        {
+         "h": 130,
+         "w": 130,
+         "x": 814,
+         "y": 136
+        }
+       ]
+      },
+      "small": {
+       "faces": [
+        {
+         "h": 43,
+         "w": 43,
+         "x": 270,
+         "y": 45
+        }
+       ]
+      }
+     },
+     "id_str": "2115129424496451584",
+     "indices": [
+      234,
+      257
+     ],
+     "media_key": "3_2115129424496451584",
+     "media_results": {
+      "result": {
+       "media_key": "3_2115129424496451584"
+      }
+     },
+     "media_url_https": "https://pbs.twimg.com/media/HVpzAVEWYAARbtt.jpg",
+     "original_info": {
+      "focus_rects": [
+       {
+        "h": 1147,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 1365,
+        "x": 393,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 1197,
+        "x": 477,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 683,
+        "x": 734,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "height": 1365,
+      "width": 2048
+     },
+     "sizes": {
+      "large": {
+       "h": 1365,
+       "resize": "fit",
+       "w": 2048
+      },
+      "medium": {
+       "h": 800,
+       "resize": "fit",
+       "w": 1200
+      },
+      "small": {
+       "h": 453,
+       "resize": "fit",
+       "w": 680
+      },
+      "thumb": {
+       "h": 150,
+       "resize": "crop",
+       "w": 150
+      }
+     },
+     "type": "photo",
+     "url": "https://t.co/T33BGuaR8Y"
+    }
+   ],
+   "user_mentions": [
+    {
+     "id_str": "1456357980216066048",
+     "indices": [
+      52,
+      63
+     ],
+     "name": "Anil Menon",
+     "screen_name": "astro_anil"
+    },
+    {
+     "id_str": "798240312908910593",
+     "indices": [
+      68,
+      81
+     ],
+     "name": "Joshua Kutryk",
+     "screen_name": "Astro_Kutryk"
+    },
+    {
+     "id_str": "1451773004",
+     "indices": [
+      218,
+      232
+     ],
+     "name": "International Space Station",
+     "screen_name": "Space_Station"
+    }
+   ]
+  },
+  "ext": {
+   "views": {
+    "r": {
+     "ok": {
+      "count": 345645
+     }
+    }
+   }
+  },
+  "extended_entities": {
+   "media": [
+    {
+     "display_url": "pic.x.com/T33BGuaR8Y",
+     "expanded_url": "https://x.com/NASA/status/2115129428158087498/photo/1",
+     "ext_alt_text": "A photo of ESA (European Space Agency) astronaut Sophie Adenot tethered to the International Space Station during a spacewalk. She is wearing a white spacesuit used for spacewalks, and it matches the surrounding space station hardware in appearance. Earth's horizon is visible in the background of the scene.",
+     "ext_media_availability": {
+      "status": "Available"
+     },
+     "features": {
+      "large": {
+       "faces": [
+        {
+         "h": 130,
+         "w": 130,
+         "x": 814,
+         "y": 136
+        }
+       ]
+      },
+      "medium": {
+       "faces": [
+        {
+         "h": 76,
+         "w": 76,
+         "x": 476,
+         "y": 79
+        }
+       ]
+      },
+      "orig": {
+       "faces": [
+        {
+         "h": 130,
+         "w": 130,
+         "x": 814,
+         "y": 136
+        }
+       ]
+      },
+      "small": {
+       "faces": [
+        {
+         "h": 43,
+         "w": 43,
+         "x": 270,
+         "y": 45
+        }
+       ]
+      }
+     },
+     "id_str": "2115129424496451584",
+     "indices": [
+      234,
+      257
+     ],
+     "media_key": "3_2115129424496451584",
+     "media_results": {
+      "result": {
+       "media_key": "3_2115129424496451584"
+      }
+     },
+     "media_url_https": "https://pbs.twimg.com/media/HVpzAVEWYAARbtt.jpg",
+     "original_info": {
+      "focus_rects": [
+       {
+        "h": 1147,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 1365,
+        "x": 393,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 1197,
+        "x": 477,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 683,
+        "x": 734,
+        "y": 0
+       },
+       {
+        "h": 1365,
+        "w": 2048,
+        "x": 0,
+        "y": 0
+       }
+      ],
+      "height": 1365,
+      "width": 2048
+     },
+     "sizes": {
+      "large": {
+       "h": 1365,
+       "resize": "fit",
+       "w": 2048
+      },
+      "medium": {
+       "h": 800,
+       "resize": "fit",
+       "w": 1200
+      },
+      "small": {
+       "h": 453,
+       "resize": "fit",
+       "w": 680
+      },
+      "thumb": {
+       "h": 150,
+       "resize": "crop",
+       "w": 150
+      }
+     },
+     "type": "photo",
+     "url": "https://t.co/T33BGuaR8Y"
+    }
+   ]
+  },
+  "favorite_count": 1007,
+  "favorited": false,
+  "full_text": "Are you stepping into a spacesuit this week? So are @astro_anil and @astro_kutryk — but not for Halloween!\n\nTune in here on Oct. 29 at 6:30am ET (1030 UTC) to watch these two astronauts deploy a new solar array on the @Space_Station. https://t.co/T33BGuaR8Y",
+  "id": 2115129428158087400,
+  "id_str": "2115129428158087498",
+  "is_quote_status": false,
+  "lang": "en",
+  "possibly_sensitive": false,
+  "possibly_sensitive_editable": true,
+  "quote_count": 9,
+  "reply_count": 98,
+  "retweet_count": 134,
+  "retweeted": false,
+  "text": "Are you stepping into a spacesuit this week? So are @astro_anil and @astro_kutryk — but not for Halloween!\n\nTune in here on Oct. 29 at 6:30am ET (1030 UTC) to watch these two astronauts deploy a new solar array on the @Space_Station. https://t.co/T33BGuaR8Y",
+  "user": {
+   "created_at": "Wed Dec 19 20:20:32 +0000 2007",
+   "default_profile": false,
+   "default_profile_image": false,
+   "description": "Making the seemingly impossible, possible. ✨",
+   "entities": {
+    "description": {},
+    "url": {
+     "urls": [
+      {
+       "display_url": "nasa.gov",
+       "expanded_url": "http://www.nasa.gov/",
+       "indices": [
+        0,
+        23
+       ],
+       "url": "https://t.co/9NkQJKAnuU"
+      }
+     ]
+    }
+   },
+   "fast_followers_count": 0,
+   "favourites_count": 17048,
+   "follow_request_sent": false,
+   "followers_count": 92311382,
+   "friends_count": 115,
+   "has_custom_timelines": true,
+   "id": 11348282,
+   "id_str": "11348282",
+   "is_translator": false,
+   "listed_count": 96852,
+   "location": "Pale Blue Dot",
+   "media_count": 28211,
+   "name": "NASA",
+   "needs_phone_verification": false,
+   "normal_followers_count": 92311382,
+   "notifications": false,
+   "pinned_tweet_ids_str": [
+    "2113776971603689874"
+   ],
+   "possibly_sensitive": false,
+   "profile_banner_url": "https://pbs.twimg.com/profile_banners/11348282/1788992290",
+   "profile_image_url": "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg",
+   "profile_image_url_https": "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg",
+   "profile_interstitial_type": "",
+   "screen_name": "NASA",
+   "statuses_count": 74461,
+   "time_zone": "",
+   "translator_type": "regular",
+   "url": "https://t.co/9NkQJKAnuU",
+   "utc_offset": 0,
+   "verified": true,
+   "verified_type": "Blue",
+   "want_retweets": false,
+   "withheld_description": "",
+   "withheld_scope": ""
+  },
+  "user_id_str": "11348282"
+ }
+}
