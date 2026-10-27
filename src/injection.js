@@ -67,7 +67,7 @@ async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
-    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css] =
+    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js] =
         await Promise.allSettled([
             fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
@@ -77,6 +77,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/files/twitter-text.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/xlr.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/xlr.css")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/xapi.js")).then(r => r.text()),
         ]);
     if (localStorage.OTDalwaysUseLocalFiles === "0") {
         const [
@@ -183,6 +184,11 @@ async function main() {
 
     // Must land before interception.js: it reads the layout out of localStorage on load.
     await loadBackup();
+
+    // Shared X request module (also on x.com via the manifest); before anything that calls X.
+    let xapi_js_script = document.createElement("script");
+    xapi_js_script.textContent = xapi_js.value;
+    document.head.appendChild(xapi_js_script);
 
     let interception_js_script = document.createElement("script");
     interception_js_script.innerHTML = interception_js.value;

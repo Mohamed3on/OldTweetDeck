@@ -1,29 +1,13 @@
 // x.com profile pages: chips for the lists of yours this account is in (× removes), plus an
 // "Add to list" picker — the same row xlr.js puts in TweetDeck's profile popup.
 (() => {
-  const BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
-  const QID = {
-    LIST_OWNERSHIPS: 'BBLgNbbUu6HXAX11lV_1Qw',
-    LIST_ADD_MEMBER: 'vWPi0CTMoPFsjsL6W4IynQ',
-    LIST_REMOVE_MEMBER: 'cAGvZIu7SW0YlLYynz3VYA',
-  };
-
   const myId = () => document.cookie.match(/twid=u%3D(\d+)/)?.[1];
-  const hdrs = () => ({
-    'authorization': `Bearer ${BEARER}`, 'content-type': 'application/json',
-    'x-csrf-token': document.cookie.match(/ct0=([^;]+)/)?.[1] || '', 'x-twitter-active-user': 'yes',
-    'x-twitter-auth-type': 'OAuth2Session', 'x-twitter-client-language': 'en',
-  });
-  const gqlUrl = (qid, op) => `${location.origin}/i/api/graphql/${qid}/${op}`;
 
   // One call returns every list you own, its size, and whether this account is in it.
   async function fetchLists(userId) {
-    const url = new URL(gqlUrl(QID.LIST_OWNERSHIPS, 'ListOwnerships'));
-    url.searchParams.set('variables', JSON.stringify({
+    const data = await (await XApi.gql('ListOwnerships', {
       userId: myId(), isListMemberTargetUserId: userId, count: 100, includePromotedContent: false,
-    }));
-    url.searchParams.set('features', '{}');
-    const data = await (await fetch(url, { headers: hdrs(), credentials: 'include' })).json();
+    })).json();
     const lists = [];
     for (const inst of data?.data?.user?.result?.timeline?.timeline?.instructions || []) {
       for (const entry of inst.entries || []) {
@@ -36,11 +20,7 @@
   }
 
   const setMember = async (list, userId, member) => {
-    const [qid, op] = member ? [QID.LIST_ADD_MEMBER, 'ListAddMember'] : [QID.LIST_REMOVE_MEMBER, 'ListRemoveMember'];
-    const r = await fetch(gqlUrl(qid, op), {
-      method: 'POST', headers: hdrs(), credentials: 'include',
-      body: JSON.stringify({ variables: { listId: list.id, userId }, features: {}, queryId: qid }),
-    });
+    const r = await XApi.gql(member ? 'ListAddMember' : 'ListRemoveMember', { listId: list.id, userId });
     if (r.ok) list.member = member;
     return r.ok;
   };
