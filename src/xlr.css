@@ -903,6 +903,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   white-space: pre-line;
   overflow-wrap: anywhere;
   &:empty { display: none; }
+  a:hover { text-decoration: underline; }
 }
 .xlr-hc-loc {
   display: flex;

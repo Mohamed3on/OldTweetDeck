@@ -793,6 +793,27 @@
   const pinSvg = mkSvg('M12 7c-1.93 0-3.5 1.57-3.5 3.5S10.07 14 12 14s3.5-1.57 3.5-3.5S13.93 7 12 7zm0 5c-.827 0-1.5-.673-1.5-1.5S11.173 9 12 9s1.5.673 1.5 1.5S12.827 12 12 12zm0-10c-4.687 0-8.5 3.813-8.5 8.5 0 5.967 7.621 11.116 7.945 11.332l.555.37.555-.37c.324-.216 7.945-5.365 7.945-11.332C20.5 5.813 16.687 2 12 2zm0 17.77c-1.665-1.241-6.5-5.196-6.5-9.27C5.5 6.916 8.416 4 12 4s6.5 2.916 6.5 6.5c0 4.073-4.835 8.028-6.5 9.27z');
   const verifiedSvg = mkSvg('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z');
 
+  // The bio as links: t.co URLs as their expanded link, @mentions as rel="user", #hashtags as
+  // rel="hashtag" — the markup TweetDeck's own tweet text uses.
+  const BIO_TOKEN_RE = /(https:\/\/t\.co\/\w+)|(^|[^\w@\/])@(\w{1,15})|(^|[^\p{L}\p{N}_&\/])#([\p{L}\p{N}_]*\p{L}[\p{L}\p{N}_]*)/gu;
+  function linkifyHcBio(u) {
+    const text = u.description || '', frag = document.createDocumentFragment();
+    const urls = Object.fromEntries((u.entities?.description?.urls || []).map(e => [e.url, e]));
+    const mk = (href, label, rel) => Object.assign(document.createElement('a'), { href, textContent: label, target: '_blank', ...(rel && { rel }) });
+    let last = 0;
+    for (const m of text.matchAll(BIO_TOKEN_RE)) {
+      const [whole, url, preAt, handle, preHash, tag] = m;
+      const lead = preAt ?? preHash ?? '';
+      frag.append(text.slice(last, m.index) + lead);
+      if (url) frag.append(urls[url] ? mk(urls[url].expanded_url, urls[url].display_url) : url);
+      else if (handle) frag.append(mk(`https://twitter.com/${handle}`, '@' + handle, 'user'));
+      else frag.append(mk(`https://twitter.com/search?q=%23${encodeURIComponent(tag)}`, '#' + tag, 'hashtag'));
+      last = m.index + whole.length;
+    }
+    frag.append(text.slice(last));
+    return frag;
+  }
+
   function showHc(link, anchor, u, instant) {
     const username = u.screen_name;
     if (u.id_str && !userIds[username]) { userIds[username] = u.id_str; persistUserIds(); }
@@ -810,9 +831,21 @@
     hc.querySelector('.xlr-hc-name').textContent = u.name;
     if (u.verified) hc.querySelector('.xlr-hc-name').appendChild(verifiedSvg.cloneNode(true));
     hc.querySelector('.xlr-hc-handle').textContent = '@' + username;
-    let bio = u.description || '';
-    for (const { url, display_url } of u.entities?.description?.urls || []) bio = bio.replace(url, display_url);
-    hc.querySelector('.xlr-hc-bio').textContent = bio;
+    const bio = hc.querySelector('.xlr-hc-bio');
+    bio.append(linkifyHcBio(u));
+    // TweetDeck only opens its profile popup / search column for links inside a column, so a bio
+    // @mention or #hashtag clicks a hidden copy of itself next to the hovered handle.
+    bio.onclick = (e) => {
+      const a = e.target.closest('a[rel]');
+      if (!a || !link.isConnected) return;
+      e.preventDefault();
+      hideHc();
+      const proxy = a.cloneNode(true);
+      proxy.hidden = true;
+      link.after(proxy);
+      proxy.click();
+      proxy.remove();
+    };
     if (u.location) hc.querySelector('.xlr-hc-loc').append(pinSvg.cloneNode(true), u.location);
     const [following, followers] = hc.querySelectorAll('.xlr-hc-stats b');
     following.textContent = fmtCount(u.friends_count);
