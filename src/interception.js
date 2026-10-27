@@ -57,12 +57,7 @@ if(localStorage.OTDsettings) {
 backupState();
 setInterval(backupState, 60 * 60 * 1000);
 let seenNotifications = [];
-let timings = {
-    home: {},
-    list: {},
-    user: {},
-    search: {},
-}
+const timings = {}; // stream key → when its last request went out
 // Refresh cadence adapts to whether you're actually watching the tab. The guards below only
 // *cancel* TweetDeck's background polls, so these are floors on how often a real fetch escapes:
 // fast while the tab is focused, slower when the window's in the background, slowest when hidden
@@ -148,7 +143,7 @@ function searchFloor(query) {
 // waiting out the interval (background polls were throttled or cancelled while you were away).
 document.addEventListener("visibilitychange", () => {
     if (document.hidden || Date.now() < rateCoolUntil) return;
-    for (const store of Object.values(timings)) for (const k in store) store[k] = 0;
+    for (const k in timings) timings[k] = 0;
 });
 
 let lastToastAt = 0;
@@ -1010,11 +1005,14 @@ let bookmarkTimes = {};
 const OriginalXHR = XMLHttpRequest;
 
 // Pagination cursors are timeline entries whose id carries a cursor-<dir>-/sq-cursor-<dir>-
-// prefix; return the cursor's value (undefined if absent — callers all guard on it).
-function findCursor(entries, direction) {
-    return entries.find(
-        (e) => e.entryId.startsWith(`sq-cursor-${direction}-`) || e.entryId.startsWith(`cursor-${direction}-`)
-    )?.content?.value;
+// prefix. GraphQL keeps the value on content, the v2 notifications API under
+// content.operation.cursor, and a page fetched with a cursor re-sends its cursors as
+// replace-entry instructions instead. Returns undefined if absent.
+function findCursor(entries, direction, instructions = []) {
+    const isCursor = (id) => id?.startsWith(`sq-cursor-${direction}-`) || id?.startsWith(`cursor-${direction}-`);
+    const content = entries.find((e) => isCursor(e.entryId))?.content
+        ?? instructions.find((i) => isCursor(i.entry_id_to_replace))?.entry?.content;
+    return content?.value ?? content?.operation?.cursor?.value;
 }
 
 // Every proxied route swaps TweetDeck's headers for the modern GraphQL API's
@@ -1054,409 +1052,205 @@ function sendOrEmulate(xhr, data) {
     }
 }
 
+// ── Timeline paging ──
+// TweetDeck pages its legacy timelines with max_id/since_id; their GraphQL replacements page
+// with opaque cursors. Tweet streams pin each cursor to the tweet ids TweetDeck will echo back:
+// bottom on the oldest tweet (returned as max_id+1), top on the newest two (either can come back
+// as since_id). Notification streams (perTweet: false) keep one top/bottom pair.
+function cursorFor(stream, params, perTweet) {
+    const since_id = params.get("since_id"), max_id = params.get("max_id");
+    if (since_id) return cursors[perTweet ? `${stream}-${since_id}-top` : `${stream}-top`];
+    if (max_id) return cursors[perTweet ? `${stream}-${BigInt(max_id) + 1n}` : `${stream}-bottom`];
+}
+function recordCursors(stream, page, entries, items, perTweet) {
+    const top = findCursor(entries, "top", page.instructions);
+    const bottom = findCursor(entries, "bottom", page.instructions);
+    if (!perTweet) {
+        if (top) cursors[`${stream}-top`] = top;
+        if (bottom) cursors[`${stream}-bottom`] = bottom;
+    } else if (items.length) {
+        if (bottom) cursors[`${stream}-${items[items.length - 1].id_str}`] = bottom;
+        if (top) for (const t of items.slice(0, 2)) cursors[`${stream}-${t.id_str}-top`] = top;
+    }
+}
+// Tweets on a GraphQL timeline page: tweet entries, plus the tweets inside the route's
+// conversation modules (with home's feedback actions attached).
+function timelineTweets(xhr, spec, page, entries) {
+    const feedbackActions = page.responseObjects?.feedbackActions ?? [];
+    const tweets = [];
+    for (const e of entries) {
+        if (e.entryId.startsWith("tweet-") || e.entryId.startsWith("sq-I-t-")) {
+            if (e.content.itemContent?.promotedMetadata) continue;
+            const tweet = parseTweet(e.content.itemContent?.tweet_results?.result);
+            if (tweet) tweets.push(tweet);
+        } else if (spec.conversation && e.entryId.startsWith(spec.conversation)) {
+            for (const { entryId, item } of e.content.items) {
+                if (!entryId.includes("-tweet-")) continue;
+                const tweet = parseTweet(item.itemContent.tweet_results.result);
+                if (!tweet || (spec.keepThreaded && !spec.keepThreaded(tweet, xhr))) continue;
+                if (item.feedbackInfo) {
+                    tweet.feedback = item.feedbackInfo.feedbackKeys
+                        .map((f) => feedbackActions.find((a) => a.key === f)?.value)
+                        .filter((f) => f);
+                    if (tweet.feedback.length) tweet.feedbackMetadata = item.feedbackInfo.feedbackMetadata;
+                }
+                tweets.push(tweet);
+            }
+        }
+    }
+    return tweets;
+}
+const notMuted = (t) => !t.user?.muting && !t.user?.blocking;
+// A timeline route is its stream key, its query and where its page lives; this owns the rest.
+//   stream(params, xhr) → stream key (may stash route state on xhr.storage)
+//   request(xhr, params, cursor) → sets modUrl (and storage.body when post: true)
+//   timeline(data) → the page's { instructions, responseObjects }
+// Optional: floor(xhr) poll gate, conversation prefix + keepThreaded(tweet, xhr), items(entries,
+// data) for non-GraphQL pages, visible filter, sort: false, perTweet: false, finish(items, xhr,
+// page), wrap(items, bottomCursor, xhr) response shape. Other keys pass through onto the route.
+function timelineRoute(spec) {
+    const { stream, request, timeline, floor, perTweet = true, sort = true, visible = notMuted, wrap = (items) => items } = spec;
+    return {
+        method: "GET",
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
+        ...spec,
+        beforeRequest: (xhr) => {
+            try {
+                const params = new URL(xhr.modUrl).searchParams;
+                xhr.storage.stream = stream(params, xhr);
+                xhr.storage.poll = params.has("since_id");
+                request(xhr, params, cursorFor(xhr.storage.stream, params, perTweet));
+            } catch (e) {
+                console.error(e);
+            }
+        },
+        // Polls (since_id) go out no faster than the route's floor; a throttled one is answered empty.
+        openHandler: (xhr, method, url, ...rest) => {
+            const key = xhr.storage.stream;
+            if (floor && xhr.storage.poll && Date.now() - (timings[key] ?? 0) < floor(xhr)) {
+                xhr.storage.cancelled = true;
+            } else {
+                xhr.open(spec.post ? "POST" : method, url, ...rest);
+                timings[key] = Date.now();
+            }
+        },
+        sendHandler: (xhr, body) => sendOrEmulate(xhr, xhr.storage.body ?? body),
+        afterRequest: (xhr) => {
+            if (xhr.storage.cancelled) return wrap([], null, xhr);
+            try {
+                const data = parseResponse(xhr);
+                const page = data && timeline(data);
+                const add = page?.instructions?.find((i) => i.entries || i.addEntries);
+                const entries = add?.entries ?? add?.addEntries?.entries;
+                if (!entries) return wrap([], null, xhr);
+                const items = (spec.items ? spec.items(entries, data) : timelineTweets(xhr, spec, page, entries)).filter(visible);
+                if (sort) sortByDate(items);
+                recordCursors(xhr.storage.stream, page, entries, items, perTweet);
+                spec.finish?.(items, xhr, page);
+                return wrap(items, findCursor(entries, "bottom", page.instructions) ?? null, xhr);
+            } catch (e) {
+                console.error(e);
+                return wrap([], null, xhr);
+            }
+        },
+    };
+}
+
 const proxyRoutes = [
     // Home timeline
-    {
+    timelineRoute({
         path: "/1.1/statuses/home_timeline.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            try {
-                let url = new URL(xhr.modUrl);
-                let params = new URLSearchParams(url.search);
-                let variables = {"count":40,"enableRanking":false,"includePromotedContent":false,"requestContext":"launch","seenTweetIds":[]};
-
-                let max_id = params.get("max_id");
-                let since_id = params.get("since_id");
-                let user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? params.get("user_id") ?? getCurrentUserId();
-                if(params.get("user_id")) {
-                    xhr.storage.user_id = params.get("user_id");
-                }
-                if (max_id) {
-                    let bn = BigInt(params.get("max_id"));
-                    bn += BigInt(1);
-                    if (cursors[`home-${user_id}-${bn}`]) {
-                        variables.cursor = cursors[`home-${user_id}-${bn}`];
-                    }
-                }
-                if (since_id) {
-                    let bn = BigInt(params.get("since_id"));
-                    if (cursors[`home-${user_id}-${bn}-top`]) {
-                        variables.cursor = cursors[`home-${user_id}-${bn}-top`];
-                        xhr.storage.cursor = true;
-                    }
-                }
-                xhr.modUrl = `${NEW_API}/n2m8OTpLdsM3Zhv33ljKoA/HomeLatestTimeline`;
-                xhr.storage.body = JSON.stringify({ variables, features: TIMELINE_FEATURES, queryId: "n2m8OTpLdsM3Zhv33ljKoA" });
-            } catch (e) {
-                console.error(e);
-            }
+        post: true, // GraphQL HomeLatestTimeline only accepts POST; the original XHR was GET.
+        stream: (params, xhr) => `home-${xhr.storage.user_id = params.get("user_id") ?? getCurrentUserId()}`,
+        floor: (xhr) => streamFloor("home", xhr.storage.user_id),
+        request: (xhr, params, cursor) => {
+            let variables = {"count":40,"enableRanking":false,"includePromotedContent":false,"requestContext":"launch","seenTweetIds":[]};
+            if (cursor) variables.cursor = cursor;
+            xhr.modUrl = `${NEW_API}/n2m8OTpLdsM3Zhv33ljKoA/HomeLatestTimeline`;
+            xhr.storage.body = JSON.stringify({ variables, features: TIMELINE_FEATURES, queryId: "n2m8OTpLdsM3Zhv33ljKoA" });
         },
-        openHandler: (xhr, method, url, async, username, password) => {
-            let user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? xhr.storage.user_id ?? getCurrentUserId();
-            xhr.storage.user_id = user_id;
-            if(!timings.home[user_id]) {
-                timings.home[user_id] = 0;
-            }
-            if(Date.now() - timings.home[user_id] < streamFloor("home", user_id) && xhr.storage.cursor) {
-                xhr.storage.cancelled = true;
-            } else {
-                // GraphQL HomeLatestTimeline only accepts POST; the original XHR was GET.
-                xhr.open("POST", url, async, username, password);
-                timings.home[user_id] = Date.now();
-            }
-        },
-        sendHandler: (xhr) => sendOrEmulate(xhr, xhr.storage.body),
-        beforeSendHeaders: (xhr) => {
-            xhr.storage.user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? getCurrentUserId();
-            setApiHeaders(xhr);
-        },
-        afterRequest: (xhr) => {
-            if(xhr.storage.cancelled) {
-                return [];
-            }
-            if(xhr.storage.data) {
-                return xhr.storage.data;
-            }
-            let data = parseResponse(xhr);
-            if (!data) return [];
-            if (data.errors && data.errors[0]) {
-                return [];
-            }
-            let instructions = data.data.home.home_timeline_urt.instructions;
-            let entries = instructions.find((i) => i.type === "TimelineAddEntries");
-            if (!entries) {
-                return [];
-            }
-            entries = entries.entries;
-            let feedbackActions =
-                data.data.home.home_timeline_urt.responseObjects?.feedbackActions ?? [];
-            let tweets = [];
-            for (let e of entries) {
-                // thats a lot of trash https://lune.dimden.dev/0bf524e52eb.png
-                if (e.entryId.startsWith("tweet-")) {
-                    let tweet = parseTweet(e.content.itemContent.tweet_results.result);
-                    if (tweet) tweets.push(tweet);
-                } else if (e.entryId.startsWith("home-conversation-")) {
-                    for (let item of e.content.items) {
-                        if (!item.entryId.includes("-tweet-")) continue;
-                        let tweet = parseTweet(item.item.itemContent.tweet_results.result);
-                        if (!tweet) continue;
-                        if (item.item.feedbackInfo) {
-                            tweet.feedback = item.item.feedbackInfo.feedbackKeys
-                                .map((f) => feedbackActions.find((a) => a.key === f)?.value)
-                                .filter((f) => f);
-                            if (tweet.feedback.length) {
-                                tweet.feedbackMetadata = item.item.feedbackInfo.feedbackMetadata;
-                            }
-                        }
-                        tweets.push(tweet);
-                    }
-                }
-            }
-
-            tweets = tweets.filter((t) => !t.user.muting && !t.user.blocking);
-
-            if (tweets.length === 0) return tweets;
-
-            sortByDate(tweets);
-
-            let bottomCursor = findCursor(entries, "bottom");
-            if (bottomCursor) {
-                cursors[`home-${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
-            }
-            let topCursor = findCursor(entries, "top");
-            if (topCursor) {
-                if(tweets[0]) cursors[`home-${xhr.storage.user_id}-${tweets[0].id_str}-top`] = topCursor;
-                if(tweets[1]) cursors[`home-${xhr.storage.user_id}-${tweets[1].id_str}-top`] = topCursor;
-            }
-
-            xhr.storage.data = tweets;
-
-            return tweets;
-        },
-    },
+        timeline: (data) => data.data?.home?.home_timeline_urt,
+        conversation: "home-conversation-",
+    }),
     // List timeline
-    {
+    timelineRoute({
         path: "/1.1/lists/statuses.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            try {
-                let url = new URL(xhr.modUrl);
-                let params = new URLSearchParams(url.search);
-                let variables = { count: 40, includePromotedContent: false };
-                let features = {"rweb_video_screen_enabled":false,"payments_enabled":false,"profile_label_improvements_pcf_label_in_post_enabled":true,"rweb_tipjar_consumption_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":false,"responsive_web_grok_analyze_post_followups_enabled":true,"responsive_web_jetfuel_frame":true,"responsive_web_grok_share_attachment_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"responsive_web_grok_show_grok_translated_post":true,"responsive_web_grok_analysis_button_from_backend":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_grok_image_annotation_enabled":true,"responsive_web_grok_community_note_auto_translation_is_enabled":false,"responsive_web_enhance_cards_enabled":false};
-
-                let list_id = params.get("list_id");
-                let max_id = params.get("max_id");
-                let since_id = params.get("since_id");
-                if (max_id) {
-                    let bn = BigInt(params.get("max_id"));
-                    bn += BigInt(1);
-                    if (cursors[`list-${list_id}-${bn}`]) {
-                        variables.cursor = cursors[`list-${list_id}-${bn}`];
-                        xhr.storage.cursor = true;
-                    }
-                }
-                if (since_id) {
-                    let bn = BigInt(params.get("since_id"));
-                    if (cursors[`list-${list_id}-${bn}-top`]) {
-                        variables.cursor = cursors[`list-${list_id}-${bn}-top`];
-                        xhr.storage.cursor = true;
-                    }
-                }
-                variables.listId = list_id;
-                xhr.storage.list_id = list_id;
-                xhr.modUrl = `${NEW_API}/l411pL-GRg-AKo_a2rmYjg/ListLatestTweetsTimeline?${generateParams(
-                    features,
-                    variables
-                )}`;
-            } catch (e) {
-                console.error(e);
-            }
+        stream: (params) => `list-${params.get("list_id")}`,
+        floor: pollFloor,
+        request: (xhr, params, cursor) => {
+            let variables = { count: 40, includePromotedContent: false, listId: params.get("list_id") };
+            let features = {"rweb_video_screen_enabled":false,"payments_enabled":false,"profile_label_improvements_pcf_label_in_post_enabled":true,"rweb_tipjar_consumption_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":false,"responsive_web_grok_analyze_post_followups_enabled":true,"responsive_web_jetfuel_frame":true,"responsive_web_grok_share_attachment_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"responsive_web_grok_show_grok_translated_post":true,"responsive_web_grok_analysis_button_from_backend":false,"creator_subscriptions_quote_tweet_preview_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_grok_image_annotation_enabled":true,"responsive_web_grok_community_note_auto_translation_is_enabled":false,"responsive_web_enhance_cards_enabled":false};
+            if (cursor) variables.cursor = cursor;
+            xhr.modUrl = `${NEW_API}/l411pL-GRg-AKo_a2rmYjg/ListLatestTweetsTimeline?${generateParams(
+                features,
+                variables
+            )}`;
         },
-        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
-        openHandler: (xhr, method, url, async, username, password) => {
-            const list_id = xhr.storage.list_id;
-            if(!timings.list[list_id]) {
-                timings.list[list_id] = 0;
-            }
-            if(Date.now() - timings.list[list_id] < pollFloor() && xhr.storage.cursor) {
-                xhr.storage.cancelled = true;
-            } else {
-                xhr.open(method, url, async, username, password);
-                timings.list[list_id] = Date.now();
-            }
-        },
-        sendHandler: sendOrEmulate,
-        afterRequest: (xhr) => {
-            if(xhr.storage.cancelled) {
-                return [];
-            }
-            let data = parseResponse(xhr);
-            if (!data) return [];
-            let list = data?.data?.list?.tweets_timeline?.timeline?.instructions?.find(
-                (i) => i.type === "TimelineAddEntries"
-            );
-            if (!list) return [];
-            list = list.entries;
-            let tweets = [];
-            for (let e of list) {
-                if (e.entryId.startsWith("tweet-")) {
-                    let res = e.content.itemContent.tweet_results.result;
-                    let tweet = parseTweet(res);
-                    if (tweet) {
-                        tweets.push(tweet);
-                    }
-                } else if (e.entryId.startsWith("list-conversation-")) {
-                    let lt = e.content.items;
-                    for (let i = 0; i < lt.length; i++) {
-                        let t = lt[i];
-                        if (t.entryId.includes("-tweet-")) {
-                            let res = t.item.itemContent.tweet_results.result;
-                            let tweet = parseTweet(res);
-                            if (!tweet) continue;
-                            tweets.push(tweet);
-                        }
-                    }
-                }
-            }
-
-            if (tweets.length === 0) return tweets;
-
-            tweets = tweets.filter(t => !t.user.muting && !t.user.blocking);
-
-            sortByDate(tweets);
-
-            let bottomCursor = findCursor(list, "bottom");
-            if (bottomCursor) {
-                cursors[`list-${xhr.storage.list_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
-            }
-            let topCursor = findCursor(list, "top");
-            if (topCursor) {
-                if(tweets[0]) cursors[`list-${xhr.storage.list_id}-${tweets[0].id_str}-top`] = topCursor;
-                if(tweets[1]) cursors[`list-${xhr.storage.list_id}-${tweets[1].id_str}-top`] = topCursor;
-            }
-
-            return tweets;
-        },
-    },
+        timeline: (data) => data.data?.list?.tweets_timeline?.timeline,
+        conversation: "list-conversation-",
+    }),
     // User timeline
-    {
+    timelineRoute({
         path: "/1.1/statuses/user_timeline.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            try {
-                let url = new URL(xhr.modUrl);
-                let params = new URLSearchParams(url.search);
-                let user_id = params.get("user_id");
-                let variables = {
-                    count: 20,
-                    includePromotedContent: false,
-                    withCommunity: true,
-                    withVoice: true,
-                };
-
-                if (!user_id) {
-                    variables.userId = getCurrentUserId();
-                } else {
-                    variables.userId = user_id;
-                }
-                let since_id = params.get("since_id");
-                let max_id = params.get("max_id");
-                if (max_id) {
-                    let bn = BigInt(params.get("max_id"));
-                    bn += BigInt(1);
-                    if (cursors[`${variables.userId}-${bn}`]) {
-                        variables.cursor = cursors[`${variables.userId}-${bn}`];
-                        xhr.storage.cursor = true;
-                    }
-                }
-                if (since_id) {
-                    let bn = BigInt(params.get("since_id"));
-                    if (cursors[`${variables.userId}-${bn}-top`]) {
-                        variables.cursor = cursors[`${variables.userId}-${bn}-top`];
-                        xhr.storage.cursor = true;
-                    }
-                }
-                xhr.storage.user_id = variables.userId;
-
-                xhr.modUrl = `${NEW_API}/Yhdsu6wWbof5lwXjYqxXEg/UserTweetsAndReplies?${generateParams(
-                    TIMELINE_FEATURES,
-                    variables,
-                    { withArticlePlainText: false }
-                )}`;
-            } catch (e) {
-                console.error(e);
-            }
+        stream: (params, xhr) => `user-${xhr.storage.user_id = params.get("user_id") || getCurrentUserId()}`,
+        floor: pollFloor,
+        request: (xhr, params, cursor) => {
+            let variables = {
+                userId: xhr.storage.user_id,
+                count: 20,
+                includePromotedContent: false,
+                withCommunity: true,
+                withVoice: true,
+            };
+            if (cursor) variables.cursor = cursor;
+            xhr.modUrl = `${NEW_API}/Yhdsu6wWbof5lwXjYqxXEg/UserTweetsAndReplies?${generateParams(
+                TIMELINE_FEATURES,
+                variables,
+                { withArticlePlainText: false }
+            )}`;
         },
-        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
-        openHandler: (xhr, method, url, async, username, password) => {
-            const user_id = xhr.storage.user_id;
-            if(!timings.user[user_id]) {
-                timings.user[user_id] = 0;
-            }
-            if(Date.now() - timings.user[user_id] < pollFloor() && xhr.storage.cursor) {
-                xhr.storage.cancelled = true;
-            } else {
-                xhr.open(method, url, async, username, password);
-                timings.user[user_id] = Date.now();
-            }
+        timeline: (data) => (data.data?.user?.result?.timeline ?? data.data?.user?.result?.timeline_v2)?.timeline,
+        // Reply threads carry other people's tweets; the profile column only shows the user's own.
+        conversation: "profile-conversation-",
+        keepThreaded: (tweet, xhr) => tweet.user.id_str === xhr.storage.user_id,
+        // Slot the pinned tweet in where its date puts it, unless that's past the end of the page.
+        finish: (tweets, xhr, page) => {
+            let pinEntry = page.instructions.find((e) => e.type === "TimelinePinEntry");
+            let pinnedTweet = parseTweet(pinEntry?.entry?.content?.itemContent?.tweet_results?.result);
+            if (!pinnedTweet) return;
+            let time = new Date(pinnedTweet.created_at).getTime();
+            let index = tweets.findIndex((t) => new Date(t.created_at).getTime() < time);
+            if (index !== -1) tweets.splice(index, 0, pinnedTweet);
         },
-        sendHandler: sendOrEmulate,
-        afterRequest: (xhr) => {
-            if(xhr.storage.cancelled) {
-                return [];
-            }
-            let data = parseResponse(xhr);
-            if (!data) return [];
-            let timeline = data?.data?.user?.result?.timeline ?? data?.data?.user?.result?.timeline_v2;
-            let instructions = timeline?.timeline?.instructions;
-            let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
-            if (!entries) {
-                return [];
-            }
-            entries = entries.entries;
-            let tweets = [];
-            for (let entry of entries) {
-                if (entry.entryId.startsWith("tweet-")) {
-                    let result = entry.content.itemContent.tweet_results.result;
-                    let tweet = parseTweet(result);
-                    if (tweet) {
-                        tweets.push(tweet);
-                    }
-                } else if (entry.entryId.startsWith("profile-conversation-")) {
-                    let items = entry.content.items;
-                    for (let i = 0; i < items.length; i++) {
-                        let item = items[i];
-                        let result = item.item.itemContent.tweet_results.result;
-                        if (item.entryId.includes("-tweet-")) {
-                            let tweet = parseTweet(result);
-                            if (tweet && tweet.user.id_str === xhr.storage.user_id) {
-                                tweets.push(tweet);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (tweets.length === 0) return tweets;
-
-            sortByDate(tweets);
-
-            let bottomCursor = findCursor(entries, "bottom");
-            if (bottomCursor) {
-                cursors[`${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
-            }
-            let topCursor = findCursor(entries, "top");
-            if (topCursor) {
-                if(tweets[0]) cursors[`${xhr.storage.user_id}-${tweets[0].id_str}-top`] = topCursor;
-                if(tweets[1]) cursors[`${xhr.storage.user_id}-${tweets[1].id_str}-top`] = topCursor;
-            }
-
-            let pinEntry = instructions.find((e) => e.type === "TimelinePinEntry");
-            if (
-                pinEntry &&
-                pinEntry.entry &&
-                pinEntry.entry.content &&
-                pinEntry.entry.content.itemContent
-            ) {
-                let result = pinEntry.entry.content.itemContent.tweet_results.result;
-                let pinnedTweet = parseTweet(result);
-                if (pinnedTweet) {
-                    let tweetTimes = tweets.map((t) => [
-                        t.id_str,
-                        new Date(t.created_at).getTime(),
-                    ]);
-                    tweetTimes.push([
-                        pinnedTweet.id_str,
-                        new Date(pinnedTweet.created_at).getTime(),
-                    ]);
-                    tweetTimes.sort((a, b) => b[1] - a[1]);
-                    let index = tweetTimes.findIndex((t) => t[0] === pinnedTweet.id_str);
-                    if (index !== tweets.length) {
-                        tweets.splice(index, 0, pinnedTweet);
-                    }
-                }
-            }
-
-            return tweets;
-        },
-    },
+    }),
     // Bookmarks timeline
-    {
+    timelineRoute({
         path: "/1.1/statuses/bookmarks.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            try {
-                let url = new URL(xhr.modUrl);
-                let params = new URLSearchParams(url.search);
-                let variables = {
-                    "count": 40,
-                    "includePromotedContent":false
-                };
-                let features = {"graphql_timeline_v2_bookmark_timeline":true,"blue_business_profile_image_shape_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"tweetypie_unmention_optimization_enabled":true,"vibe_api_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"responsive_web_grok_show_grok_translated_post":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":false,"interactive_text_enabled":true,"responsive_web_text_conversations_enabled":false,"longform_notetweets_rich_text_read_enabled":true,"responsive_web_enhance_cards_enabled":false};
-
-                let max_id = params.get("max_id");
-                if (max_id) {
-                    let bn = BigInt(params.get("max_id"));
-                    bn += BigInt(1);
-                    if (cursors[`bookmarks-${bn}`]) {
-                        variables.cursor = cursors[`bookmarks-${bn}`];
-                    }
-                    if(bookmarkTimes[`${bn}`]) {
-                        xhr.storage.time = bookmarkTimes[`${bn}`];
-                    }
-                }
-
-                xhr.modUrl = `${NEW_API}/3OjEFzT2VjX-X7w4KYBJRg/Bookmarks?${generateParams(
-                    features,
-                    variables
-                )}`;
-            } catch (e) {
-                console.error(e);
+        stream: () => "bookmarks",
+        request: (xhr, params, cursor) => {
+            let variables = {
+                "count": 40,
+                "includePromotedContent":false
+            };
+            let features = {"graphql_timeline_v2_bookmark_timeline":true,"blue_business_profile_image_shape_enabled":true,"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"tweetypie_unmention_optimization_enabled":true,"vibe_api_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"responsive_web_grok_show_grok_translated_post":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":false,"interactive_text_enabled":true,"responsive_web_text_conversations_enabled":false,"longform_notetweets_rich_text_read_enabled":true,"responsive_web_enhance_cards_enabled":false};
+            if (cursor) variables.cursor = cursor;
+            let max_id = params.get("max_id");
+            if (max_id) xhr.storage.time = bookmarkTimes[BigInt(max_id) + 1n];
+            xhr.modUrl = `${NEW_API}/3OjEFzT2VjX-X7w4KYBJRg/Bookmarks?${generateParams(
+                features,
+                variables
+            )}`;
+        },
+        timeline: (data) => data.data?.bookmark_timeline_v2?.timeline,
+        // Bookmarks keep bookmark order: each gets a receive time just below the previous one.
+        sort: false,
+        finish: (tweets, xhr) => {
+            for(let i = 0; i < tweets.length; i++) {
+                const tweet = tweets[i];
+                tweet.receiveTime = bookmarkTimes[tweet.id_str] ?? ((xhr.storage.time ?? Date.now()) - i);
+                bookmarkTimes[tweet.id_str] = tweet.receiveTime;
             }
         },
-        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
         // artificially slow down, because theres an invisible rate limit that gets hit after a few hours
         responseHeaderOverride: {
             "x-rate-limit-limit": (value) => {
@@ -1466,268 +1260,76 @@ const proxyRoutes = [
                 return Math.floor(+value/5);
             },
         },
-        afterRequest: (xhr) => {
-            let data = parseResponse(xhr);
-            if (!data) return [];
-            // if (data.errors && data.errors[0]) {
-            //     return [];
-            // }
-            let instructions = data?.data?.bookmark_timeline_v2?.timeline?.instructions;
-            let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
-            if (!entries) {
-                return [];
-            }
-            entries = entries.entries;
-            let tweets = [];
-            for (let entry of entries) {
-                if (entry.entryId.startsWith("tweet-")) {
-                    let result = entry.content.itemContent.tweet_results.result;
-                    let tweet = parseTweet(result);
-                    if (tweet) {
-                        tweets.push(tweet);
-                    }
-                } else if (entry.entryId.startsWith("profile-conversation-")) {
-                    let items = entry.content.items;
-                    for (let i = 0; i < items.length; i++) {
-                        let item = items[i];
-                        let result = item.item.itemContent.tweet_results.result;
-                        if (item.entryId.includes("-tweet-")) {
-                            let tweet = parseTweet(result);
-                            if (tweet && tweet.user.id_str === xhr.storage.user_id) {
-                                tweets.push(tweet);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (tweets.length === 0) return tweets;
-
-            for(let i = 0; i < tweets.length; i++) {
-                const tweet = tweets[i];
-                tweet.receiveTime = bookmarkTimes[tweet.id_str] ?? ((xhr.storage.time ?? Date.now()) - i);
-                bookmarkTimes[tweet.id_str] = tweet.receiveTime;
-            }
-
-            let cursor = findCursor(entries, "bottom");
-            if (cursor) {
-                cursors[`bookmarks-${tweets[tweets.length - 1].id_str}`] = cursor;
-            }
-
-            return tweets;
-        },
-    },
+    }),
     // Notifications column
-    {
+    timelineRoute({
         path: "/1.1/activity/about_me.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            const params = new URLSearchParams(xhr.modUrl);
-            const since_id = params.get("since_id");
-            const max_id = params.get("max_id");
-            const user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? params.get("user_id") ?? getCurrentUserId();
-            let cursor;
-            if(since_id && cursors[`notifications-${user_id}-top`]) {
-                cursor = cursors[`notifications-${user_id}-top`];
-            } else if(max_id && cursors[`notifications-${user_id}-bottom`]) {
-                cursor = cursors[`notifications-${user_id}-bottom`];
-            }
-
+        stream: (params) => `notifications-${params.get("user_id") ?? getCurrentUserId()}`,
+        request: (xhr, params, cursor) => {
             xhr.modUrl = `https://${location.hostname}/i/api/2/notifications/all.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=20&requestContext=launch&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl${cursor ? `&cursor=${cursor}` : ''}`;
         },
-        beforeSendHeaders: (xhr) => {
-            xhr.storage.user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? getCurrentUserId();
-            setApiHeaders(xhr, navigator.language.split("-")[0]);
-        },
-        afterRequest: (xhr) => {
-            if(xhr.storage.notifications) {
-                return xhr.storage.notifications;
-            }
-            try {
-                const response = JSON.parse(xhr.responseText);
-                const entries = response.timeline.instructions.find((i) => i.addEntries).addEntries.entries;
-                const go = response.globalObjects;
-                const notifications = [];
-                for(let entry of entries) {
-                    try {
-                        if(entry.entryId.startsWith("notification-")) {
-                            const sortIndex = entry.sortIndex;
-                            const item = entry.content.item;
-                            const type = item.clientEventInfo.element;
-                            const notif = item.content.notification;
-    
-                            switch(type) {
-                                case "users_retweeted_your_retweet":
-                                case "users_retweeted_your_tweet":
-                                case "user_liked_multiple_tweets": 
-                                case "users_liked_your_retweet":
-                                case "users_liked_your_tweet": {
-                                    const nf = go.notifications[notif.id];
-                                    const actions = nf.template.aggregateUserActionsV1;
-                                    const users = actions.fromUsers.map(u => u.user.id);
-                                    const tweets = actions.targetObjects.map(t => t.tweet.id);
-                                    let i = 0;
-                                    for(const userId of users) {
-                                        for(const tweetId of tweets) {
-                                            const tweet = go.tweets[tweetId];
-                                            const user = go.users[userId];
-                                            const action = type === "users_retweeted_your_tweet" || type === "users_retweeted_your_retweet" ? "retweet" : "favorite";
-                                            if(!tweet || !user) continue;
-                                            const id = `${tweetId}-${userId}-${action}`;
-                                            if(seenNotifications.includes(id)) continue;
-                                            seenNotifications.push(id);
-                                            const notifSortIndex = +sortIndex - (i++);
-                                            tweet.user = go.users[tweet.user_id_str];
-                                            if(tweet.quoted_status_id_str) {
-                                                tweet.quoted_status = go.tweets[tweet.quoted_status_id_str];
-                                                tweet.quoted_status.user = go.users[tweet.quoted_status.user_id_str];
-                                            }
-    
-                                            const sources = [user];
-                                            const targets = [tweet];
-                                            const target_objects = [tweet];
-                                            notifications.push({
-                                                action,
-                                                created_at: formatTwitterStyle(new Date(notifSortIndex)),
-                                                max_position: notifSortIndex+"",
-                                                min_position: notifSortIndex+"",
-                                                sources,
-                                                sources_size: sources.length,
-                                                target_objects,
-                                                target_objects_size: target_objects.length,
-                                                targets,
-                                                targets_size: targets.length,
-                                            })
-                                        }
-                                    }
-                                    break;
-                                }
-                                case "user_mentioned_you":
-                                case "user_replied_to_your_tweet": 
-                                case "user_quoted_your_tweet":{
-                                    const tweetId = item.content.tweet.id;
-                                    const tweet = go.tweets[tweetId];
-                                    if(!tweet) continue;
-                                    tweet.user = go.users[tweet.user_id_str];
-                                    const type = item.clientEventInfo.element === "user_mentioned_you" ? "mention" : item.clientEventInfo.element === "user_replied_to_your_tweet" ? "reply" : "quote";
-                                    
-                                    const id = `${tweetId}-${tweet.user_id_str}-${type}`;
-                                    if(seenNotifications.includes(id)) continue;
-                                    seenNotifications.push(id);
-    
-                                    if(tweet.quoted_status_id_str) {
-                                        tweet.quoted_status = go.tweets[tweet.quoted_status_id_str];
-                                        tweet.quoted_status.user = go.users[tweet.quoted_status.user_id_str];
-                                    }
-                                    
-                                    notifications.push({
-                                        action: type,
-                                        created_at: formatTwitterStyle(new Date(+sortIndex)),
-                                        max_position: sortIndex+"",
-                                        min_position: sortIndex+"",
-                                        sources: [tweet.user],
-                                        sources_size: 1,
-                                        target_objects: [tweet],
-                                        target_objects_size: 1,
-                                        targets: [tweet],
-                                        targets_size: 1,
-                                    });
-                                    break;
-                                }
-                                case "follow_from_recommended_user":
-                                case "users_followed_you": {
-                                    const nf = go.notifications[notif.id];
-                                    const users = nf.template.aggregateUserActionsV1.fromUsers.map(u => u.user.id);
-                                    for(const userId of users) {
-                                        const user = go.users[userId];
-                                        if(!user) continue;
-                                        const id = `${userId}-follow`;
-                                        if(seenNotifications.includes(id)) continue;
-                                        seenNotifications.push(id);
-                                        notifications.push({
-                                            action: "follow",
-                                            created_at: formatTwitterStyle(new Date(+sortIndex)),
-                                            max_position: sortIndex+"",
-                                            min_position: sortIndex+"",
-                                            sources: [user],
-                                            sources_size: 1,
-                                            target_objects: [user],
-                                            target_objects_size: 1,
-                                            targets: [user],
-                                            targets_size: 1
-                                        });
-                                    }
-                                    break;
-                                }
-                                case "generic_login_notification":
-                                case "generic_acid_notification":
-                                case "generic_safety_label_added":
-                                    break;
-                                default:
-                                    console.warn(`Unknown notification type: ${type}`);
-                            }
-                        }
-                    } catch (e) {
-                        console.error(`Error parsing notification`, JSON.stringify(entry));
-                    }
-                }
-                xhr.storage.notifications = notifications;
-                const cursorTop = entries.find(
-                    (e) =>
-                        e.entryId.startsWith("sq-cursor-top-") ||
-                        e.entryId.startsWith("cursor-top-")
-                )?.content?.operation?.cursor?.value;
-                if(cursorTop) {
-                    cursors[`notifications-${xhr.storage.user_id}-top`] = cursorTop;
-                }
-                const cursorBottom = entries.find(
-                    (e) =>
-                        e.entryId.startsWith("sq-cursor-bottom-") ||
-                        e.entryId.startsWith("cursor-bottom-")
-                )?.content?.operation?.cursor?.value;
-                if(cursorBottom) {
-                    cursors[`notifications-${xhr.storage.user_id}-bottom`] = cursorBottom;
-                }
-                return notifications;
-            } catch (e) {
-                console.error(`Error parsing notifications`, e);
-                return [];
-            }
-        },
-    },
-    // Mentions timeline
-    {
-        path: "/1.1/statuses/mentions_timeline.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            const params = new URLSearchParams(xhr.modUrl);
-            const since_id = params.get("since_id");
-            const max_id = params.get("max_id");
-            const user_id = xhr.modReqHeaders["x-act-as-user-id"] ?? params.get("user_id") ?? getCurrentUserId();
-            xhr.storage.user_id = user_id;
-            let cursor;
-            if(since_id && cursors[`mentions-${user_id}-top`]) {
-                cursor = cursors[`mentions-${user_id}-top`];
-            } else if(max_id && cursors[`mentions-${user_id}-bottom`]) {
-                cursor = cursors[`mentions-${user_id}-bottom`];
-            }
-
-            xhr.modUrl = `https://${location.hostname}/i/api/2/notifications/mentions.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=20&requestContext=launch&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl${cursor ? `&cursor=${cursor}` : ''}`;
-        },
-        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
-        afterRequest: (xhr) => {
-            try {
-                const response = JSON.parse(xhr.responseText);
-                const entries = response.timeline.instructions.find((i) => i.addEntries).addEntries.entries;
-                const go = response.globalObjects;
-                const tweets = [];
-                for(let entry of entries) {
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr, navigator.language.split("-")[0]),
+        timeline: (data) => data.timeline,
+        perTweet: false,
+        sort: false,
+        visible: (n) => !n.sources.some((u) => u?.muting || u?.blocking),
+        items: (entries, data) => {
+            const go = data.globalObjects;
+            const notifications = [];
+            for(let entry of entries) {
+                try {
                     if(entry.entryId.startsWith("notification-")) {
                         const sortIndex = entry.sortIndex;
                         const item = entry.content.item;
                         const type = item.clientEventInfo.element;
+                        const notif = item.content.notification;
 
                         switch(type) {
+                            case "users_retweeted_your_retweet":
+                            case "users_retweeted_your_tweet":
+                            case "user_liked_multiple_tweets": 
+                            case "users_liked_your_retweet":
+                            case "users_liked_your_tweet": {
+                                const nf = go.notifications[notif.id];
+                                const actions = nf.template.aggregateUserActionsV1;
+                                const users = actions.fromUsers.map(u => u.user.id);
+                                const tweets = actions.targetObjects.map(t => t.tweet.id);
+                                let i = 0;
+                                for(const userId of users) {
+                                    for(const tweetId of tweets) {
+                                        const tweet = go.tweets[tweetId];
+                                        const user = go.users[userId];
+                                        const action = type === "users_retweeted_your_tweet" || type === "users_retweeted_your_retweet" ? "retweet" : "favorite";
+                                        if(!tweet || !user) continue;
+                                        const id = `${tweetId}-${userId}-${action}`;
+                                        if(seenNotifications.includes(id)) continue;
+                                        seenNotifications.push(id);
+                                        const notifSortIndex = +sortIndex - (i++);
+                                        tweet.user = go.users[tweet.user_id_str];
+                                        if(tweet.quoted_status_id_str) {
+                                            tweet.quoted_status = go.tweets[tweet.quoted_status_id_str];
+                                            tweet.quoted_status.user = go.users[tweet.quoted_status.user_id_str];
+                                        }
+
+                                        const sources = [user];
+                                        const targets = [tweet];
+                                        const target_objects = [tweet];
+                                        notifications.push({
+                                            action,
+                                            created_at: formatTwitterStyle(new Date(notifSortIndex)),
+                                            max_position: notifSortIndex+"",
+                                            min_position: notifSortIndex+"",
+                                            sources,
+                                            sources_size: sources.length,
+                                            target_objects,
+                                            target_objects_size: target_objects.length,
+                                            targets,
+                                            targets_size: targets.length,
+                                        })
+                                    }
+                                }
+                                break;
+                            }
                             case "user_mentioned_you":
                             case "user_replied_to_your_tweet": 
                             case "user_quoted_your_tweet":{
@@ -1735,125 +1337,144 @@ const proxyRoutes = [
                                 const tweet = go.tweets[tweetId];
                                 if(!tweet) continue;
                                 tweet.user = go.users[tweet.user_id_str];
+                                const type = item.clientEventInfo.element === "user_mentioned_you" ? "mention" : item.clientEventInfo.element === "user_replied_to_your_tweet" ? "reply" : "quote";
+                                
+                                const id = `${tweetId}-${tweet.user_id_str}-${type}`;
+                                if(seenNotifications.includes(id)) continue;
+                                seenNotifications.push(id);
 
                                 if(tweet.quoted_status_id_str) {
                                     tweet.quoted_status = go.tweets[tweet.quoted_status_id_str];
                                     tweet.quoted_status.user = go.users[tweet.quoted_status.user_id_str];
                                 }
                                 
-                                tweets.push(tweet);
+                                notifications.push({
+                                    action: type,
+                                    created_at: formatTwitterStyle(new Date(+sortIndex)),
+                                    max_position: sortIndex+"",
+                                    min_position: sortIndex+"",
+                                    sources: [tweet.user],
+                                    sources_size: 1,
+                                    target_objects: [tweet],
+                                    target_objects_size: 1,
+                                    targets: [tweet],
+                                    targets_size: 1,
+                                });
                                 break;
                             }
+                            case "follow_from_recommended_user":
+                            case "users_followed_you": {
+                                const nf = go.notifications[notif.id];
+                                const users = nf.template.aggregateUserActionsV1.fromUsers.map(u => u.user.id);
+                                for(const userId of users) {
+                                    const user = go.users[userId];
+                                    if(!user) continue;
+                                    const id = `${userId}-follow`;
+                                    if(seenNotifications.includes(id)) continue;
+                                    seenNotifications.push(id);
+                                    notifications.push({
+                                        action: "follow",
+                                        created_at: formatTwitterStyle(new Date(+sortIndex)),
+                                        max_position: sortIndex+"",
+                                        min_position: sortIndex+"",
+                                        sources: [user],
+                                        sources_size: 1,
+                                        target_objects: [user],
+                                        target_objects_size: 1,
+                                        targets: [user],
+                                        targets_size: 1
+                                    });
+                                }
+                                break;
+                            }
+                            case "generic_login_notification":
+                            case "generic_acid_notification":
+                            case "generic_safety_label_added":
+                                break;
+                            default:
+                                console.warn(`Unknown notification type: ${type}`);
                         }
                     }
+                } catch (e) {
+                    console.error(`Error parsing notification`, JSON.stringify(entry));
                 }
-                const cursorTop = entries.find(
-                    (e) =>
-                        e.entryId.startsWith("sq-cursor-top-") ||
-                        e.entryId.startsWith("cursor-top-")
-                )?.content?.operation?.cursor?.value;
-                if(cursorTop) {
-                    cursors[`mentions-${xhr.storage.user_id}-top`] = cursorTop;
-                }
-                const cursorBottom = entries.find(
-                    (e) =>
-                        e.entryId.startsWith("sq-cursor-bottom-") ||
-                        e.entryId.startsWith("cursor-bottom-")
-                )?.content?.operation?.cursor?.value;
-                if(cursorBottom) {
-                    cursors[`mentions-${xhr.storage.user_id}-bottom`] = cursorBottom;
-                }
-                
-                return tweets;
-            } catch (e) {
-                console.error(`Error parsing mentions`, e);
-                return [];
             }
-        }
-    },
-    // User likes timeline
-    {
-        path: "/1.1/favorites/list.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            try {
-                let url = new URL(xhr.modUrl);
-                let params = new URLSearchParams(url.search);
-                let user_id = params.get("user_id") ?? getCurrentUserId();
-                let variables = {
-                    "userId": user_id,
-                    "count": 50,
-                    "includePromotedContent": false,
-                    "withSuperFollowsUserFields": true,
-                    "withDownvotePerspective": false,
-                    "withReactionsMetadata": false,
-                    "withReactionsPerspective": false,
-                    "withSuperFollowsTweetFields": true,
-                    "withClientEventToken": false,
-                    "withBirdwatchNotes": false,
-                    "withVoice": true,
-                    "withV2Timeline": true
-                };
-                let features = {
-                    "dont_mention_me_view_api_enabled": true,
-                    "interactive_text_enabled": true,
-                    "responsive_web_uc_gql_enabled": false,
-                    "vibe_tweet_context_enabled": false,
-                    "responsive_web_edit_tweet_api_enabled": false,
-                    "standardized_nudges_misinfo": false,
-                    "responsive_web_enhance_cards_enabled": false
-                };
+            return notifications;
+        },
+    }),
+    // Mentions timeline
+    timelineRoute({
+        path: "/1.1/statuses/mentions_timeline.json",
+        stream: (params) => `mentions-${params.get("user_id") ?? getCurrentUserId()}`,
+        request: (xhr, params, cursor) => {
+            xhr.modUrl = `https://${location.hostname}/i/api/2/notifications/mentions.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&include_can_media_tag=1&include_ext_has_nft_avatar=1&include_ext_is_blue_verified=1&include_ext_verified_type=1&include_ext_profile_image_shape=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_ext_limited_action_results=true&include_quote_count=true&include_reply_count=1&tweet_mode=extended&include_ext_views=true&include_entities=true&include_user_entities=true&include_ext_media_color=true&include_ext_media_availability=true&include_ext_sensitive_media_warning=true&include_ext_trusted_friends_metadata=true&send_error_codes=true&simple_quoted_tweet=true&count=20&requestContext=launch&ext=mediaStats%2ChighlightedLabel%2ChasNftAvatar%2CvoiceInfo%2CbirdwatchPivot%2CsuperFollowMetadata%2CunmentionInfo%2CeditControl${cursor ? `&cursor=${cursor}` : ''}`;
+        },
+        timeline: (data) => data.timeline,
+        perTweet: false,
+        sort: false,
+        items: (entries, data) => {
+            const go = data.globalObjects;
+            const tweets = [];
+            for(let entry of entries) {
+                if(!entry.entryId.startsWith("notification-")) continue;
+                const item = entry.content.item;
+                switch(item.clientEventInfo.element) {
+                    case "user_mentioned_you":
+                    case "user_replied_to_your_tweet": 
+                    case "user_quoted_your_tweet":{
+                        const tweet = go.tweets[item.content.tweet.id];
+                        if(!tweet) continue;
+                        tweet.user = go.users[tweet.user_id_str];
 
-                let max_id = params.get("max_id");
-                if (max_id) {
-                    let bn = BigInt(params.get("max_id"));
-                    bn += BigInt(1);
-                    if (cursors[`${variables.userId}-${bn}-likes`]) {
-                        variables.cursor = cursors[`${variables.userId}-${bn}-likes`];
+                        if(tweet.quoted_status_id_str) {
+                            tweet.quoted_status = go.tweets[tweet.quoted_status_id_str];
+                            tweet.quoted_status.user = go.users[tweet.quoted_status.user_id_str];
+                        }
+                        
+                        tweets.push(tweet);
+                        break;
                     }
                 }
-                xhr.storage.user_id = variables.userId;
-
-                xhr.modUrl = `${NEW_API}/vni8vUvtZvJoIsl49VPudg/Likes?${generateParams(
-                    features,
-                    variables
-                )}`;
-            } catch (e) {
-                console.error(e);
             }
-        },
-        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
-        afterRequest: (xhr) => {
-            let data = parseResponse(xhr);
-            if (!data) return [];
-            // if (data.errors && data.errors[0]) {
-            //     return [];
-            // }
-            let timeline = data?.data?.user?.result?.timeline ?? data?.data?.user?.result?.timeline_v2;
-            let instructions = timeline?.timeline?.instructions;
-            let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
-            if (!entries) {
-                return [];
-            }
-            entries = entries.entries;
-
-            let tweets = entries
-                .filter(e => e.entryId.startsWith('tweet-') && e.content.itemContent.tweet_results.result)
-                .map(e => parseTweet(e.content.itemContent.tweet_results.result))
-                .filter(e => e);
-
-            if (tweets.length === 0) return tweets;
-
-            let cursor = findCursor(entries, "bottom");
-            if (cursor) {
-                cursors[`${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}-likes`] = cursor;
-            }
-
-            sortByDate(tweets);
-
             return tweets;
         },
-    },
+    }),
+    // User likes timeline
+    timelineRoute({
+        path: "/1.1/favorites/list.json",
+        stream: (params, xhr) => `likes-${xhr.storage.user_id = params.get("user_id") ?? getCurrentUserId()}`,
+        request: (xhr, params, cursor) => {
+            let variables = {
+                "userId": xhr.storage.user_id,
+                "count": 50,
+                "includePromotedContent": false,
+                "withSuperFollowsUserFields": true,
+                "withDownvotePerspective": false,
+                "withReactionsMetadata": false,
+                "withReactionsPerspective": false,
+                "withSuperFollowsTweetFields": true,
+                "withClientEventToken": false,
+                "withBirdwatchNotes": false,
+                "withVoice": true,
+                "withV2Timeline": true
+            };
+            let features = {
+                "dont_mention_me_view_api_enabled": true,
+                "interactive_text_enabled": true,
+                "responsive_web_uc_gql_enabled": false,
+                "vibe_tweet_context_enabled": false,
+                "responsive_web_edit_tweet_api_enabled": false,
+                "standardized_nudges_misinfo": false,
+                "responsive_web_enhance_cards_enabled": false
+            };
+            if (cursor) variables.cursor = cursor;
+            xhr.modUrl = `${NEW_API}/vni8vUvtZvJoIsl49VPudg/Likes?${generateParams(
+                features,
+                variables
+            )}`;
+        },
+        timeline: (data) => (data.data?.user?.result?.timeline ?? data.data?.user?.result?.timeline_v2)?.timeline,
+    }),
     // Liking / unliking
     {
         path: /\/1\.1\/favorites\/.*\.json/,
@@ -1947,106 +1568,36 @@ const proxyRoutes = [
         },
     },
     // Search
-    {
+    timelineRoute({
         path: "/1.1/search/universal.json",
-        method: "GET",
-        beforeRequest: (xhr) => {
-            try {
-                let url = new URL(xhr.modUrl);
-                let params = new URLSearchParams(url.search);
-                let variables = {
-                    rawQuery: params.get("q"),
-                    count: 20,
-                    querySource: "typed_query",
-                    product: "Latest",
-                    withGrokTranslatedBio: false,
-                    withQuickPromoteEligibilityTweetFields: false,
-                };
-
-                xhr.storage.query = variables.rawQuery;
-                xhr.storage.cursor = params.get("since_id");
-                xhr.modUrl = `${NEW_API}/099UqLkXma7fhT81Jv4n9g/SearchTimeline?${generateParams(
-                    TIMELINE_FEATURES,
-                    variables
-                )}`;
-            } catch (e) {
-                console.error(e);
-            }
+        // TweetDeck pages search with since_id:/max_id: operators inside q, which SearchTimeline
+        // understands natively; lift them into params so the poll gate, stream key and pacer see
+        // the bare column query, and send q through untouched.
+        stream: (params, xhr) => {
+            xhr.storage.query = params.get("q").replace(/\s*\b(since_id|max_id):(\d+)/g, (_, op, id) => (params.set(op, id), "")).trim();
+            return `search-${xhr.storage.query}`;
         },
-        openHandler: (xhr, method, url, async, username, password) => {
-            if(!timings.search[xhr.storage.query]) {
-                timings.search[xhr.storage.query] = 0;
-            }
-            if(Date.now() - timings.search[xhr.storage.query] < searchFloor(xhr.storage.query) && xhr.storage.cursor) {
-                xhr.storage.cancelled = true;
-            } else {
-                xhr.open(method, url, async, username, password);
-                timings.search[xhr.storage.query] = Date.now();
-            }
-        },
-        sendHandler: sendOrEmulate,
-        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
-        afterRequest: (xhr) => {
-            const empty = { metadata: { cursor: null, refresh_interval_in_sec: searchPollHint(xhr.storage.query) }, modules: [] };
-            if(xhr.storage.cancelled) {
-                return empty;
-            }
-            let data;
-            try {
-                data = JSON.parse(xhr.responseText);
-            } catch (e) {
-                console.warn("Search response unparseable", { status: xhr.status, body: xhr.responseText?.slice(0, 200) }, e);
-                return empty;
-            }
-            // if (data.errors && data.errors[0]) {
-            //     return empty;
-            // }
-            let instructions = data?.data?.search_by_raw_query?.search_timeline?.timeline?.instructions;
-            let entries = instructions?.find((i) => i.entries);
-            if (!entries) {
-                return empty;
-            }
-            entries = entries.entries;
-            let res = [];
-            for (let entry of entries) {
-                if (entry.entryId.startsWith("sq-I-t-") || entry.entryId.startsWith("tweet-")) {
-                    let result = entry.content.itemContent.tweet_results.result;
-
-                    if (entry.content.itemContent.promotedMetadata) {
-                        continue;
-                    }
-                    let tweet = parseTweet(result);
-                    if (!tweet) {
-                        continue;
-                    }
-                    if (tweet.user.blocking || tweet.user.muting) continue;
-                    res.push(tweet);
-                }
-            }
-            let cursor = findCursor(entries, "bottom");
-            if (!cursor) {
-                cursor = instructions.find(
-                    (e) =>
-                        e.entry_id_to_replace &&
-                        (e.entry_id_to_replace.startsWith("sq-cursor-bottom-") ||
-                            e.entry_id_to_replace.startsWith("cursor-bottom-"))
-                );
-                if (cursor) {
-                    cursor = cursor.entry.content.value;
-                } else {
-                    cursor = null;
-                }
-            }
-
-            return {
-                metadata: {
-                    cursor,
-                    refresh_interval_in_sec: searchPollHint(xhr.storage.query),
-                },
-                modules: res.map((t) => ({ status: { data: t } })),
+        floor: (xhr) => searchFloor(xhr.storage.query),
+        request: (xhr, params) => {
+            let variables = {
+                rawQuery: params.get("q"),
+                count: 20,
+                querySource: "typed_query",
+                product: "Latest",
+                withGrokTranslatedBio: false,
+                withQuickPromoteEligibilityTweetFields: false,
             };
+            xhr.modUrl = `${NEW_API}/099UqLkXma7fhT81Jv4n9g/SearchTimeline?${generateParams(
+                TIMELINE_FEATURES,
+                variables
+            )}`;
         },
-    },
+        timeline: (data) => data.data?.search_by_raw_query?.search_timeline?.timeline,
+        wrap: (tweets, cursor, xhr) => ({
+            metadata: { cursor, refresh_interval_in_sec: searchPollHint(xhr.storage.query) },
+            modules: tweets.map((t) => ({ status: { data: t } })),
+        }),
+    }),
     // User search
     {
         path: "/1.1/users/search.json",
@@ -2878,12 +2429,13 @@ XMLHttpRequest = function () {
                 showToast("Twitter rate limit hit — slow down or try again in a bit.");
             }
             if (xhr.proxyRoute && xhr.proxyRoute.afterRequest) {
+                // TweetDeck reads responseText more than once; convert a finished response once, so
+                // cursors and seen-notification dedupe aren't re-applied on the second read.
+                if ("out" in xhr.storage) return xhr.storage.out;
                 let out = xhr.proxyRoute.afterRequest(xhr);
-                if (typeof out === "object") {
-                    return JSON.stringify(out);
-                } else {
-                    return out;
-                }
+                if (typeof out === "object") out = JSON.stringify(out);
+                if ((xhr._readyState || xhr.readyState) === 4) xhr.storage.out = out;
+                return out;
             }
             return xhr.responseText;
         },
