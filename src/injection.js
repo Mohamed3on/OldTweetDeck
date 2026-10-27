@@ -56,7 +56,7 @@ async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
-    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js, layout_js, tweet_js, users_js] =
+    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, xlr_js, xlr_css, xapi_js, layout_js, tweet_js, users_js, lists_js] =
         await Promise.allSettled([
             fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
@@ -70,6 +70,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/layout.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/tweet.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/users.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/lists.js")).then(r => r.text()),
         ]);
     if (localStorage.OTDalwaysUseLocalFiles === "0") {
         const [
@@ -186,8 +187,8 @@ async function main() {
     xapi_js_script.textContent = xapi_js.value;
     document.head.appendChild(xapi_js_script);
 
-    // User directory, and the tweet adapter for the local interception only.
-    for (let mod of [users_js, tweet_js]) {
+    // User directory and list store, and the tweet adapter for the local interception only.
+    for (let mod of [users_js, lists_js, tweet_js]) {
         if (!mod) continue;
         let script = document.createElement("script");
         script.textContent = mod.value;

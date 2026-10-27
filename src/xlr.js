@@ -5,83 +5,28 @@
   const OTD = window.OTD;
   if (!OTD) console.warn('OTD: upstream interception.js is loaded; community notes, muted-quote recovery and new user lookups are off');
   const users = OTD?.users ?? createUserDirectory({ request: XApi, storage: localStorage, toLegacy: () => null });
-  let lists = null, listsByName = null;
-  const buildByName = (ls) => Object.fromEntries(ls.map(l => [l.name.toLowerCase(), l.id]));
-
-  const LIST_CACHE_TTL = 1000 * 60 * 60 * 24;
-
-  const listsReady = (async () => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('xlrLists_v3'));
-      if (cached && Date.now() - cached.ts < LIST_CACHE_TTL) {
-        lists = cached.lists;
-        listsByName = buildByName(lists);
-        return;
-      }
-    } catch {}
-    const res = await XApi.get(`https://api.${location.hostname}/1.1/lists/ownerships.json?count=1000`);
-    const data = await res.json();
-    // Biggest lists first — the API returns newest-created first, which buries the main lists.
-    lists = (data.lists || [])
-      .sort((a, b) => b.member_count - a.member_count)
-      .map(l => ({ name: l.name, id: l.id_str }));
-    listsByName = buildByName(lists);
-    if (lists.length) localStorage.setItem('xlrLists_v3', JSON.stringify({ lists, ts: Date.now() }));
-  })();
-
-  // Persisted so a profile shows its list chips the moment it opens. Our own adds/removes patch it
-  // (updateMembership), but membership can also change outside OTD, so each user is still refetched
-  // once per session (membershipFresh).
-  let membershipCache = {};
-  try { membershipCache = JSON.parse(localStorage.getItem('xlrMemberships'), (_, v) => Array.isArray(v) ? new Set(v) : v) || {}; } catch {}
-  const persistMemberships = () =>
-    localStorage.setItem('xlrMemberships', JSON.stringify(membershipCache, (_, v) => v instanceof Set ? [...v] : v));
-  const membershipFresh = new Set();
-  const membershipInflight = {};
-
-  async function fetchMembership(username) {
-    if (membershipFresh.has(username)) return membershipCache[username];
-    if (membershipInflight[username]) return membershipInflight[username];
-    membershipInflight[username] = (async () => {
-      try {
-        const userId = await users.idFor(username);
-        if (!userId) return new Set();
-        const data = await (await XApi.gql('ListOwnerships', {
-          userId: users.me(), isListMemberTargetUserId: userId, count: 100, includePromotedContent: false,
-        })).json();
-        const memberOf = new Set();
-        for (const inst of data?.data?.user?.result?.timeline?.timeline?.instructions || []) {
-          if (inst.type !== 'TimelineAddEntries') continue;
-          for (const entry of inst.entries) {
-            const l = entry?.content?.itemContent?.list;
-            if (l?.is_member) memberOf.add(l.id_str || l.rest_id);
-          }
-        }
-        membershipCache[username] = memberOf;
-        membershipFresh.add(username);
-        persistMemberships();
-        return memberOf;
-      } finally {
-        delete membershipInflight[username];
-      }
-    })();
-    return membershipInflight[username];
-  }
-
-  const updateMembership = (username, listId, added) => {
-    const cache = membershipCache[username];
-    if (cache) { added ? cache.add(listId) : cache.delete(listId); persistMemberships(); }
+  // Your lists and who's in them (src/lists.js). Views here take a username; the store keys by
+  // user id, known at once for anyone whose tweet has been parsed (users.known).
+  const listStore = createListStore({ request: XApi, storage: localStorage, me: users.me });
+  const memberOf = (username) => listStore.memberOf(users.known(username));
+  const fetchMembership = async (username) => {
+    const id = await users.idFor(username);
+    return id ? listStore.membership(id) : new Set();
   };
-
-  const listName = (id) => (lists.find(l => l.id === id) || {}).name;
-
-  const removeFromList = async (username, listId) => {
-    const userId = await users.idFor(username);
-    if (!userId) return false;
-    const r = await XApi.gql('ListRemoveMember', { listId, userId });
-    if (r.ok) updateMembership(username, listId, false);
-    return r.ok;
+  const setListMember = async (username, listId, member) => {
+    const id = await users.idFor(username);
+    return !!id && (member ? listStore.add(id, listId) : listStore.remove(id, listId));
   };
+  // Every live view of a user's chips (tweet popover, profile popup, hover card), so a change
+  // made in any one redraws the others.
+  const chipViews = new Set();
+  const watchChips = (username, el, render) => chipViews.add({ username, el, render });
+  listStore.subscribe((userId) => {
+    for (const v of chipViews) {
+      if (!v.el.isConnected) chipViews.delete(v);
+      else if (userId === null || users.known(v.username) === userId) v.render();
+    }
+  });
 
   const EDIT_BOX = '.column-title-edit-box';
   const AT_RE = /(?:^|\s)@(\S+)/;
@@ -185,7 +130,8 @@
     if (!col) return null;
     if (col.querySelector('.column-type-icon.icon-list')) {
       const heading = col.querySelector('.column-heading');
-      if (heading) return listsByName?.[heading.textContent.trim().toLowerCase()] || null;
+      const name = heading?.textContent.trim().toLowerCase();
+      if (name) return listStore.catalog()?.find((l) => l.name.toLowerCase() === name)?.id || null;
     }
     return col.querySelector(EDIT_BOX)?.value?.match(/list:(\d+)/)?.[1] || null;
   }
@@ -259,12 +205,8 @@
     if (!(await users.act(username, 'mute'))) return false;
     setClientMute(username, true);
     if (delist) {
-      const userId = users.known(username);
-      const memberOf = await fetchMembership(username);
-      await Promise.all([...memberOf].map(listId =>
-        XApi.gql('ListRemoveMember', { listId, userId })
-          .then(r => { if (r.ok) updateMembership(username, listId, false); })
-      ));
+      const ids = await fetchMembership(username);
+      await Promise.all([...ids].map((listId) => setListMember(username, listId, false)));
     }
     return true;
   };
@@ -324,22 +266,16 @@
     item.classList.toggle('xlr-dropdown-done', isMember);
   }
 
-  function renderItem(name, id, username, onToggle) {
+  function renderItem(name, id, username) {
     const item = document.createElement('button');
     item.className = 'xlr-dropdown-item';
     item.textContent = name;
-    item.onclick = withBusy(item, 'xlr-inflight', async () => {
-      const removing = item.classList.contains('xlr-dropdown-done');
-      setItemState(item, !removing);
-      const userId = await users.idFor(username);
-      const r = await XApi.gql(removing ? 'ListRemoveMember' : 'ListAddMember', { listId: id, userId });
-      if (r.ok) { updateMembership(username, id, !removing); onToggle?.(); }
-      else setItemState(item, removing);
-    });
+    item.onclick = withBusy(item, 'xlr-inflight', () =>
+      setListMember(username, id, !item.classList.contains('xlr-dropdown-done')));
     return item;
   }
 
-  async function showPopover(addBtn, username, onToggle) {
+  async function showPopover(addBtn, username) {
     if (popoverAnchor === addBtn && popover.matches(':popover-open')) {
       popover.hidePopover();
       return;
@@ -347,11 +283,16 @@
     popoverAnchor = addBtn;
 
     popover.replaceChildren();
+    const lists = listStore.catalog();
     const items = lists.map(({ name, id }) => {
-      const item = renderItem(name, id, username, onToggle);
+      const item = renderItem(name, id, username);
       popover.appendChild(item);
       return item;
     });
+    const sync = () => items.forEach((item, i) => setItemState(item, !!memberOf(username)?.has(lists[i].id)));
+    for (const v of chipViews) if (v.el === popover) chipViews.delete(v);
+    watchChips(username, popover, sync);
+    sync();
 
     const rect = addBtn.getBoundingClientRect();
     Object.assign(popover.style, {
@@ -370,14 +311,13 @@
     if (up) popover.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
     else popover.style.top = (rect.bottom + 4) + 'px';
 
-    const memberOf = await fetchMembership(username);
-    items.forEach((item, i) => setItemState(item, memberOf.has(lists[i].id)));
+    fetchMembership(username).then(sync, () => {});
   }
 
   const seen = new WeakSet();
 
   function process(article) {
-    if (seen.has(article) || !lists) return;
+    if (seen.has(article) || !listStore.catalog()) return;
     seen.add(article);
 
     const actionBar = article.querySelector('ul.tweet-actions, ul.tweet-detail-actions');
@@ -444,12 +384,8 @@
     if (listId) {
       const removeBtn = mkBtn('xlr-remove-btn', 'Remove from list', removeSvg);
       removeBtn.onclick = withBusy(removeBtn, 'xlr-removing', async () => {
-        const userId = await users.idFor(username);
-        if (!userId) return;
-        const r = await XApi.gql('ListRemoveMember', { listId, userId });
-        if (!r.ok) return;
+        if (!(await setListMember(username, listId, false))) return;
         markDone(removeBtn, `Removed @${username}`, article);
-        updateMembership(username, listId, false);
         offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
       });
       buttons.push(removeBtn);
@@ -488,8 +424,8 @@
     buttons.forEach(appendToBar);
   }
 
-  function makeChip(listId, username, onChange) {
-    const name = listName(listId) || 'List';
+  function makeChip(listId, username) {
+    const name = listStore.name(listId) || 'List';
     const chip = document.createElement('span');
     chip.className = 'xlr-prf-chip';
     chip.appendChild(document.createTextNode(name));
@@ -497,9 +433,7 @@
     x.className = 'xlr-prf-chip-x';
     x.textContent = '×';
     x.title = `Remove from ${name}`;
-    x.onclick = withBusy(chip, 'xlr-inflight', async () => {
-      if (await removeFromList(username, listId)) onChange();
-    });
+    x.onclick = withBusy(chip, 'xlr-inflight', () => setListMember(username, listId, false));
     chip.appendChild(x);
     return chip;
   }
@@ -528,7 +462,7 @@
   // Also replace the native launcher grid with a compact actions row: a "View tweets"
   // button (proxying the hidden native Tweets launcher) and Mute/Block toggles.
   function processProfile(actions) {
-    if (seen.has(actions) || !lists) return;
+    if (seen.has(actions) || !listStore.catalog()) return;
     const unameEl = actions.closest('.prf')?.querySelector('.username');
     const username = unameEl?.firstChild?.textContent?.trim().replace(/^@/, '');
     if (!username) return;
@@ -540,7 +474,7 @@
 
     const section = document.createElement('div');
     // A cached membership renders at once (and refreshes below); only an unseen user's row loads.
-    section.className = membershipCache[username] ? 'xlr-prf-lists' : 'xlr-prf-lists xlr-prf-loading';
+    section.className = memberOf(username) ? 'xlr-prf-lists' : 'xlr-prf-lists xlr-prf-loading';
     const chips = document.createElement('div');
     chips.className = 'xlr-prf-chips';
     const addBtn = document.createElement('button');
@@ -548,17 +482,15 @@
     addBtn.append(plusSvg.cloneNode(true), document.createTextNode('Add to list'));
     section.append(chips, addBtn);
 
-    const renderChips = () => {
-      const memberOf = membershipCache[username] || new Set();
-      chips.replaceChildren(...[...memberOf].map(id => makeChip(id, username, renderChips)));
-    };
+    const renderChips = () => chips.replaceChildren(...[...memberOf(username) || []].map((id) => makeChip(id, username)));
     renderChips();
+    watchChips(username, section, renderChips);
 
     addBtn.onmouseenter = () => fetchMembership(username);
     addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
     addBtn.onclick = (e) => {
       e.preventDefault(); e.stopPropagation();
-      if (!addBtn._wasOpen) showPopover(addBtn, username, renderChips);
+      if (!addBtn._wasOpen) showPopover(addBtn, username);
     };
 
     const cols = actions.querySelector('.js-profile-columns');
@@ -744,33 +676,38 @@
       });
     }
 
-    if (lists) {
+    if (listStore.catalog()) {
       const row = document.createElement('div');
-      row.className = membershipCache[username] ? 'xlr-hc-lists' : 'xlr-hc-lists xlr-hc-loading';
+      row.className = memberOf(username) ? 'xlr-hc-lists' : 'xlr-hc-lists xlr-hc-loading';
       const chips = document.createElement('div');
       chips.className = 'xlr-prf-chips';
       const addBtn = mkBtn('xlr-hc-add', 'Add to list', plusSvg);
       addBtn.append(document.createElement('span'));   // "Add to list" label, shown only with no chips
-      // showHc rebuilds the card on every open and renderChips redraws every chip, so only chips
-      // that weren't in the last render scale in (xlr-hc-chip-new); a removed one fades out first.
-      let prev = null;
+      // showHc rebuilds the card on every open; within one card chips are kept by list id, so
+      // only an added chip scales in (xlr-hc-chip-new) and a removed one fades out first.
+      let first = true;
       const renderChips = () => {
-        const ids = [...(membershipCache[username] || [])];
-        chips.replaceChildren(...ids.map((id) => {
-          const chip = makeChip(id, username, () => {
-            chip.classList.add('xlr-hc-chip-leaving');
-            setTimeout(renderChips, 180);
-          });
-          if (prev && !prev.has(id)) chip.classList.add('xlr-hc-chip-new');
-          return chip;
-        }));
-        prev = new Set(ids);
+        const ids = memberOf(username) || new Set();
+        for (const chip of chips.children) {
+          if (ids.has(chip.dataset.listId) || chip.classList.contains('xlr-hc-chip-leaving')) continue;
+          chip.classList.add('xlr-hc-chip-leaving');
+          setTimeout(() => chip.remove(), 180);
+        }
+        for (const id of ids) {
+          if (chips.querySelector(`[data-list-id="${id}"]:not(.xlr-hc-chip-leaving)`)) continue;
+          const chip = makeChip(id, username);
+          chip.dataset.listId = id;
+          if (!first) chip.classList.add('xlr-hc-chip-new');
+          chips.appendChild(chip);
+        }
+        first = false;
       };
       renderChips();
+      watchChips(username, row, renderChips);
       addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
       addBtn.onclick = (e) => {
         e.preventDefault(); e.stopPropagation();
-        if (!addBtn._wasOpen) showPopover(addBtn, username, renderChips);
+        if (!addBtn._wasOpen) showPopover(addBtn, username);
       };
       row.append(chips, addBtn);
       hc.appendChild(row);
@@ -1536,5 +1473,5 @@
     /^(?:https?:\/\/)?(?:(?:www|m)\.)?(?:youtube\.com\/(?:watch\?|live\/|shorts\/)|youtu\.be\/)[\w-]/;
 
   observer.observe(document.body, { childList: true, subtree: true });
-  listsReady.then(scan);
+  listStore.ready.then(scan);
 })();

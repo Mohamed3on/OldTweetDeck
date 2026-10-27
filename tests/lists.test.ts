@@ -1,0 +1,99 @@
+import { describe, expect, test } from "bun:test";
+import { createListStore } from "../src/lists.js";
+
+// A fake X: lists you own (id → { name, size, members }), answering ListOwnerships for one
+// target and applying ListAddMember / ListRemoveMember unless told to fail.
+function fakeX(lists: Record<string, { name: string; size: number; members: string[] }>) {
+  const calls: string[] = [];
+  let fail = false;
+  const json = (body: any, ok = true) => Promise.resolve({ ok, json: async () => body });
+  return {
+    calls, lists,
+    failNext() { fail = true; },
+    gql(op: string, vars: any) {
+      calls.push(op);
+      if (op === "ListOwnerships") {
+        const entries = Object.entries(lists).map(([id, l]) => ({
+          entryId: `list-${id}`,
+          content: { itemContent: { list: { id_str: id, name: l.name, member_count: l.size, is_member: l.members.includes(vars.isListMemberTargetUserId) } } },
+        }));
+        return json({ data: { user: { result: { timeline: { timeline: { instructions: [{ type: "TimelineAddEntries", entries }] } } } } } });
+      }
+      if (fail) { fail = false; return json({}, false); }
+      const m = lists[vars.listId].members;
+      if (op === "ListAddMember") m.push(vars.userId);
+      else m.splice(m.indexOf(vars.userId), 1);
+      return json({});
+    },
+  };
+}
+const setup = (storage: Record<string, string> = {}, clock = { t: 1_000_000 }) => {
+  const x = fakeX({ a: { name: "Small", size: 2, members: [] }, b: { name: "Big", size: 9, members: ["u1"] } });
+  const store = createListStore({ request: x, storage, me: () => "me", now: () => clock.t });
+  return { x, store, storage, clock };
+};
+
+describe("list store", () => {
+  test("catalog comes from ListOwnerships, biggest first", async () => {
+    const { store, x } = setup();
+    await store.ready;
+    expect(store.catalog()!.map((l) => l.name)).toEqual(["Big", "Small"]);
+    expect(store.name("a")).toBe("Small");
+    expect(x.calls).toEqual(["ListOwnerships"]);
+  });
+
+  test("a new list appears in the catalog on the next membership read", async () => {
+    const { store, x } = setup();
+    await store.ready;
+    x.lists.c = { name: "New", size: 50, members: ["u2"] };
+    expect([...await store.membership("u2")]).toEqual(["c"]);
+    expect(store.catalog()![0].name).toBe("New");
+  });
+
+  test("add and remove apply optimistically and notify", async () => {
+    const { store, x } = setup();
+    await store.membership("u1");
+    const seen: (string | null)[] = [];
+    store.subscribe((id) => seen.push(id));
+    const pending = store.add("u1", "a");
+    expect(store.memberOf("u1")!.has("a")).toBe(true); // before X answers
+    expect(await pending).toBe(true);
+    expect(x.lists.a.members).toContain("u1");
+    expect(await store.remove("u1", "b")).toBe(true);
+    expect([...store.memberOf("u1")!]).toEqual(["a"]);
+    expect(seen).toEqual(["u1", "u1"]);
+  });
+
+  test("a refused change rolls back", async () => {
+    const { store, x } = setup();
+    await store.membership("u1");
+    const seen: boolean[] = [];
+    store.subscribe(() => seen.push(store.memberOf("u1")!.has("a")));
+    x.failNext();
+    expect(await store.add("u1", "a")).toBe(false);
+    expect(store.memberOf("u1")!.has("a")).toBe(false);
+    expect(seen).toEqual([true, false]);
+  });
+
+  test("memberships refetch after the TTL and dedupe in flight", async () => {
+    const { store, x, clock } = setup();
+    await Promise.all([store.membership("u1"), store.membership("u1")]);
+    await store.membership("u1");
+    const reads = () => x.calls.filter((c) => c === "ListOwnerships").length;
+    expect(reads()).toBe(2); // catalog + one membership read
+    x.lists.a.members.push("u1"); // changed outside OTD
+    clock.t += 31 * 60 * 1000;
+    expect([...await store.membership("u1")].sort()).toEqual(["a", "b"]);
+    expect(reads()).toBe(3);
+  });
+
+  test("memberships and catalog persist across sessions", async () => {
+    const first = setup();
+    await first.store.membership("u1");
+    const second = setup(first.storage, first.clock);
+    expect([...second.store.memberOf("u1")!]).toEqual(["b"]);
+    expect(second.store.catalog()!.length).toBe(2);
+    await second.store.membership("u1");
+    expect(second.x.calls).toEqual([]); // fresh cache: no requests at all
+  });
+});
