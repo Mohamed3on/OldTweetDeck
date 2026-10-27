@@ -1,57 +1,5 @@
 (() => {
-  const BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
-  const QID = {
-    LIST_OWNERSHIPS: 'BBLgNbbUu6HXAX11lV_1Qw',
-    LIST_ADD_MEMBER: 'vWPi0CTMoPFsjsL6W4IynQ',
-    LIST_REMOVE_MEMBER: 'cAGvZIu7SW0YlLYynz3VYA',
-    FOLLOWERS_YOU_KNOW: '85KIcL0KntSKE-fEbKEV3w',
-  };
-  const FEATURES = {
-    rweb_video_screen_enabled: false, profile_label_improvements_pcf_label_in_post_enabled: true,
-    responsive_web_graphql_timeline_navigation_enabled: true, responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-    creator_subscriptions_tweet_preview_api_enabled: true, communities_web_enable_tweet_community_results_fetch: true,
-    c9s_tweet_anatomy_moderator_badge_enabled: true, articles_preview_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true, graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    view_counts_everywhere_api_enabled: true, longform_notetweets_consumption_enabled: true,
-    responsive_web_twitter_article_tweet_consumption_enabled: true, responsive_web_grok_analyze_post_followups_enabled: true,
-    responsive_web_grok_share_attachment_enabled: true, responsive_web_grok_annotations_enabled: true,
-    responsive_web_grok_image_annotation_enabled: true, freedom_of_speech_not_reach_fetch_enabled: true,
-    standardized_nudges_misinfo: true, tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
-    longform_notetweets_rich_text_read_enabled: true, longform_notetweets_inline_media_enabled: true,
-    responsive_web_enhance_cards_enabled: false, hidden_profile_likes_enabled: true, verified_phone_label_enabled: false,
-    responsive_web_twitter_article_notes_tab_enabled: true, subscriptions_verification_info_verified_since_enabled: true,
-    subscriptions_verification_info_is_identity_verified_enabled: true, highlights_tweets_tab_ui_enabled: true,
-    responsive_web_graphql_exclude_directive_enabled: true, hidden_profile_subscriptions_enabled: true,
-    responsive_web_grok_analysis_button_from_backend: true, tweet_awards_web_tipping_enabled: false,
-    responsive_web_grok_show_grok_translated_post: true, responsive_web_jetfuel_frame: true,
-    rweb_tipjar_consumption_enabled: false, responsive_web_grok_community_note_auto_translation_is_enabled: false,
-    premium_content_api_read_enabled: false, responsive_web_profile_redirect_enabled: false,
-    responsive_web_grok_analyze_button_fetch_trends_enabled: false, post_ctas_fetch_enabled: true,
-    responsive_web_grok_imagine_annotation_enabled: true, responsive_web_media_download_video_enabled: false,
-    tweetypie_unmention_optimization_enabled: true, rweb_video_timestamps_enabled: true,
-  };
-
-  const csrf = () => document.cookie.match(/ct0=([^;]+)/)?.[1] || '';
   const myId = () => document.cookie.match(/twid=u%3D(\d+)/)?.[1];
-  const hdrs = () => ({
-    'authorization': `Bearer ${BEARER}`, 'content-type': 'application/json',
-    'x-csrf-token': csrf(), 'x-twitter-active-user': 'yes',
-    'x-twitter-auth-type': 'OAuth2Session', 'x-twitter-client-language': 'en',
-  });
-
-  const gql = async (qid, op, variables) => {
-    const url = new URL(`${location.origin}/i/api/graphql/${qid}/${op}`);
-    url.searchParams.set('variables', JSON.stringify(variables));
-    url.searchParams.set('features', JSON.stringify(FEATURES));
-    return (await fetch(url, { headers: hdrs(), credentials: 'include' })).json();
-  };
-
-  const gqlPost = (qid, op, variables) =>
-    fetch(`${location.origin}/i/api/graphql/${qid}/${op}`, {
-      method: 'POST', headers: hdrs(), credentials: 'include',
-      body: JSON.stringify({ variables, features: FEATURES, queryId: qid }),
-    });
-
   let lists = null, listsByName = null;
   const buildByName = (ls) => Object.fromEntries(ls.map(l => [l.name.toLowerCase(), l.id]));
 
@@ -67,10 +15,7 @@
         return;
       }
     } catch {}
-    const res = await fetch(
-      `https://api.${location.hostname}/1.1/lists/ownerships.json?count=1000`,
-      { headers: hdrs(), credentials: 'include' },
-    );
+    const res = await XApi.get(`https://api.${location.hostname}/1.1/lists/ownerships.json?count=1000`);
     const data = await res.json();
     // Biggest lists first — the API returns newest-created first, which buries the main lists.
     lists = (data.lists || [])
@@ -117,9 +62,9 @@
       try {
         const userId = await resolveUser(username);
         if (!userId) return new Set();
-        const data = await gql(QID.LIST_OWNERSHIPS, 'ListOwnerships', {
+        const data = await (await XApi.gql('ListOwnerships', {
           userId: myId(), isListMemberTargetUserId: userId, count: 100, includePromotedContent: false,
-        });
+        })).json();
         const memberOf = new Set();
         for (const inst of data?.data?.user?.result?.timeline?.timeline?.instructions || []) {
           if (inst.type !== 'TimelineAddEntries') continue;
@@ -149,7 +94,7 @@
   const removeFromList = async (username, listId) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
-    const r = await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId });
+    const r = await XApi.gql('ListRemoveMember', { listId, userId });
     if (r.ok) updateMembership(username, listId, false);
     return r.ok;
   };
@@ -310,13 +255,6 @@
     clearFromFilter(article);
   };
 
-  const restPost = (path, body) =>
-    fetch(`${location.origin}/i/api${path}`, {
-      method: 'POST', credentials: 'include',
-      headers: { ...hdrs(), 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: new URLSearchParams(body).toString(),
-    });
-
   // Muted state mirrors TweetDeck's own client.mutes cache (keyed by user id) — the same
   // source its native dropdown trusts, so it's accurate even when the timeline API's
   // user.muting flag is stale. The author is in TD.cache once their tweet has rendered,
@@ -339,13 +277,13 @@
   const muteUser = async (username, { delist = true } = {}) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
-    const r = await restPost('/1.1/mutes/users/create.json', { user_id: userId });
+    const r = await XApi.rest('/1.1/mutes/users/create.json', { user_id: userId });
     if (!r.ok) return false;
     setClientMute(username, true);
     if (delist) {
       const memberOf = await fetchMembership(username);
       await Promise.all([...memberOf].map(listId =>
-        gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId })
+        XApi.gql('ListRemoveMember', { listId, userId })
           .then(r => { if (r.ok) updateMembership(username, listId, false); })
       ));
     }
@@ -355,7 +293,7 @@
   const unmuteUser = async (username) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
-    const r = await restPost('/1.1/mutes/users/destroy.json', { user_id: userId });
+    const r = await XApi.rest('/1.1/mutes/users/destroy.json', { user_id: userId });
     if (!r.ok) return false;
     setClientMute(username, false);
     return true;
@@ -363,23 +301,23 @@
 
   const followUser = async (username) => {
     const userId = await resolveUser(username);
-    return !!(userId && (await restPost('/1.1/friendships/create.json', { user_id: userId })).ok);
+    return !!(userId && (await XApi.rest('/1.1/friendships/create.json', { user_id: userId })).ok);
   };
   const unfollowUser = async (username) => {
     const userId = await resolveUser(username);
-    return !!(userId && (await restPost('/1.1/friendships/destroy.json', { user_id: userId })).ok);
+    return !!(userId && (await XApi.rest('/1.1/friendships/destroy.json', { user_id: userId })).ok);
   };
 
   const blockUser = async (username) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
-    return (await restPost('/1.1/blocks/create.json', { user_id: userId })).ok;
+    return (await XApi.rest('/1.1/blocks/create.json', { user_id: userId })).ok;
   };
 
   const unblockUser = async (username) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
-    return (await restPost('/1.1/blocks/destroy.json', { user_id: userId })).ok;
+    return (await XApi.rest('/1.1/blocks/destroy.json', { user_id: userId })).ok;
   };
 
   // friendships/update toggles the per-user "show Retweets" preference (source.want_retweets
@@ -388,17 +326,14 @@
   const setUserRetweets = async (username, want) => {
     const userId = await resolveUser(username);
     if (!userId) return false;
-    return (await restPost('/1.1/friendships/update.json', { id: userId, retweets: want })).ok;
+    return (await XApi.rest('/1.1/friendships/update.json', { id: userId, retweets: want })).ok;
   };
 
   // friendships/show is the same source TweetDeck's follow-state uses; source.muting /
   // source.blocking give authoritative mute/block state for the profile action toggles.
   const fetchRelationship = async (username) => {
     try {
-      const r = await fetch(
-        `${location.origin}/i/api/1.1/friendships/show.json?target_screen_name=${encodeURIComponent(username)}`,
-        { headers: hdrs(), credentials: 'include' },
-      );
+      const r = await XApi.get(`/1.1/friendships/show.json?target_screen_name=${encodeURIComponent(username)}`);
       return (await r.json())?.relationship?.source || {};
     } catch { return {}; }
   };
@@ -460,11 +395,7 @@
       const removing = item.classList.contains('xlr-dropdown-done');
       setItemState(item, !removing);
       const userId = await resolveUser(username);
-      const r = await gqlPost(
-        removing ? QID.LIST_REMOVE_MEMBER : QID.LIST_ADD_MEMBER,
-        removing ? 'ListRemoveMember' : 'ListAddMember',
-        { listId: id, userId },
-      );
+      const r = await XApi.gql(removing ? 'ListRemoveMember' : 'ListAddMember', { listId: id, userId });
       if (r.ok) { updateMembership(username, id, !removing); onToggle?.(); }
       else setItemState(item, removing);
     });
@@ -578,7 +509,7 @@
       removeBtn.onclick = withBusy(removeBtn, 'xlr-removing', async () => {
         const userId = await resolveUser(username);
         if (!userId) return;
-        const r = await gqlPost(QID.LIST_REMOVE_MEMBER, 'ListRemoveMember', { listId, userId });
+        const r = await XApi.gql('ListRemoveMember', { listId, userId });
         if (!r.ok) return;
         markDone(removeBtn, `Removed @${username}`, article);
         updateMembership(username, listId, false);
@@ -783,8 +714,8 @@
   // FollowersYouKnow: the people you follow who follow this account (x.com's "Followed by …",
   // 500 calls / 15 min). No total comes back, so one 50-user page is the count, "+" when it's full.
   const hcKnown = {};
-  const knownFollowers = (userId) => hcKnown[userId] ??= gql(QID.FOLLOWERS_YOU_KNOW, 'FollowersYouKnow',
-    { userId, count: 50, includePromotedContent: false }).then((data) =>
+  const knownFollowers = (userId) => hcKnown[userId] ??= XApi.gql('FollowersYouKnow',
+    { userId, count: 50, includePromotedContent: false }).then(r => r.json()).then((data) =>
       (data?.data?.user?.result?.timeline?.timeline?.instructions || []).flatMap(i => i.entries || [])
         .map(e => e.content?.itemContent?.user_results?.result).filter(Boolean)
         .map(r => ({ name: r.core?.name || r.legacy?.name, img: r.avatar?.image_url || r.legacy?.profile_image_url_https })),
@@ -1335,34 +1266,13 @@
   // so TweetDeck falls back to "This Tweet is unavailable". The tweet is still fetchable by
   // id, so re-fetch it, rebuild the quoted card through TweetDeck's own pipeline, and drop
   // in a subtle muted marker — rather than leaving the whole quote hidden.
-  const QUOTE_QID = '0hWvDhmW8YQ-S_ib3azIrw';
-  const QUOTE_FEATURES = {
-    creator_subscriptions_tweet_preview_api_enabled: true, tweetypie_unmention_optimization_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true, graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    view_counts_everywhere_api_enabled: true, longform_notetweets_consumption_enabled: true,
-    responsive_web_twitter_article_tweet_consumption_enabled: true, tweet_awards_web_tipping_enabled: false,
-    freedom_of_speech_not_reach_fetch_enabled: true, standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true, longform_notetweets_rich_text_read_enabled: true,
-    longform_notetweets_inline_media_enabled: true, responsive_web_graphql_exclude_directive_enabled: true,
-    verified_phone_label_enabled: false, responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-    responsive_web_graphql_timeline_navigation_enabled: true, responsive_web_enhance_cards_enabled: false,
-    rweb_video_timestamps_enabled: true, c9s_tweet_anatomy_moderator_badge_enabled: true,
-    creator_subscriptions_quote_tweet_preview_enabled: false, rweb_tipjar_consumption_enabled: true,
-    profile_label_improvements_pcf_label_in_post_enabled: true, responsive_web_grok_analyze_button_fetch_trends_enabled: false,
-    premium_content_api_read_enabled: false, communities_web_enable_tweet_community_results_fetch: true,
-    articles_preview_enabled: true,
-  };
-
   // Fetch a single tweet by id and hand it to interception's parseTweet, yielding the legacy
   // tweet object that TweetDeck.fromJSONObject expects. Cached (incl. nulls) so repeated
   // column refreshes don't re-hit the API for the same quote.
   const quoteCache = {};
   const fetchQuotedLegacy = (id) => (quoteCache[id] ??= (async () => {
     try {
-      const url = new URL(`${location.origin}/i/api/graphql/${QUOTE_QID}/TweetResultByRestId`);
-      url.searchParams.set('variables', JSON.stringify({ tweetId: id, withCommunity: false, includePromotedContent: false, withVoice: false }));
-      url.searchParams.set('features', JSON.stringify(QUOTE_FEATURES));
-      const j = await (await fetch(url, { headers: hdrs(), credentials: 'include' })).json();
+      const j = await (await XApi.gql('TweetResultByRestId', { tweetId: id, withCommunity: false, includePromotedContent: false, withVoice: false })).json();
       let r = j?.data?.tweetResult?.result;
       if (r?.tweet) r = r.tweet;
       if (!r || !r.legacy || !window.OTDparseTweet) return null;
@@ -1497,7 +1407,7 @@
   // (50 calls / 15 min, 200 users a page): yours first, then whichever follow's list covers the most
   // still-unnamed accounts per page, until the budget runs out. Cached for a day.
   const FOF_TTL = 1000 * 60 * 60 * 24, FOF_TOP = 100;
-  const api1 = (path) => fetch(`https://api.${location.hostname}/1.1/${path}`, { headers: hdrs(), credentials: 'include' });
+  const api1 = (path) => XApi.get(`https://api.${location.hostname}/1.1/${path}`);
 
   const friendIds = async (uid) => {
     let ids = [], cursor = '-1';
@@ -1550,7 +1460,7 @@
       let cursor = '-1';
       do {
         const r = await api1(`friends/list.json?count=200&skip_status=true&include_user_entities=false&user_id=${best.u}&cursor=${cursor}`);
-        budget = +r.headers.get('x-rate-limit-remaining') || 0;
+        budget = XApi.rateLimit(r)?.remaining || 0;
         if (!r.ok) return;
         const j = await r.json();
         for (const u of j.users) Object.assign(byId[u.id_str] || {}, { n: u.screen_name, name: u.name, img: u.profile_image_url_https });

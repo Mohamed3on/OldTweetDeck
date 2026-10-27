@@ -31,123 +31,47 @@ function expandTweet(e, tweet_id) {
     e.target.innerText = "Loading...";
     e.target.onclick = null;
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", `https://api.${location.hostname}/1.1/statuses/show/${tweet_id}.json`, true);
-    xhr.setRequestHeader("X-Twitter-Active-User", "yes");
-    xhr.setRequestHeader("X-Twitter-Auth-Type", "OAuth2Session");
-    xhr.setRequestHeader("X-Twitter-Client-Language", "en");
-    xhr.setRequestHeader(
-        "Authorization",
-        "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
-    );
-    xhr.setRequestHeader(
-        "X-Csrf-Token",
-        (function () {
-            var csrf = document.cookie.match(/(?:^|;\s*)ct0=([0-9a-f]+)\s*(?:;|$)/);
-            return csrf ? csrf[1] : "";
-        })()
-    );
-    xhr.withCredentials = true;
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            var data = JSON.parse(xhr.responseText);
+    XApi.get(`https://api.${location.hostname}/1.1/statuses/show/${tweet_id}.json`)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
             e.target.parentElement.innerHTML = TD.util.transform(data.full_text, data.entities);
             e.target.remove();
-        } else {
+        })
+        .catch(() => {
             e.target.innerText = "Error";
             e.target.style.color = "red";
-        }
-    };
-
-    xhr.send();
+        });
 }
 
 function follow(screen_name) {
-    return new Promise(function (resolve, reject) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", `https://api.${location.hostname}/1.1/friendships/create.json`, true);
-        xhr.setRequestHeader("X-Twitter-Active-User", "yes");
-        xhr.setRequestHeader("X-Twitter-Auth-Type", "OAuth2Session");
-        xhr.setRequestHeader("X-Twitter-Client-Language", "en");
-        xhr.setRequestHeader(
-            "Authorization",
-            "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
-        );
-        xhr.setRequestHeader(
-            "X-Csrf-Token",
-            (function () {
-                var csrf = document.cookie.match(/(?:^|;\s*)ct0=([0-9a-f]+)\s*(?:;|$)/);
-                return csrf ? csrf[1] : "";
-            })()
-        );
-        xhr.withCredentials = true;
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                resolve();
-            } else {
-                reject();
-            }
-        };
-
-        xhr.send("screen_name=" + screen_name);
-    });
+    return XApi.rest(`https://api.${location.hostname}/1.1/friendships/create.json`, { screen_name })
+        .then(r => r.ok ? undefined : Promise.reject());
 }
 document.body.addEventListener("click", function (e) {
     if (e.target.classList.contains("tweet-bookmark-menu-option")) {
         var tweetId = e.target.dataset.tweetId;
-        var xhr = new XMLHttpRequest();
-        xhr.open(
-            "POST",
-            `https://${location.hostname}/i/api/graphql/aoDbu3RHznuiSkQ9aNM67Q/CreateBookmark`,
-            true
-        );
-        xhr.setRequestHeader("X-Twitter-Active-User", "yes");
-        xhr.setRequestHeader("X-Twitter-Auth-Type", "OAuth2Session");
-        xhr.setRequestHeader("X-Twitter-Client-Language", "en");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader(
-            "Authorization",
-            "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
-        );
-        xhr.setRequestHeader(
-            "X-Csrf-Token",
-            (function () {
-                var csrf = document.cookie.match(/(?:^|;\s*)ct0=([0-9a-f]+)\s*(?:;|$)/);
-                return csrf ? csrf[1] : "";
-            })()
-        );
-        xhr.withCredentials = true;
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                try {
-                    let data = JSON.parse(xhr.responseText);
-                    if (data.errors && data.errors.length > 0) {
-                        toasts.showErrorNotification({
-                            message:
-                                "Error: " +
-                                data.errors[0].message.replace("favorited", "bookmarked"),
-                        }); // why is twitter saying 'favorited' for bookmark errors?
-                    } else {
-                        toasts.showNotification({ message: "Success: Bookmarked tweet" });
-                        // refresh the bookmarks column
-                        const bookmarksColumns = Object.values(TD.controller.columnManager._aColumnIndex).filter(c => Object.keys(c.feedSubscriptions).some(f => f.includes(":bookmarks:")));
-                        for(column of bookmarksColumns) {
-                            const columnName = column.streamRateEvent.split(".")[1];
-                            TD.controller.feedScheduler.refreshColumn(columnName);
-                        }
+        XApi.gql("CreateBookmark", { tweet_id: tweetId }).then(r => r.text()).then(function (responseText) {
+            try {
+                let data = JSON.parse(responseText);
+                if (data.errors && data.errors.length > 0) {
+                    toasts.showErrorNotification({
+                        message:
+                            "Error: " +
+                            data.errors[0].message.replace("favorited", "bookmarked"),
+                    }); // why is twitter saying 'favorited' for bookmark errors?
+                } else {
+                    toasts.showNotification({ message: "Success: Bookmarked tweet" });
+                    // refresh the bookmarks column
+                    const bookmarksColumns = Object.values(TD.controller.columnManager._aColumnIndex).filter(c => Object.keys(c.feedSubscriptions).some(f => f.includes(":bookmarks:")));
+                    for(column of bookmarksColumns) {
+                        const columnName = column.streamRateEvent.split(".")[1];
+                        TD.controller.feedScheduler.refreshColumn(columnName);
                     }
-                } catch (e) {
-                    toasts.showErrorNotification({ message: "Error: " + xhr.responseText });
                 }
+            } catch (e) {
+                toasts.showErrorNotification({ message: "Error: " + responseText });
             }
-        };
-
-        xhr.send(
-            JSON.stringify({ variables: { tweet_id: tweetId }, queryId: "aoDbu3RHznuiSkQ9aNM67Q" })
-        );
+        });
     }
 });
 
