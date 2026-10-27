@@ -802,3 +802,146 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 
 /* Single-account setup: the Accounts drawer link only takes nav space. */
 .app-navigator [data-drawer="accountSettings"] { display: none !important; }
+
+/* Handle hover card (xlr.js showHc). Grows in from the hovered handle; exit is quicker than entry.
+   .xlr-hc-instant skips the motion when hopping between handles while a card is already up. */
+.xlr-hc {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  width: 288px;
+  padding: 14px;
+  color: rgb(231, 233, 234);
+  font: 14px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: rgb(21, 24, 28);
+  border: 1px solid rgb(56, 60, 65);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: scale(0.96);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out, visibility 0s 0.1s;
+
+  &.xlr-hc-open {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.16s cubic-bezier(0.23, 1, 0.32, 1), transform 0.16s cubic-bezier(0.23, 1, 0.32, 1), visibility 0s;
+  }
+  &.xlr-hc-instant { transition: none; }
+}
+@media (prefers-reduced-motion: reduce) { .xlr-hc { transform: none; } }
+
+.xlr-hc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+.xlr-hc-avatar { width: 44px; height: 44px; flex-shrink: 0; border-radius: 9999px; }
+.xlr-hc-names { display: flex; flex-direction: column; min-width: 0; }
+.xlr-hc-name {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.xlr-hc-head:hover .xlr-hc-name { text-decoration: underline; }
+.xlr-hc-name svg { width: 16px; height: 16px; flex-shrink: 0; color: rgb(29, 155, 240); }
+.xlr-hc-handle { color: rgb(139, 152, 165); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.xlr-hc-bio {
+  margin: 10px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  &:empty { display: none; }
+}
+
+.xlr-hc-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  color: rgb(139, 152, 165);
+  b { color: rgb(231, 233, 234); font-weight: 700; }
+}
+
+/* List chips: the profile popup's chips (makeChip), shrunk to the card. Scoped under .xlr-hc
+   (0,2,0) to beat TweetDeck's `html.dark button` base, same as .xlr-prf-lists. */
+.xlr-hc-lists {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.xlr-hc-lists.xlr-hc-loading { opacity: 0; }
+.xlr-hc .xlr-prf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  height: 26px;
+  padding: 0 4px 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  transition: background-color 0.15s;
+  &:hover { background: rgba(255, 255, 255, 0.14); }
+  &.xlr-inflight { opacity: 0.5; pointer-events: none; }
+}
+.xlr-hc .xlr-prf-chip-x,
+.xlr-hc .xlr-hc-add {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  outline: none;
+  box-shadow: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: background-color 0.15s, color 0.15s, transform 0.12s ease-out;
+}
+.xlr-hc .xlr-prf-chip-x {
+  width: 18px;
+  height: 18px;
+  font: 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: rgb(139, 152, 165);
+  &:hover { background: color-mix(in srgb, rgb(244, 33, 46) 20%, transparent); color: rgb(244, 33, 46); }
+}
+.xlr-hc .xlr-hc-add {
+  width: 26px;
+  height: 26px;
+  color: rgb(29, 155, 240);
+  border: 1px solid rgba(29, 155, 240, 0.45);
+  &:hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
+  &:active { transform: scale(0.94); }
+  svg { width: 14px; height: 14px; }
+}
+.xlr-hc .xlr-prf-chips:empty + .xlr-hc-add {
+  width: auto;
+  gap: 4px;
+  padding: 0 11px 0 8px;
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  span::after { content: 'Add to list'; }
+}

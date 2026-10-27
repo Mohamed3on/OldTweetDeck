@@ -765,6 +765,119 @@
     });
   }
 
+  // Hover card on @handles, avatars and names (x.com's hovercard, which TweetDeck never had): avatar,
+  // name, bio, Following/Followers and your list chips. Opens after a short intent delay — the user
+  // fetch starts during it — and instantly while another card is up, like tooltips. Stays open while
+  // the pointer is on it (or its list picker is open) so the chips stay usable. Clicking still opens
+  // TweetDeck's own profile popup.
+  const hc = document.createElement('div');
+  hc.className = 'xlr-hc';
+  document.body.appendChild(hc);
+  let hcLink = null, hcShowT, hcHideT;
+  const fmtCount = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format;
+  const hcHandle = (a) => a?.getAttribute('href')?.match(/^https?:\/\/(?:twitter|x)\.com\/(\w{1,15})\/?$/)?.[1];
+  const verifiedSvg = mkSvg('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z');
+
+  function showHc(link, anchor, u, instant) {
+    const username = u.screen_name;
+    if (u.id_str && !userIds[username]) { userIds[username] = u.id_str; persistUserIds(); }
+    hc.innerHTML = `<a class="xlr-hc-head" rel="user" target="_blank"><img class="xlr-hc-avatar" alt="">
+      <span class="xlr-hc-names"><b class="xlr-hc-name"></b><span class="xlr-hc-handle"></span></span></a>
+      <p class="xlr-hc-bio"></p>
+      <div class="xlr-hc-stats"><span><b></b> Following</span><span><b></b> Followers</span></div>`;
+    const head = hc.querySelector('.xlr-hc-head');
+    head.href = `https://twitter.com/${username}`;
+    // TweetDeck only opens its profile popup for user links inside its app, so click the original.
+    head.onclick = (e) => { e.preventDefault(); hideHc(); link.click(); };
+    hc.querySelector('.xlr-hc-avatar').src = u.profile_image_url_https.replace('_normal.', '_bigger.');
+    hc.querySelector('.xlr-hc-name').textContent = u.name;
+    if (u.verified) hc.querySelector('.xlr-hc-name').appendChild(verifiedSvg.cloneNode(true));
+    hc.querySelector('.xlr-hc-handle').textContent = '@' + username;
+    let bio = u.description || '';
+    for (const { url, display_url } of u.entities?.description?.urls || []) bio = bio.replace(url, display_url);
+    hc.querySelector('.xlr-hc-bio').textContent = bio;
+    const [following, followers] = hc.querySelectorAll('.xlr-hc-stats b');
+    following.textContent = fmtCount(u.friends_count);
+    followers.textContent = fmtCount(u.followers_count);
+
+    if (lists) {
+      const row = document.createElement('div');
+      row.className = membershipCache[username] ? 'xlr-hc-lists' : 'xlr-hc-lists xlr-hc-loading';
+      const chips = document.createElement('div');
+      chips.className = 'xlr-prf-chips';
+      const addBtn = mkBtn('xlr-hc-add', 'Add to list', plusSvg);
+      addBtn.append(document.createElement('span'));   // "Add to list" label, shown only with no chips
+      const renderChips = () => {
+        chips.replaceChildren(...[...(membershipCache[username] || [])].map(id => makeChip(id, username, renderChips)));
+      };
+      renderChips();
+      addBtn.onmousedown = () => { addBtn._wasOpen = popover.matches(':popover-open'); };
+      addBtn.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!addBtn._wasOpen) showPopover(addBtn, username, renderChips);
+      };
+      row.append(chips, addBtn);
+      hc.appendChild(row);
+      fetchMembership(username).finally(() => {
+        if (!row.isConnected) return;
+        row.classList.remove('xlr-hc-loading');
+        renderChips();
+      });
+    }
+
+    // Below the hovered element, flipped above when it won't fit. Anchored by `bottom` when above so
+    // chips loading in grow the card away from the handle instead of over it.
+    hcLink = link;
+    hc.classList.toggle('xlr-hc-instant', instant);
+    const r = anchor.getBoundingClientRect(), w = hc.offsetWidth, h = hc.offsetHeight;
+    const up = r.bottom + 8 + h > innerHeight && r.top - 8 - h >= 0;
+    const left = Math.max(8, Math.min(r.left, innerWidth - w - 8));
+    Object.assign(hc.style, {
+      left: left + 'px',
+      top: up ? 'auto' : r.bottom + 8 + 'px',
+      bottom: up ? innerHeight - r.top + 8 + 'px' : 'auto',
+      transformOrigin: `${Math.min(r.left + r.width / 2, left + w) - left}px ${up ? '100%' : '0'}`,
+    });
+    hc.classList.add('xlr-hc-open');
+  }
+
+  const hideHc = () => {
+    clearTimeout(hcShowT); clearTimeout(hcHideT);
+    if (popover.matches(':popover-open') && hc.contains(popoverAnchor)) return;
+    hcLink = null;
+    hc.classList.remove('xlr-hc-open', 'xlr-hc-instant');
+  };
+
+  document.addEventListener('mouseover', (e) => {
+    if (hc.contains(e.target)) return clearTimeout(hcHideT);
+    const link = e.target.closest?.('a[rel="user"]');
+    const name = hcHandle(link);
+    if (!name) return;
+    clearTimeout(hcHideT);
+    if (link === hcLink) return;
+    clearTimeout(hcShowT);
+    const anchor = e.target.closest('img') || link;
+    const open = hc.classList.contains('xlr-hc-open');
+    const user = window.OTDuserByScreenName?.(name);
+    hcShowT = setTimeout(async () => {
+      const u = await user?.catch(() => null);
+      if (u && link.matches(':hover')) showHc(link, anchor, u, open);
+    }, open ? 0 : 350);
+  });
+  document.addEventListener('mouseout', (e) => {
+    const to = e.relatedTarget;
+    if (to && (hc.contains(to) || hcHandle(to.closest?.('a[rel="user"]')))) return;
+    clearTimeout(hcShowT);
+    clearTimeout(hcHideT);
+    hcHideT = setTimeout(hideHc, 150);
+  });
+  // Clicking a handle opens TweetDeck's profile popup; scrolling detaches the card from its handle.
+  document.addEventListener('mousedown', (e) => { if (e.target.closest?.('a[rel="user"]') && !hc.contains(e.target)) hideHc(); }, true);
+  document.addEventListener('scroll', (e) => { if (e.target !== popover) hideHc(); }, true);
+  popover.addEventListener('toggle', (e) => {
+    if (e.newState === 'closed' && hc.contains(popoverAnchor) && !hc.matches(':hover')) hideHc();
+  });
+
   // The X user API returns only URL entities for a bio — never @mention entities — so
   // TweetDeck renders bio mentions as plain text. Linkify them into rel="user" anchors
   // (the markup profile_summary uses for the @handle), which TweetDeck's global click
