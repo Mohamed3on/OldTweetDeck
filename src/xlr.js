@@ -774,7 +774,7 @@
   const hc = document.createElement('div');
   hc.className = 'xlr-hc';
   document.body.appendChild(hc);
-  let hcLink = null, hcShowT, hcPrefT, hcHideT;
+  let hcLink = null, hcAnchor = null, hcCtx = null, hcShowT, hcPrefT, hcHideT;
   const fmtCount = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format;
   const hcHandle = (a) => a?.getAttribute('href')?.match(/^https?:\/\/(?:twitter|x)\.com\/(\w{1,15})\/?$/)?.[1];
   // friendships/show per user, kept for the session so re-hovering doesn't refetch; a follow toggle drops it.
@@ -814,7 +814,9 @@
     return frag;
   }
 
-  function showHc(link, anchor, u, instant) {
+  // link is what was hovered; ctx the in-column handle the card first opened from (the same link,
+  // unless a bio mention swapped the card), where its clicks are replayed.
+  function showHc(link, anchor, u, instant, ctx) {
     const username = u.screen_name;
     if (u.id_str && !userIds[username]) { userIds[username] = u.id_str; persistUserIds(); }
     hc.innerHTML = `<div class="xlr-hc-top"><a class="xlr-hc-head" rel="user" target="_blank"><img class="xlr-hc-avatar" alt="">
@@ -823,29 +825,13 @@
       <p class="xlr-hc-bio"></p><div class="xlr-hc-loc"></div>
       <div class="xlr-hc-stats"><span><b></b> Following</span><span><b></b> Followers</span></div>
       <div class="xlr-hc-known"></div>`;
-    const head = hc.querySelector('.xlr-hc-head');
-    head.href = `https://twitter.com/${username}`;
-    // TweetDeck only opens its profile popup for user links inside its app, so click the original.
-    head.onclick = (e) => { e.preventDefault(); hideHc(); link.click(); };
+    hc.querySelector('.xlr-hc-head').href = `https://twitter.com/${username}`;
     hc.querySelector('.xlr-hc-avatar').src = hcAvatar(u);
     hc.querySelector('.xlr-hc-name').textContent = u.name;
     if (u.verified) hc.querySelector('.xlr-hc-name').appendChild(verifiedSvg.cloneNode(true));
     hc.querySelector('.xlr-hc-handle').textContent = '@' + username;
     const bio = hc.querySelector('.xlr-hc-bio');
     bio.append(linkifyHcBio(u));
-    // TweetDeck only opens its profile popup / search column for links inside a column, so a bio
-    // @mention or #hashtag clicks a hidden copy of itself next to the hovered handle.
-    bio.onclick = (e) => {
-      const a = e.target.closest('a[rel]');
-      if (!a || !link.isConnected) return;
-      e.preventDefault();
-      hideHc();
-      const proxy = a.cloneNode(true);
-      proxy.hidden = true;
-      link.after(proxy);
-      proxy.click();
-      proxy.remove();
-    };
     if (u.location) hc.querySelector('.xlr-hc-loc').append(pinSvg.cloneNode(true), u.location);
     const [following, followers] = hc.querySelectorAll('.xlr-hc-stats b');
     following.textContent = fmtCount(u.friends_count);
@@ -934,7 +920,20 @@
 
     // Below the hovered element, flipped above when it won't fit. Anchored by `bottom` when above so
     // chips loading in grow the card away from the handle instead of over it.
-    hcLink = link;
+    hcLink = link; hcAnchor = anchor; hcCtx = ctx;
+    // TweetDeck only opens its profile popup / search column for links inside a column, so the
+    // name, a bio @mention or #hashtag clicks a hidden copy of itself next to that in-column handle.
+    hc.onclick = (e) => {
+      const a = e.target.closest('a[rel]');
+      if (!a || !ctx.isConnected) return;
+      e.preventDefault();
+      hideHc();
+      const proxy = a.cloneNode(true);
+      proxy.hidden = true;
+      ctx.after(proxy);
+      proxy.click();
+      proxy.remove();
+    };
     hc.classList.toggle('xlr-hc-instant', instant);
     const r = anchor.getBoundingClientRect(), w = hc.offsetWidth, h = hc.offsetHeight;
     const up = r.bottom + 8 + h > innerHeight && r.top - 8 - h >= 0;
@@ -956,31 +955,36 @@
   };
 
   document.addEventListener('mouseover', (e) => {
-    if (hc.contains(e.target)) return clearTimeout(hcHideT);
-    const link = e.target.closest?.('a[rel="user"]');
+    // A bio @mention in the card swaps the card to that account in place, after the same intent delay.
+    const inCard = hc.contains(e.target);
+    if (inCard) clearTimeout(hcHideT);
+    const link = e.target.closest?.(inCard ? '.xlr-hc-bio a[rel="user"]' : 'a[rel="user"]');
     const name = hcHandle(link);
     if (!name) return;
     clearTimeout(hcHideT);
     if (link === hcLink) return;
     clearTimeout(hcShowT); clearTimeout(hcPrefT);
-    const anchor = e.target.closest('img') || link;
-    const open = hc.classList.contains('xlr-hc-open');
+    const anchor = inCard ? hcAnchor : e.target.closest('img') || link;
+    const ctx = inCard ? hcCtx : link;
+    const open = hc.classList.contains('xlr-hc-open'), delay = open && !inCard ? 0 : 350;
     const user = window.OTDuserByScreenName?.(name);
     user?.then((u) => { if (u) new Image().src = hcAvatar(u); }, () => {});   // avatar loads during the delay
     // Follow state and "Followed by" (which needs the user's id) take ~300ms on top of the user's
     // ~250ms, so they start once the hover has lasted 200ms, and the card waits up to 250ms past its
     // delay for them: it opens whole instead of growing a beat later. Slower ones fade in once open.
     const extras = (u) => Promise.all([hcRel(name), u.id_str !== myId() && knownFollowers(u.id_str)]);
-    hcPrefT = setTimeout(() => user?.then((u) => u && extras(u), () => {}), open ? 0 : 200);
+    hcPrefT = setTimeout(() => user?.then((u) => u && extras(u), () => {}), delay ? 200 : 0);
     hcShowT = setTimeout(async () => {
       const u = await user?.catch(() => null);
       if (!u) return;
       await Promise.race([extras(u), new Promise((r) => setTimeout(r, 250))]);
-      if (link.matches(':hover')) showHc(link, anchor, u, open);
-    }, open ? 0 : 350);
+      if (link.matches(':hover')) showHc(link, anchor, u, open, ctx);
+    }, delay);
   });
   document.addEventListener('mouseout', (e) => {
     const to = e.relatedTarget;
+    // Leaving a bio mention for elsewhere in the card cancels its pending swap.
+    if (e.target.closest?.('.xlr-hc-bio a[rel="user"]')?.contains(to) === false) { clearTimeout(hcShowT); clearTimeout(hcPrefT); }
     if (to && (hc.contains(to) || hcHandle(to.closest?.('a[rel="user"]')))) return;
     clearTimeout(hcShowT); clearTimeout(hcPrefT);
     clearTimeout(hcHideT);
