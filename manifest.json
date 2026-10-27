@@ -59,7 +59,7 @@
         {
             "matches": ["https://twitter.com/*", "https://x.com/*"],
             "exclude_matches": ["https://twitter.com/i/tweetdeck*", "https://x.com/i/tweetdeck*"],
-            "js": ["src/xapi.js", "src/xprofile.js"],
+            "js": ["src/xapi.js", "src/lists.js", "src/xprofile.js"],
             "css": ["src/xprofile.css"],
             "world": "MAIN"
         }
