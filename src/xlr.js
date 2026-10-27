@@ -776,14 +776,19 @@
   let hcLink = null, hcShowT, hcHideT;
   const fmtCount = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format;
   const hcHandle = (a) => a?.getAttribute('href')?.match(/^https?:\/\/(?:twitter|x)\.com\/(\w{1,15})\/?$/)?.[1];
+  // friendships/show per user, kept for the session so re-hovering doesn't refetch; a follow toggle drops it.
+  const hcRels = {};
+  const hcRel = (name) => hcRels[name.toLowerCase()] ??= fetchRelationship(name);
+  const pinSvg = mkSvg('M12 7c-1.93 0-3.5 1.57-3.5 3.5S10.07 14 12 14s3.5-1.57 3.5-3.5S13.93 7 12 7zm0 5c-.827 0-1.5-.673-1.5-1.5S11.173 9 12 9s1.5.673 1.5 1.5S12.827 12 12 12zm0-10c-4.687 0-8.5 3.813-8.5 8.5 0 5.967 7.621 11.116 7.945 11.332l.555.37.555-.37c.324-.216 7.945-5.365 7.945-11.332C20.5 5.813 16.687 2 12 2zm0 17.77c-1.665-1.241-6.5-5.196-6.5-9.27C5.5 6.916 8.416 4 12 4s6.5 2.916 6.5 6.5c0 4.073-4.835 8.028-6.5 9.27z');
   const verifiedSvg = mkSvg('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z');
 
   function showHc(link, anchor, u, instant) {
     const username = u.screen_name;
     if (u.id_str && !userIds[username]) { userIds[username] = u.id_str; persistUserIds(); }
-    hc.innerHTML = `<a class="xlr-hc-head" rel="user" target="_blank"><img class="xlr-hc-avatar" alt="">
-      <span class="xlr-hc-names"><b class="xlr-hc-name"></b><span class="xlr-hc-handle"></span></span></a>
-      <p class="xlr-hc-bio"></p>
+    hc.innerHTML = `<div class="xlr-hc-top"><a class="xlr-hc-head" rel="user" target="_blank"><img class="xlr-hc-avatar" alt="">
+      <span class="xlr-hc-names"><b class="xlr-hc-name"></b><span class="xlr-hc-sub"><span class="xlr-hc-handle"></span>
+      <span class="xlr-hc-fy" hidden>Follows you</span></span></span></a></div>
+      <p class="xlr-hc-bio"></p><div class="xlr-hc-loc"></div>
       <div class="xlr-hc-stats"><span><b></b> Following</span><span><b></b> Followers</span></div>`;
     const head = hc.querySelector('.xlr-hc-head');
     head.href = `https://twitter.com/${username}`;
@@ -796,9 +801,38 @@
     let bio = u.description || '';
     for (const { url, display_url } of u.entities?.description?.urls || []) bio = bio.replace(url, display_url);
     hc.querySelector('.xlr-hc-bio').textContent = bio;
+    if (u.location) hc.querySelector('.xlr-hc-loc').append(pinSvg.cloneNode(true), u.location);
     const [following, followers] = hc.querySelectorAll('.xlr-hc-stats b');
     following.textContent = fmtCount(u.friends_count);
     followers.textContent = fmtCount(u.followers_count);
+
+    // Follow pill, as in the profile popup: following an account re-reads the relationship so a
+    // protected one lands on "Requested". Not shown on your own card or someone you block.
+    if (u.id_str !== myId()) {
+      const follow = makeToggle('xlr-hc-follow', 'Follow', 'Following', false, async (active) => {
+        delete hcRels[username.toLowerCase()];
+        if (active) return unfollowUser(username);
+        if (!(await followUser(username))) return false;
+        const rel = await hcRel(username);
+        applyRel(rel.following || rel.following_requested ? rel : { following: true });
+        return false;   // applyRel already set the state
+      });
+      const applyRel = (rel) => {
+        const requested = !!rel.following_requested && !rel.following;
+        follow.set(!!rel.following || requested);
+        follow.btn.classList.toggle('xlr-requested', requested);
+        if (requested) follow.btn.textContent = 'Requested';
+        follow.btn.hidden = !!rel.blocking;
+      };
+      follow.btn.classList.add('xlr-loading');
+      hc.querySelector('.xlr-hc-top').appendChild(follow.btn);
+      const fy = hc.querySelector('.xlr-hc-fy');
+      hcRel(username).then((rel) => {
+        applyRel(rel);
+        fy.hidden = !rel.followed_by;
+        follow.btn.classList.remove('xlr-loading');
+      });
+    }
 
     if (lists) {
       const row = document.createElement('div');
@@ -860,6 +894,7 @@
     const open = hc.classList.contains('xlr-hc-open');
     const user = window.OTDuserByScreenName?.(name);
     hcShowT = setTimeout(async () => {
+      hcRel(name);   // intent confirmed: fetch the follow state alongside the user
       const u = await user?.catch(() => null);
       if (u && link.matches(':hover')) showHc(link, anchor, u, open);
     }, open ? 0 : 350);

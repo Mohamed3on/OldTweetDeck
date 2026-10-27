@@ -834,8 +834,10 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 @media (prefers-reduced-motion: reduce) { .xlr-hc { transform: none; } }
 
+.xlr-hc-top { display: flex; align-items: center; gap: 10px; }
 .xlr-hc-head {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -856,16 +858,59 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 .xlr-hc-head:hover .xlr-hc-name { text-decoration: underline; }
 .xlr-hc-name svg { width: 16px; height: 16px; flex-shrink: 0; color: rgb(29, 155, 240); }
+.xlr-hc-sub { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .xlr-hc-handle { color: rgb(139, 152, 165); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xlr-hc-fy {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  font-size: 11px;
+  color: rgb(139, 152, 165);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  &[hidden] { display: none; }
+}
+
+/* Follow pill: the profile popup's colours (blue outline → blue fill, red on hover to unfollow),
+   at card size. Scoped under .xlr-hc to beat TweetDeck's `html.dark button` base. */
+.xlr-hc .xlr-hc-follow {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 14px;
+  font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: rgb(29, 155, 240);
+  background: none;
+  border: 1px solid rgba(29, 155, 240, 0.45);
+  border-radius: 9999px;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.12s ease-out;
+  &:hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
+  &:active { transform: scale(0.96); }
+  &.xlr-on { background: rgb(29, 155, 240); border-color: transparent; color: #fff; }
+  &.xlr-on.xlr-requested { background: rgba(255, 255, 255, 0.1); color: rgb(231, 233, 234); }
+  &.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
+  &.xlr-loading, &.xlr-inflight { opacity: 0.5; pointer-events: none; }
+  &[hidden] { display: none; }
+}
 
 .xlr-hc-bio {
   margin: 10px 0 0;
   white-space: pre-line;
   overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  &:empty { display: none; }
+}
+.xlr-hc-loc {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  color: rgb(139, 152, 165);
+  overflow-wrap: anywhere;
+  svg { width: 15px; height: 15px; flex-shrink: 0; }
   &:empty { display: none; }
 }
 
