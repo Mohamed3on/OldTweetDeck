@@ -71,7 +71,11 @@ function createListStore({ request, storage, me, now = Date.now }) {
         const apply = (on) => { on ? m.ids.add(listId) : m.ids.delete(listId); saveMembers(); notify(userId); };
         apply(member);
         let ok = false;
-        try { ok = (await request.gql(member ? 'ListAddMember' : 'ListRemoveMember', { listId, userId })).ok; } catch {}
+        // X refuses with HTTP 200 and an errors array, so a 200 alone isn't success.
+        try {
+            const res = await request.gql(member ? 'ListAddMember' : 'ListRemoveMember', { listId, userId });
+            ok = res.ok && !(await res.json()).errors;
+        } catch {}
         if (!ok) apply(!member);
         return ok;
     }

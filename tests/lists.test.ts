@@ -19,7 +19,7 @@ function fakeX(lists: Record<string, { name: string; size: number; members: stri
         }));
         return json({ data: { user: { result: { timeline: { timeline: { instructions: [{ type: "TimelineAddEntries", entries }] } } } } } });
       }
-      if (fail) { fail = false; return json({}, false); }
+      if (fail) { fail = false; return json({ data: {}, errors: [{ code: 37, message: "Authorization: You aren't allowed to remove this user from lists." }] }); }
       const m = lists[vars.listId].members;
       if (op === "ListAddMember") m.push(vars.userId);
       else m.splice(m.indexOf(vars.userId), 1);
