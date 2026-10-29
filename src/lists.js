@@ -66,16 +66,20 @@ function createListStore({ request, storage, me, now = Date.now }) {
     }
 
     async function setMember(userId, listId, member) {
+        // Read a never-seen user first, or their remove looks like a no-op and never reaches X.
+        if (!members[userId]) await membership(userId).catch(() => {});
         const m = members[userId] ??= { ids: new Set(), ts: 0 };
-        if (m.ids.has(listId) === member) return true;
+        if (m.ts && m.ids.has(listId) === member) return true;
         const apply = (on) => { on ? m.ids.add(listId) : m.ids.delete(listId); saveMembers(); notify(userId); };
         apply(member);
         let ok = false;
-        // X refuses with HTTP 200 and an errors array, so a 200 alone isn't success.
+        // X answers HTTP 200 with an errors array both when it refuses and, sometimes, when it
+        // applied the change anyway, so on any error ask it what the list holds now.
         try {
             const res = await request.gql(member ? 'ListAddMember' : 'ListRemoveMember', { listId, userId });
             ok = res.ok && !(await res.json()).errors;
         } catch {}
+        if (!ok) try { ok = (await ownerships(userId)).has(listId) === member; } catch {}
         if (!ok) apply(!member);
         return ok;
     }

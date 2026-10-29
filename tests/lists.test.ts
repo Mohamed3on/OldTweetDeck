@@ -5,11 +5,12 @@ import { createListStore } from "../src/lists.js";
 // target and applying ListAddMember / ListRemoveMember unless told to fail.
 function fakeX(lists: Record<string, { name: string; size: number; members: string[] }>) {
   const calls: string[] = [];
-  let fail = false;
+  let fail = false, applyAnyway = false;
   const json = (body: any, ok = true) => Promise.resolve({ ok, json: async () => body });
   return {
     calls, lists,
-    failNext() { fail = true; },
+    // X's errors array: a refusal, or (applied) an error on a change it made anyway.
+    failNext(applied = false) { fail = true; applyAnyway = applied; },
     gql(op: string, vars: any) {
       calls.push(op);
       if (op === "ListOwnerships") {
@@ -19,11 +20,13 @@ function fakeX(lists: Record<string, { name: string; size: number; members: stri
         }));
         return json({ data: { user: { result: { timeline: { timeline: { instructions: [{ type: "TimelineAddEntries", entries }] } } } } } });
       }
-      if (fail) { fail = false; return json({ data: {}, errors: [{ code: 37, message: "Authorization: You aren't allowed to remove this user from lists." }] }); }
+      const errored = fail;
+      fail = false;
+      if (errored && !applyAnyway) return json({ data: {}, errors: [{ code: 37, message: "Authorization: You aren't allowed to remove this user from lists." }] });
       const m = lists[vars.listId].members;
       if (op === "ListAddMember") m.push(vars.userId);
       else m.splice(m.indexOf(vars.userId), 1);
-      return json({});
+      return json(errored ? { data: {}, errors: [{ message: "BadRequest: com.twitter.strato.serialization.DecodeException" }] } : {});
     },
   };
 }
@@ -64,15 +67,32 @@ describe("list store", () => {
     expect(seen).toEqual(["u1", "u1"]);
   });
 
+  test("removing a user never read reaches X", async () => {
+    const { store, x } = setup();
+    await store.ready;
+    expect(await store.remove("u1", "b")).toBe(true);
+    expect(x.calls).toContain("ListRemoveMember");
+    expect(x.lists.b.members).not.toContain("u1");
+  });
+
   test("a refused change rolls back", async () => {
     const { store, x } = setup();
     await store.membership("u1");
     const seen: boolean[] = [];
-    store.subscribe(() => seen.push(store.memberOf("u1")!.has("a")));
+    store.subscribe((id) => id && seen.push(store.memberOf("u1")!.has("a")));
     x.failNext();
     expect(await store.add("u1", "a")).toBe(false);
     expect(store.memberOf("u1")!.has("a")).toBe(false);
     expect(seen).toEqual([true, false]);
+  });
+
+  test("an error on a change X applied anyway keeps it", async () => {
+    const { store, x } = setup();
+    await store.membership("u1");
+    x.failNext(true);
+    expect(await store.remove("u1", "b")).toBe(true);
+    expect(store.memberOf("u1")!.has("b")).toBe(false);
+    expect(x.lists.b.members).not.toContain("u1");
   });
 
   test("memberships refetch after the TTL and dedupe in flight", async () => {
