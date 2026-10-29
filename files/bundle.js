@@ -31,10 +31,13 @@ function expandTweet(e, tweet_id) {
     e.target.innerText = "Loading...";
     e.target.onclick = null;
 
-    XApi.get(`https://api.${location.hostname}/1.1/statuses/show/${tweet_id}.json`)
+    // v1.1 statuses/show is gone (404); a top-level parse expands the note text
+    XApi.gql("TweetResultByRestId", { tweetId: tweet_id, withCommunity: false, includePromotedContent: false, withVoice: false })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
-            e.target.parentElement.innerHTML = TD.util.transform(data.full_text, data.entities);
+            let r = data.data.tweetResult.result;
+            let tweet = OTD.parseTweet(r.tweet || r);
+            e.target.parentElement.innerHTML = new TD.services.TwitterStatus(TD.storage.accountController.getPreferredAccount("twitter")).fromJSONObject(tweet).htmlText;
             e.target.remove();
         })
         .catch(() => {
@@ -37552,6 +37555,7 @@ document.body.addEventListener("click", function (e) {
                     (0, u.default)(e, "card.name", "").includes("poll") &&
                         (this.poll = m.default.getPollDataFromCard(e.card)),
                     (this.conversationMuted = e.conversation_muted),
+                    (this.truncatedNote = e.truncated_note),
                     this._generateHTMLText(),
                     this
                 );
@@ -37659,13 +37663,10 @@ document.body.addEventListener("click", function (e) {
             }),
             (TD.services.TwitterStatus.prototype._generateHTMLText = function () {
                 this.htmlText = TD.util.transform(this.text, this.entities);
-                let cleanText = this.text.replace(/\shttps:\/\/t.co\/[a-zA-Z0-9\-]{8,10}$/, "");
-                if (cleanText.endsWith("…")) {
-                    if (this.text.length >= 100 && this.text.length < 400) {
-                        let id = this.retweetedStatus ? this.retweetedStatus.id : this.id;
-                        let path = this.user ? this.user.screenName : "i/web";
-                        this.htmlText += ` <a href="https://twitter.com/${path}/status/${id}" onclick="expandTweet(event, '${id}')" class="expand-tweet" data-clicked="false">Expand tweet</a>`;
-                    }
+                if ((this.retweetedStatus || this).truncatedNote) {
+                    let id = this.retweetedStatus ? this.retweetedStatus.id : this.id;
+                    let path = this.user ? this.user.screenName : "i/web";
+                    this.htmlText += ` <a href="https://twitter.com/${path}/status/${id}" onclick="expandTweet(event, '${id}')" class="expand-tweet" data-clicked="false">Expand tweet</a>`;
                 }
             }),
             (TD.services.TwitterStatus.prototype.getMainUser = function () {

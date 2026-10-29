@@ -217,7 +217,10 @@ function adaptNode(raw, role, autoExpand) {
         for (let bv of legacy.card.binding_values) bvo[bv.key] = bv.value;
         legacy.card.binding_values = bvo;
     }
-    if (node.note_tweet?.note_tweet_results && (role === "top" || autoExpand)) expandNote(legacy, node);
+    if (node.note_tweet?.note_tweet_results) {
+        if (role === "top" || autoExpand) expandNote(legacy, node);
+        else legacy.truncated_note = true; // bundle.js draws an "Expand tweet" link for it
+    }
 
     let rt = role === "top" ? adaptNode(legacy.retweeted_status_result?.result, "retweet", autoExpand) : null;
     if (rt) legacy.retweeted_status = rt.legacy;
