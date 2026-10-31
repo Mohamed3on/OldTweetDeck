@@ -386,6 +386,12 @@
       removeBtn.onclick = withBusy(removeBtn, 'xlr-removing', async () => {
         if (!(await setListMember(username, listId, false))) return;
         markDone(removeBtn, `Removed @${username}`, article);
+        // Removing from the primary list resets every other search column, as its reset icon would.
+        if (listSearchCols()[0]?.contains(col)) {
+          for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
+            if (!col.contains(input)) setFilterInput(input, resetTarget(input.value));
+          }
+        }
         offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
       });
       buttons.push(removeBtn);
