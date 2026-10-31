@@ -1301,7 +1301,7 @@
   const saveFof = (fof) => {
     localStorage.setItem('xlrFof', JSON.stringify(fof));
     const names = fofNames();
-    for (const { id, n, name, img } of fof.rows) if (n) names[id] = { n, name, img };
+    for (const { id, n, name, img, bio } of fof.rows) if (n) names[id] = { n, name, img, bio };
     localStorage.setItem('xlrFofNames', JSON.stringify(names));
   };
 
@@ -1335,7 +1335,7 @@
     let budget = Infinity;
     for (;;) {
       const best = Object.keys(fof.cover)
-        .map(u => ({ u, cover: fof.cover[u].filter(id => !byId[id].n).length, cost: fof.cost[u] }))
+        .map(u => ({ u, cover: fof.cover[u].filter(id => byId[id].bio === undefined).length, cost: fof.cost[u] }))
         .filter(x => x.cover && x.cost <= budget)
         .sort((a, b) => b.cover / b.cost - a.cover / a.cost)[0];
       if (!best) return;
@@ -1345,7 +1345,7 @@
         budget = XApi.rateLimit(r)?.remaining || 0;
         if (!r.ok) return;
         const j = await r.json();
-        for (const u of j.users) Object.assign(byId[u.id_str] || {}, { n: u.screen_name, name: u.name, img: u.profile_image_url_https });
+        for (const u of j.users) Object.assign(byId[u.id_str] || {}, { n: u.screen_name, name: u.name, img: u.profile_image_url_https, bio: u.description || '' });
         cursor = j.next_cursor_str;
       } while (cursor !== '0' && budget > 0);
       saveFof(fof);
@@ -1385,9 +1385,9 @@
         <button class="xlr-fof-refresh" ${status ? 'disabled' : ''}>Refresh</button>
       </div>
       <ol class="xlr-fof-list">${rows.map(r => `<li>
-        <span class="xlr-fof-count" title="Followed by ${r.c} of your follows">${r.c}</span>
+        <span class="xlr-fof-count" title="Followed by ${r.c} of the ${fof.total} people you follow">${r.c}<small>of ${fof.total}</small></span>
         ${r.n
-          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${r.f ? fofFollowingBadge : ''}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span></span></a>`
+          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${r.f ? fofFollowingBadge : ''}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span>${r.bio ? `<span class="xlr-fof-bio">${escHtml(r.bio)}</span>` : ''}</span></a>`
           : `<a href="https://x.com/i/user/${r.id}" target="_blank"><span class="xlr-fof-names"><b>Name not loaded</b><span>Open on X</span></span></a>`}
       </li>`).join('')}</ol>`;
     if (scroll) fofDialog.querySelector('.xlr-fof-list').scrollTop = scroll;
@@ -1407,7 +1407,11 @@
         renderFof(fof, 'Reading follow lists…');
         fof = await buildFof((s) => renderFof(fof, s));
       }
-      if (fof.rows.some(r => !r.n)) { renderFof(fof, 'Looking up names…'); await nameFof(fof); }
+      // Bios backfill quietly; only missing names hold the list in a loading state.
+      if (fof.rows.some(r => r.bio === undefined)) {
+        renderFof(fof, fof.rows.some(r => !r.n) ? 'Looking up names…' : undefined);
+        await nameFof(fof);
+      }
       renderFof(fof);
       // List tags: memberships already known show at once; only accounts never looked up cost a
       // ListOwnerships call (500 / 15 min), a few at a time, redrawing as they land.
