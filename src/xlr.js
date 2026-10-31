@@ -1385,7 +1385,7 @@
         <button class="xlr-fof-refresh" ${status ? 'disabled' : ''}>Refresh</button>
       </div>
       <ol class="xlr-fof-list">${rows.map(r => `<li>
-        <span class="xlr-fof-count" title="Followed by ${r.c} of the ${fof.total} people you follow">${r.c}<small>of ${fof.total}</small></span>
+        <span class="xlr-fof-count" title="Followed by ${r.c} of the ${fof.total} people you follow">${r.c}</span>
         ${r.n
           ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${r.f ? fofFollowingBadge : ''}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span>${r.bio ? `<span class="xlr-fof-bio">${escHtml(r.bio)}</span>` : ''}</span></a>`
           : `<a href="https://x.com/i/user/${r.id}" target="_blank"><span class="xlr-fof-names"><b>Name not loaded</b><span>Open on X</span></span></a>`}
