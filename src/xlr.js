@@ -1363,7 +1363,26 @@
 
   const escHtml = (s) => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
 
-  const fofFollowingBadge = '<svg class="xlr-fof-badge" viewBox="0 0 24 24" role="img" aria-label="Following"><title>You follow them</title><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+  // One badge on the avatar's corner, the strongest relationship winning: blocked, muted, followed.
+  const fofBadgeSvg = (cls, label, d) => `<svg class="xlr-fof-badge ${cls}" viewBox="0 0 24 24" role="img" aria-label="${label}"><title>${label}</title><path d="${d}"/></svg>`;
+  const fofBadge = (r) => r.b ? fofBadgeSvg('xlr-fof-blocked', 'Blocked', 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 3a7 7 0 0 1 5.6 11.2L7.8 6.4A7 7 0 0 1 12 5zM6.4 7.8l9.8 9.8A7 7 0 0 1 6.4 7.8z')
+    : r.m ? fofBadgeSvg('xlr-fof-muted', 'Muted', 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.4.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z')
+    : r.f ? fofBadgeSvg('', 'You follow them', 'M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z') : '';
+
+  // Who you block and mute, as id sets. blocks/ids (50 / 15 min) and mutes/users/ids (15 / 15 min)
+  // return 5,000 a page; too big to keep, so each open re-reads them and flags the ranked rows.
+  const fofIdSet = async (path) => {
+    const ids = new Set();
+    let cursor = '-1';
+    do {
+      const r = await api1(`${path}?stringify_ids=true&cursor=${cursor}`);
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      for (const id of j.ids) ids.add(id);
+      cursor = j.next_cursor_str;
+    } while (cursor !== '0');
+    return ids;
+  };
 
   // Your lists the account is already in, as small tags after the handle.
   const fofListTags = (id) => [...(listStore.memberOf(id) || [])].map(l => listStore.name(l)).filter(Boolean)
@@ -1387,7 +1406,7 @@
       <ol class="xlr-fof-list">${rows.map(r => `<li>
         <span class="xlr-fof-count" title="Followed by ${r.c} of the ${fof.total} people you follow">${r.c}</span>
         ${r.n
-          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${r.f ? fofFollowingBadge : ''}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span>${r.bio ? `<span class="xlr-fof-bio">${escHtml(r.bio)}</span>` : ''}</span></a>`
+          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${fofBadge(r)}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span>${r.bio ? `<span class="xlr-fof-bio">${escHtml(r.bio)}</span>` : ''}</span></a>`
           : `<a href="https://x.com/i/user/${r.id}" target="_blank"><span class="xlr-fof-names"><b>Name not loaded</b><span>Open on X</span></span></a>`}
       </li>`).join('')}</ol>`;
     if (scroll) fofDialog.querySelector('.xlr-fof-list').scrollTop = scroll;
@@ -1413,6 +1432,12 @@
         await nameFof(fof);
       }
       renderFof(fof);
+      try {
+        const [blocked, muted] = await Promise.all([fofIdSet('blocks/ids.json'), fofIdSet('mutes/users/ids.json')]);
+        for (const r of fof.rows) { r.b = blocked.has(r.id); r.m = muted.has(r.id); }
+        saveFof(fof);
+        renderFof(fof);
+      } catch {} // rate-limited: keep the last known flags
       // List tags: memberships already known show at once; only accounts never looked up cost a
       // ListOwnerships call (500 / 15 min), a few at a time, redrawing as they land.
       await listStore.ready;

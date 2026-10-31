@@ -808,7 +808,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
     color: rgb(196, 201, 206); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere;
   }
 }
-/* Accounts you already follow: a green check tucked on the avatar's corner, cut out of the card. */
+/* Your relationship to the account, as a badge tucked on the avatar's corner and cut out of the
+   card: green check (following), amber (muted), red (blocked). */
 .xlr-fof-avatar { position: relative; flex: none; display: flex; }
 .xlr-fof-badge {
   position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; padding: 2px; box-sizing: border-box;
@@ -816,6 +817,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   box-shadow: 0 0 0 2px rgb(21, 24, 28);
 }
 .xlr-fof-list li:hover .xlr-fof-badge { box-shadow: 0 0 0 2px rgb(33, 36, 39); }
+.xlr-fof-badge.xlr-fof-muted { background: rgb(255, 173, 31); }
+.xlr-fof-badge.xlr-fof-blocked { background: rgb(244, 33, 46); }
 /* Your lists the account is in: the list chips, shrunk onto the handle line, wrapping under the
    handle rather than cutting either short. */
 .xlr-fof-handle {
