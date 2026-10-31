@@ -5,18 +5,21 @@ import { createListStore } from "../src/lists.js";
 // target and applying ListAddMember / ListRemoveMember unless told to fail.
 function fakeX(lists: Record<string, { name: string; size: number; members: string[] }>) {
   const calls: string[] = [];
-  let fail = false, applyAnyway = false;
+  let fail = false, applyAnyway = false, stale = 0, before: Record<string, string[]> = {};
   const json = (body: any, ok = true) => Promise.resolve({ ok, json: async () => body });
   return {
     calls, lists,
     // X's errors array: a refusal, or (applied) an error on a change it made anyway.
     failNext(applied = false) { fail = true; applyAnyway = applied; },
+    // The next n ListOwnerships reads still show the members as they were before the next change.
+    lagNext(n: number) { stale = n; before = Object.fromEntries(Object.entries(lists).map(([id, l]) => [id, [...l.members]])); },
     gql(op: string, vars: any) {
       calls.push(op);
       if (op === "ListOwnerships") {
+        const lag = stale > 0 && stale-- > 0;
         const entries = Object.entries(lists).map(([id, l]) => ({
           entryId: `list-${id}`,
-          content: { itemContent: { list: { id_str: id, name: l.name, member_count: l.size, is_member: l.members.includes(vars.isListMemberTargetUserId) } } },
+          content: { itemContent: { list: { id_str: id, name: l.name, member_count: l.size, is_member: (lag ? before[id] : l.members).includes(vars.isListMemberTargetUserId) } } },
         }));
         return json({ data: { user: { result: { timeline: { timeline: { instructions: [{ type: "TimelineAddEntries", entries }] } } } } } });
       }
@@ -32,7 +35,7 @@ function fakeX(lists: Record<string, { name: string; size: number; members: stri
 }
 const setup = (storage: Record<string, string> = {}, clock = { t: 1_000_000 }) => {
   const x = fakeX({ a: { name: "Small", size: 2, members: [] }, b: { name: "Big", size: 9, members: ["u1"] } });
-  const store = createListStore({ request: x, storage, me: () => "me", now: () => clock.t });
+  const store = createListStore({ request: x, storage, me: () => "me", now: () => clock.t, sleep: async () => {} });
   return { x, store, storage, clock };
 };
 
@@ -93,6 +96,15 @@ describe("list store", () => {
     expect(await store.remove("u1", "b")).toBe(true);
     expect(store.memberOf("u1")!.has("b")).toBe(false);
     expect(x.lists.b.members).not.toContain("u1");
+  });
+
+  test("an applied change keeps while X's re-read still lags", async () => {
+    const { store, x } = setup();
+    await store.membership("u1");
+    x.lagNext(2);
+    x.failNext(true);
+    expect(await store.add("u1", "a")).toBe(true);
+    expect(store.memberOf("u1")!.has("a")).toBe(true);
   });
 
   test("memberships refetch after the TTL and dedupe in flight", async () => {

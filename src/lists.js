@@ -5,7 +5,7 @@
 // refuses, and notify subscribers so every chip row for that user redraws. Keyed by user id;
 // xlr.js (TweetDeck) and xprofile.js (x.com profiles) each build one over XApi, sharing the
 // x.com origin's cache. Exported for the bun tests.
-function createListStore({ request, storage, me, now = Date.now }) {
+function createListStore({ request, storage, me, now = Date.now, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
     const CATALOG_KEY = 'otdLists', MEMBERS_KEY = 'otdListMembers';
     const CATALOG_TTL = 24 * 60 * 60 * 1000, MEMBERS_TTL = 30 * 60 * 1000;
     const load = (k) => { try { return JSON.parse(storage[k]) || null; } catch { return null; } };
@@ -79,7 +79,12 @@ function createListStore({ request, storage, me, now = Date.now }) {
             const res = await request.gql(member ? 'ListAddMember' : 'ListRemoveMember', { listId, userId });
             ok = res.ok && !(await res.json()).errors;
         } catch {}
-        if (!ok) try { ok = (await ownerships(userId)).has(listId) === member; } catch {}
+        // That read can lag the write by a few seconds, so look again before calling it refused.
+        for (const ms of [0, 1500, 3000]) {
+            if (ok) break;
+            await sleep(ms);
+            try { ok = (await ownerships(userId)).has(listId) === member; } catch {}
+        }
         if (!ok) apply(!member);
         return ok;
     }
