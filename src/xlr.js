@@ -205,7 +205,7 @@
     if (!(await users.act(username, 'mute'))) return false;
     setClientMute(username, true);
     if (delist) {
-      const ids = await fetchMembership(username);
+      const ids = await fetchMembership(username).catch(() => new Set());
       await Promise.all([...ids].map((listId) => setListMember(username, listId, false)));
     }
     return true;

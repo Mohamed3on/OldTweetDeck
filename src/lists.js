@@ -33,9 +33,12 @@ function createListStore({ request, storage, me, now = Date.now, sleep = (ms) =>
             const vars = { userId: me(), isListMemberTargetUserId: target, count: 100, includePromotedContent: false };
             if (cursor) vars.cursor = cursor;
             const data = await (await request.gql('ListOwnerships', vars)).json();
+            // A failed read (rate limit, errors) must throw, not pass as "on none of your lists".
+            const instructions = data?.data?.user?.result?.timeline?.timeline?.instructions;
+            if (!instructions) throw new Error('ListOwnerships failed');
             cursor = null;
             let got = 0;
-            for (const inst of data?.data?.user?.result?.timeline?.timeline?.instructions || []) {
+            for (const inst of instructions) {
                 for (const entry of inst.entries || []) {
                     const l = entry?.content?.itemContent?.list;
                     if (l) {
@@ -66,10 +69,10 @@ function createListStore({ request, storage, me, now = Date.now, sleep = (ms) =>
     }
 
     async function setMember(userId, listId, member) {
-        // Read a never-seen user first, or their remove looks like a no-op and never reaches X.
+        // Read a never-seen user first so their other memberships are known. The change always goes
+        // to X: the cache can be stale (lists edited on x.com), and a list column's author is in it.
         if (!members[userId]) await membership(userId).catch(() => {});
         const m = members[userId] ??= { ids: new Set(), ts: 0 };
-        if (m.ts && m.ids.has(listId) === member) return true;
         const apply = (on) => { on ? m.ids.add(listId) : m.ids.delete(listId); saveMembers(); notify(userId); };
         apply(member);
         let ok = false;

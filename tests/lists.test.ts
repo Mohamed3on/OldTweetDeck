@@ -5,7 +5,7 @@ import { createListStore } from "../src/lists.js";
 // target and applying ListAddMember / ListRemoveMember unless told to fail.
 function fakeX(lists: Record<string, { name: string; size: number; members: string[] }>) {
   const calls: string[] = [];
-  let fail = false, applyAnyway = false, stale = 0, before: Record<string, string[]> = {};
+  let fail = false, applyAnyway = false, stale = 0, before: Record<string, string[]> = {}, readsFail = false;
   const json = (body: any, ok = true) => Promise.resolve({ ok, json: async () => body });
   return {
     calls, lists,
@@ -13,9 +13,12 @@ function fakeX(lists: Record<string, { name: string; size: number; members: stri
     failNext(applied = false) { fail = true; applyAnyway = applied; },
     // The next n ListOwnerships reads still show the members as they were before the next change.
     lagNext(n: number) { stale = n; before = Object.fromEntries(Object.entries(lists).map(([id, l]) => [id, [...l.members]])); },
+    // ListOwnerships answers with an errors array (rate limited) until turned off.
+    failReads(on = true) { readsFail = on; },
     gql(op: string, vars: any) {
       calls.push(op);
       if (op === "ListOwnerships") {
+        if (readsFail) return json({ errors: [{ code: 88, message: "Rate limit exceeded" }] }, false);
         const lag = stale > 0 && stale-- > 0;
         const entries = Object.entries(lists).map(([id, l]) => ({
           entryId: `list-${id}`,
@@ -105,6 +108,33 @@ describe("list store", () => {
     x.failNext(true);
     expect(await store.add("u1", "a")).toBe(true);
     expect(store.memberOf("u1")!.has("a")).toBe(true);
+  });
+
+  test("a failed read never confirms a refused remove", async () => {
+    const { store, x } = setup();
+    await store.membership("u1");
+    x.failNext();
+    x.failReads();
+    expect(await store.remove("u1", "b")).toBe(false);
+    expect(store.memberOf("u1")!.has("b")).toBe(true);
+    expect(store.catalog()!.length).toBe(2); // and doesn't wipe the catalog
+  });
+
+  test("a failed read isn't cached as no lists", async () => {
+    const { store, x } = setup();
+    await store.ready;
+    x.failReads();
+    await store.membership("u1").catch(() => {});
+    expect(store.memberOf("u1")).toBeUndefined();
+  });
+
+  test("remove reaches X even when the cache says they're not on the list", async () => {
+    const { store, x } = setup();
+    await store.membership("u1");
+    x.lists.a.members.push("u1"); // added outside OTD
+    expect(await store.remove("u1", "a")).toBe(true);
+    expect(x.calls).toContain("ListRemoveMember");
+    expect(x.lists.a.members).not.toContain("u1");
   });
 
   test("memberships refetch after the TTL and dedupe in flight", async () => {
