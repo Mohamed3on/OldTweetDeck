@@ -1295,7 +1295,15 @@
     return ids;
   };
 
-  const saveFof = (fof) => localStorage.setItem('xlrFof', JSON.stringify(fof));
+  // Names outlive a rebuild: handles rarely change and friends/list is the scarce budget, so a
+  // rebuilt ranking starts named and only new accounts (or ones a fetched page renames) cost calls.
+  const fofNames = () => { try { return JSON.parse(localStorage.getItem('xlrFofNames')) || {}; } catch { return {}; } };
+  const saveFof = (fof) => {
+    localStorage.setItem('xlrFof', JSON.stringify(fof));
+    const names = fofNames();
+    for (const { id, n, name, img } of fof.rows) if (n) names[id] = { n, name, img };
+    localStorage.setItem('xlrFofNames', JSON.stringify(names));
+  };
 
   // The ranking itself, plus for each follow (and you) which ranked accounts its friends/list would
   // name and how many pages that costs, so names can keep filling in on later opens.
@@ -1307,9 +1315,9 @@
     }
     const counts = {};
     for (const u of mine) for (const v of graph[u]) if (v !== me) counts[v] = (counts[v] || 0) + 1;
-    const following = new Set(mine);
+    const following = new Set(mine), names = fofNames();
     const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, FOF_TOP)
-      .map(([id, c]) => ({ id, c, f: following.has(id) }));
+      .map(([id, c]) => ({ id, c, f: following.has(id), ...names[id] }));
     const ranked = new Set(rows.map(r => r.id)), cover = {}, cost = {};
     for (const [u, ids] of Object.entries(graph)) {
       const hits = ids.filter(v => ranked.has(v));
@@ -1355,7 +1363,14 @@
 
   const escHtml = (s) => String(s).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
 
+  const fofFollowingBadge = '<svg class="xlr-fof-badge" viewBox="0 0 24 24" role="img" aria-label="Following"><title>You follow them</title><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+
+  // Your lists the account is already in, as small tags after the handle.
+  const fofListTags = (id) => [...(listStore.memberOf(id) || [])].map(l => listStore.name(l)).filter(Boolean)
+    .map(n => `<span class="xlr-fof-tag">${escHtml(n)}</span>`).join('');
+
   function renderFof(fof, status) {
+    const scroll = fofDialog.querySelector('.xlr-fof-list')?.scrollTop;
     const hide = localStorage.getItem('xlrFofHideFollowing') === '1';
     const rows = (fof?.rows || []).filter(r => !(hide && r.f));
     const unnamed = rows.filter(r => !r.n).length;
@@ -1369,12 +1384,13 @@
         <label class="xlr-fof-hide"><input type="checkbox" ${hide ? 'checked' : ''}> Hide accounts I follow</label>
         <button class="xlr-fof-refresh" ${status ? 'disabled' : ''}>Refresh</button>
       </div>
-      <ol class="xlr-fof-list">${rows.map(r => `<li${r.f ? ' class="xlr-fof-following"' : ''}>
+      <ol class="xlr-fof-list">${rows.map(r => `<li>
         <span class="xlr-fof-count" title="Followed by ${r.c} of your follows">${r.c}</span>
         ${r.n
-          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><img src="${escHtml(r.img)}" alt=""><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span>@${r.n}${r.f ? ' · Following' : ''}</span></span></a>`
+          ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${r.f ? fofFollowingBadge : ''}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span></span></a>`
           : `<a href="https://x.com/i/user/${r.id}" target="_blank"><span class="xlr-fof-names"><b>Name not loaded</b><span>Open on X</span></span></a>`}
       </li>`).join('')}</ol>`;
+    if (scroll) fofDialog.querySelector('.xlr-fof-list').scrollTop = scroll;
     fofDialog.querySelector('.xlr-fof-hide input').onchange = (e) => {
       localStorage.setItem('xlrFofHideFollowing', e.target.checked ? '1' : '0');
       renderFof(fof, status);
@@ -1393,6 +1409,16 @@
       }
       if (fof.rows.some(r => !r.n)) { renderFof(fof, 'Looking up names…'); await nameFof(fof); }
       renderFof(fof);
+      // List tags: memberships already known show at once; only accounts never looked up cost a
+      // ListOwnerships call (500 / 15 min), a few at a time, redrawing as they land.
+      await listStore.ready;
+      const unknown = fof.rows.filter(r => !listStore.memberOf(r.id));
+      try {
+        for (let i = 0; i < unknown.length; i += 5) {
+          await Promise.all(unknown.slice(i, i + 5).map(r => listStore.membership(r.id)));
+          renderFof(fof);
+        }
+      } catch {}
     } catch {
       renderFof(fof, 'Couldn’t read follow lists. Try again in 15 minutes.');
     } finally {
