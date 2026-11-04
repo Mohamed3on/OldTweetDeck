@@ -46076,7 +46076,7 @@ document.body.addEventListener("click", function (e) {
             (TD.ui.Column.prototype.loadGif = function (e) {
                 var t = (arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {})
                     .mediaPreviewSize;
-                if (!1 !== e.hasMedia()) {
+                if (e.hasAnimatedGif()) {
                     var i = this.getChirpById(e.id).find(".js-media-gif-container");
                     if (!(i.find(".js-media-gif").length > 0)) {
                         var n = e.getMedia()[0].renderThumb(t);
@@ -46087,7 +46087,7 @@ document.body.addEventListener("click", function (e) {
             (TD.ui.Column.prototype.unloadGif = function (e) {
                 var t = (arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {})
                     .mediaPreviewSize;
-                if (!1 !== e.hasMedia()) {
+                if (e.hasAnimatedGif()) {
                     var i = this.getChirpById(e.id),
                         n = i.find(".js-media-gif-container"),
                         s = e.getMedia()[0].renderAnimatedGifPlaceholder(t);
