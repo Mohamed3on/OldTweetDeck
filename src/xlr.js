@@ -753,9 +753,11 @@
     hc.classList.add('xlr-hc-open');
   }
 
+  const hcMenuOpen = () => popover.matches(':popover-open') && hc.contains(popoverAnchor);
   const hideHc = () => {
     clearTimeout(hcShowT); clearTimeout(hcPrefT); clearTimeout(hcHideT);
-    if (popover.matches(':popover-open') && hc.contains(popoverAnchor)) return;
+    // The card's list menu belongs to it: it closes with the card rather than outliving it.
+    if (hcMenuOpen()) popover.hidePopover();
     hcLink = null;
     hc.classList.remove('xlr-hc-open', 'xlr-hc-instant');
   };
@@ -763,7 +765,9 @@
   document.addEventListener('mouseover', (e) => {
     // A bio @mention in the card swaps the card to that account in place, after the same intent delay.
     const inCard = hc.contains(e.target);
-    if (inCard) clearTimeout(hcHideT);
+    if (inCard || popover.contains(e.target)) clearTimeout(hcHideT);
+    // While its list menu is open the card stays on its user: no swapping to a handle passed on the way.
+    if (hcMenuOpen()) return;
     const link = e.target.closest?.(inCard ? '.xlr-hc-bio a[rel="user"]' : 'a[rel="user"]');
     const name = hcHandle(link);
     if (!name) return;
@@ -791,7 +795,7 @@
     const to = e.relatedTarget;
     // Leaving a bio mention for elsewhere in the card cancels its pending swap.
     if (e.target.closest?.('.xlr-hc-bio a[rel="user"]')?.contains(to) === false) { clearTimeout(hcShowT); clearTimeout(hcPrefT); }
-    if (to && (hc.contains(to) || hcHandle(to.closest?.('a[rel="user"]')))) return;
+    if (to && (hc.contains(to) || popover.contains(to) || (!hcMenuOpen() && hcHandle(to.closest?.('a[rel="user"]'))))) return;
     clearTimeout(hcShowT); clearTimeout(hcPrefT);
     clearTimeout(hcHideT);
     hcHideT = setTimeout(hideHc, 150);

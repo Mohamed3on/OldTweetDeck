@@ -139,8 +139,15 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   margin: 0 !important;
   transform-origin: top right;        /* opens downward from the button (xlr.js flips .xlr-up when it can't) */
 
+  /* Leaves with the same quick fade as the hover card it usually belongs to. */
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out, overlay 0.1s allow-discrete, display 0.1s allow-discrete;
+
   &.xlr-up { transform-origin: bottom right; }
   &:popover-open {
+    opacity: 1;
+    transform: none;
     animation: xlr-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -169,6 +176,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   text-align: left !important;
   cursor: pointer !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   transition: background-color 0.12s, color 0.12s !important;
 
   &::before {
@@ -186,6 +195,10 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
     &::before { background: rgb(29, 155, 240); transform: scale(1.3); }
   }
   &:active { background: rgb(36, 40, 46) !important; }
+  &:focus-visible {
+    background: rgb(30, 34, 40) !important;
+    box-shadow: inset 0 0 0 2px rgb(29, 155, 240) !important;
+  }
 
   &.xlr-inflight {
     opacity: 0.6;
