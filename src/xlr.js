@@ -1494,6 +1494,7 @@
     document.querySelectorAll('.prf-actions').forEach(processProfile);
     document.querySelectorAll('.prf-bio').forEach(linkifyBio);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
+    syncKindToggles();
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     processMediaModal();
     injectFofNav();
@@ -1536,6 +1537,61 @@
   // the id from ?v= on watch links and from the last path segment otherwise.
   TD.services.TwitterMedia.SERVICES.youtube =
     /^(?:https?:\/\/)?(?:(?:www|m)\.)?(?:youtube\.com\/(?:watch\?|live\/|shorts\/)|youtu\.be\/)[\w-]/;
+
+  // Add a User column: Replies / Retweets switches in the modal's button bar, beside "Add column".
+  // Each sets the preview column's own content filter (so the preview updates, the added column
+  // keeps it, and its options panel can change it later), and is remembered for the next one.
+  const HIDE_KEY = 'OTDuserColumnHide';
+  const KINDS = [['replies', 'Replies', 'setIncludeReplies'], ['retweets', 'Retweets', 'setIncludeRTs']];
+  const hiddenKinds = () => { try { return JSON.parse(localStorage[HIDE_KEY]) || {}; } catch { return {}; } };
+  const withKinds = (filter, hide) => {
+    for (const [key, , set] of KINDS) filter.content[set](!hide[key]);
+    return filter;
+  };
+  const genericTwitter = TD.components.TemporaryColumn.prototype.genericTwitter;
+  TD.components.TemporaryColumn.prototype.genericTwitter = function (type, ...rest) {
+    if (type !== TD.controller.columnManager.TWEETS) return genericTwitter.call(this, type, ...rest);
+    const init = this._init;
+    this._init = (opts) => init.call(this, { ...opts, searchFilter: withKinds(new TD.vo.SearchFilter(), hiddenKinds()) });
+    genericTwitter.call(this, type, ...rest);
+    this.column.otdKindToggles = true;
+  };
+  // Opened for a given person (a profile's "Add column"), the picker has nothing left to pick:
+  // the modal drops it and is just that person's tweets (see xlr.css).
+  const genericGo = TD.components.OpenTwitterGeneric.prototype.go;
+  TD.components.OpenTwitterGeneric.prototype.go = function (type, path, params) {
+    if (params.screenName && this.type === TD.controller.columnManager.TWEETS) this.$node.addClass('otd-user-preview');
+    return genericGo.apply(this, arguments);
+  };
+  const previewColumn = () =>
+    TD.controller.columnManager.get(document.querySelector('#open-modal .column-temp[data-column]')?.getAttribute('data-column'));
+  // The button bar outlives the menus (Back leads to other column types), so mount and unmount.
+  function syncKindToggles() {
+    const bar = document.querySelector('#open-modal .mdl-buttonbar');
+    const box = bar?.querySelector('.otd-kinds');
+    if (!previewColumn()?.otdKindToggles) return box?.remove();
+    if (!bar || box) return;
+    const kinds = document.createElement('div');
+    kinds.className = 'otd-kinds';
+    for (const [key, label] of KINDS) {
+      const sw = document.createElement('button');
+      sw.type = 'button';
+      sw.setAttribute('role', 'switch');
+      sw.className = 'otd-switch';
+      sw.textContent = label;
+      const sync = () => sw.setAttribute('aria-checked', String(!hiddenKinds()[key]));
+      sync();
+      sw.onclick = () => {
+        const hide = { ...hiddenKinds(), [key]: !hiddenKinds()[key] };
+        localStorage[HIDE_KEY] = JSON.stringify(hide);
+        sync();
+        const column = previewColumn();
+        column?.updateSearchFilter(withKinds(column.getSearchFilter(), hide));
+      };
+      kinds.append(sw);
+    }
+    bar.querySelector('.js-add-column')?.before(kinds);
+  }
 
   observer.observe(document.body, { childList: true, subtree: true });
   listStore.ready.then(scan);

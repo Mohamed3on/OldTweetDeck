@@ -12092,6 +12092,7 @@ document.body.addEventListener("click", function (e) {
             (TD.vo.ContentFilter.prototype.type = "anything"),
             (TD.vo.ContentFilter.prototype.lang = "any"),
             (TD.vo.ContentFilter.prototype.includeRTs = !0),
+            (TD.vo.ContentFilter.prototype.includeReplies = !0),
             (TD.vo.ContentFilter.prototype.sinceTimeInSec = ""),
             (TD.vo.ContentFilter.prototype.untilTimeInSec = ""),
             (TD.vo.ContentFilter.prototype.setMatching = function (e) {
@@ -12109,6 +12110,9 @@ document.body.addEventListener("click", function (e) {
             (TD.vo.ContentFilter.prototype.setIncludeRTs = function (e) {
                 this.includeRTs = void 0 === e || Boolean(e);
             }),
+            (TD.vo.ContentFilter.prototype.setIncludeReplies = function (e) {
+                this.includeReplies = void 0 === e || Boolean(e);
+            }),
             (TD.vo.ContentFilter.prototype.setSinceTimeInSec = function (e) {
                 this.sinceTimeInSec = a.unix(e).isValid() ? e : "";
             }),
@@ -12122,6 +12126,7 @@ document.body.addEventListener("click", function (e) {
                     type: this.type,
                     lang: this.lang,
                     includeRTs: this.includeRTs,
+                    includeReplies: this.includeReplies,
                     sinceTimeInSec: this.sinceTimeInSec,
                     untilTimeInSec: this.untilTimeInSec,
                 };
@@ -12133,6 +12138,7 @@ document.body.addEventListener("click", function (e) {
                     this.setType(e.type),
                     this.setLanguage(e.lang),
                     this.setIncludeRTs(e.includeRTs),
+                    this.setIncludeReplies(e.includeReplies),
                     this.setSinceTimeInSec(e.sinceTimeInSec),
                     this.setUntilTimeInSec(e.untilTimeInSec));
             }),
@@ -12165,6 +12171,7 @@ document.body.addEventListener("click", function (e) {
                 return (
                     this.lang !== TD.vo.ContentFilter.LANG_ANY && e.push("lang:" + this.lang),
                     this.includeRTs || e.push("exclude:nativeretweets exclude:retweets"),
+                    this.includeReplies || e.push("-filter:replies"),
                     this.excluding && e.push(this.getExcludingQuery()),
                     this.sinceTimeInSec && e.push("since_time:" + this.sinceTimeInSec),
                     this.untilTimeInSec && e.push("until_time:" + this.untilTimeInSec),
@@ -12219,6 +12226,7 @@ document.body.addEventListener("click", function (e) {
                 }
                 return (
                     this.includeRTs || e.push((0, r.default)("Retweets excluded")),
+                    this.includeReplies || e.push((0, r.default)("Replies excluded")),
                     this.sinceTimeInSec &&
                         e.push(
                             (0, r.default)("from {{sinceDatePretty}}", {
@@ -12286,6 +12294,8 @@ document.body.addEventListener("click", function (e) {
                         t.push(new TD.vo.Filter(TD.vo.Filter.UNTIL_TIME, this.untilTimeInSec, !0)),
                     this.includeRTs ||
                         ((e = new TD.vo.Filter(TD.vo.Filter.IS_RETWEET, !1, !0)), t.push(e)),
+                    this.includeReplies ||
+                        ((e = new TD.vo.Filter(TD.vo.Filter.IS_REPLY, !1, !0)), t.push(e)),
                     t
                 );
             }),
@@ -18359,7 +18369,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<div class="padding-hl control-s"> <div class="control-group"> <label class="control-label txt-mute">{{_i}}Showing{{/i}}</label> <div class="controls"> <select class="js-containing" data-title="type"> {{#containingOptions}} {{^hidden}} <option value="{{value}}">{{title}}</option> {{/hidden}} {{/containingOptions}} </select> </div> </div> {{#withMatching}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Matching{{/i}}</label> {{>search_input}} </div> {{/withMatching}} {{#withExcluding}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Excluding{{/i}}</label> {{>search_input}} </div> {{/withExcluding}} {{#withDateTime}} <div class="js-datetime-filter" /> {{/withDateTime}} {{#withLanguage}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Written in{{/i}}</label> <div class="controls"> <select class="js-written-in" data-title="lang"> <option value="any" >{{_i}}any language{{/i}}</option> <option value="0" disabled="disabled">---</option> {{#userLanguage}} <option value="{{code}}">{{name}}</option> <option value="0" disabled="disabled">---</option> {{/userLanguage}} {{#allLanguages}} <option value="{{code}}">{{localized_name}} ({{name}})</option> {{/allLanguages}} </select> </div> </div> {{/withLanguage}} {{#withRetweetsToggle}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Retweets{{/i}}</label> <div class="controls"> <select class="js-retweets" data-title="includeRTs"> {{#retweetOptions}} <option value="{{value}}">{{title}}</option> {{/retweetOptions}} </select> </div> </div> {{/withRetweetsToggle}} <div class="js-quality-filter-info txt-mute-text-only"></div> </div>');
+                '<div class="padding-hl control-s"> <div class="control-group"> <label class="control-label txt-mute">{{_i}}Showing{{/i}}</label> <div class="controls"> <select class="js-containing" data-title="type"> {{#containingOptions}} {{^hidden}} <option value="{{value}}">{{title}}</option> {{/hidden}} {{/containingOptions}} </select> </div> </div> {{#withMatching}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Matching{{/i}}</label> {{>search_input}} </div> {{/withMatching}} {{#withExcluding}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Excluding{{/i}}</label> {{>search_input}} </div> {{/withExcluding}} {{#withDateTime}} <div class="js-datetime-filter" /> {{/withDateTime}} {{#withLanguage}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Written in{{/i}}</label> <div class="controls"> <select class="js-written-in" data-title="lang"> <option value="any" >{{_i}}any language{{/i}}</option> <option value="0" disabled="disabled">---</option> {{#userLanguage}} <option value="{{code}}">{{name}}</option> <option value="0" disabled="disabled">---</option> {{/userLanguage}} {{#allLanguages}} <option value="{{code}}">{{localized_name}} ({{name}})</option> {{/allLanguages}} </select> </div> </div> {{/withLanguage}} {{#withRetweetsToggle}} <div class="control-group"> <label class="control-label txt-mute">{{_i}}Retweets{{/i}}</label> <div class="controls"> <select class="js-retweets" data-title="includeRTs"> {{#retweetOptions}} <option value="{{value}}">{{title}}</option> {{/retweetOptions}} </select> </div> </div> <div class="control-group"> <label class="control-label txt-mute">{{_i}}Replies{{/i}}</label> <div class="controls"> <select class="js-replies" data-title="includeReplies"> {{#retweetOptions}} <option value="{{value}}">{{title}}</option> {{/retweetOptions}} </select> </div> </div> {{/withRetweetsToggle}} <div class="js-quality-filter-info txt-mute-text-only"></div> </div>');
     },
     function (e, t, i) {
         "use strict";
@@ -29652,6 +29662,7 @@ document.body.addEventListener("click", function (e) {
                     this.exact = !0;
                     break;
                 case TD.vo.Filter.IS_FROM_VERIFIED:
+                case TD.vo.Filter.IS_REPLY:
                 case TD.vo.Filter.CHIRP_TYPE:
                     (this.exact = !0), (this.filterTarget = "parent");
             }
@@ -29662,6 +29673,7 @@ document.body.addEventListener("click", function (e) {
             (TD.vo.Filter.SOURCE = "source"),
             (TD.vo.Filter.FOLLOWERS = "followers"),
             (TD.vo.Filter.IS_RETWEET = "is_retweet"),
+            (TD.vo.Filter.IS_REPLY = "is_reply"),
             (TD.vo.Filter.IS_MENTION = "is_mention"),
             (TD.vo.Filter.IS_FAVORITE = "is_favorite"),
             (TD.vo.Filter.IS_FOLLOW = "is_follow"),
@@ -29717,6 +29729,10 @@ document.body.addEventListener("click", function (e) {
                         return this._testNumber(void 0);
                     case TD.vo.Filter.IS_RETWEET:
                         return this._testBoolean(e.isRetweetedStatus());
+                    case TD.vo.Filter.IS_REPLY:
+                        return this._testBoolean(
+                            Boolean(e.inReplyToID) && e.inReplyToUserID !== e.user?.id
+                        );
                     case TD.vo.Filter.IS_FROM_VERIFIED:
                         return this._testBoolean(e.isFromVerifiedUser());
                     case TD.vo.Filter.HAS_IMAGE:
@@ -45363,10 +45379,20 @@ document.body.addEventListener("click", function (e) {
                             f.trigger("uiShowActionsMenu");
                             break;
                         case "mediaPreview":
-                            p = (function (e, t, i, n) {
-                                if (n.temporary) return TD.util.openURL(t), !0;
-                                return new TD.components.MediaGallery(e, t, i, n), !1;
-                            })(s, f.attr("href"), f.attr("data-media-entity-id"), a);
+                            // A preview column sits in the Add column modal: stack the gallery over
+                            // that modal, which sits out close requests (Escape included) until the
+                            // gallery closes, then shows again.
+                            var oc = a.temporary && TD.components.OpenColumn.instance;
+                            oc && (0, n.default)(document).off("uiCloseModal", oc.boundCloseModal);
+                            var g = new TD.components.MediaGallery(s, f.attr("href"), f.attr("data-media-entity-id"), a);
+                            oc &&
+                                g.$node.on("uiMediaGalleryClosing", function () {
+                                    (0, n.default)(document).on("uiCloseModal", oc.boundCloseModal);
+                                    setTimeout(function () {
+                                        TD.components.OpenColumn.instance === oc &&
+                                            (0, n.default)("#open-modal").show();
+                                    });
+                                });
                             break;
                         case "retweet":
                         case "like":
@@ -58791,6 +58817,7 @@ document.body.addEventListener("click", function (e) {
                 writtenInSelector: ".js-written-in",
                 dateTimeFilterSelector: ".js-datetime-filter",
                 retweetsSelector: ".js-retweets",
+                repliesSelector: ".js-replies",
                 renderOptions: {
                     withPeriscopeFilter: !0,
                     withLanguage: !0,
@@ -58869,6 +58896,8 @@ document.body.addEventListener("click", function (e) {
                             sinceTimeInSec: "sinceTimeInSec" === e ? t : i.sinceTimeInSec,
                             untilTimeInSec: "untilTimeInSec" === e ? t : i.untilTimeInSec,
                             includeRTs: "includeRTs" === e ? "included" === t : i.includeRTs,
+                            includeReplies:
+                                "includeReplies" === e ? "included" === t : i.includeReplies,
                         });
                     this.props.onChange({
                         type: "content",
@@ -58896,6 +58925,7 @@ document.body.addEventListener("click", function (e) {
                         (this.$matching = this.select("matchingSelector")),
                         (this.$excluding = this.select("excludingSelector")),
                         (this.$retweets = this.select("retweetsSelector")),
+                        (this.$replies = this.select("repliesSelector")),
                         this.on("change", function (t, i) {
                             e.handleChange((0, a.default)(t.target).data("title"), t.target.value);
                         });
@@ -58954,7 +58984,8 @@ document.body.addEventListener("click", function (e) {
                         this.$excluding.val(e.excluding),
                         this.shouldIncludeRetweets()
                             ? this.$retweets.val("included")
-                            : this.$retweets.val("excluded");
+                            : this.$retweets.val("excluded"),
+                        this.$replies.val(e.includeReplies ? "included" : "excluded");
                 });
         });
     },
