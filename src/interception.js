@@ -898,7 +898,8 @@ const proxyRoutes = [
                     body = JSON.stringify(user);
                 } else {
                     status = 404;
-                    body = JSON.stringify({ errors: [{ code: 50, message: "User not found." }] });
+                    // Code 34 is what TweetDeck reads as "That user does not exist".
+                    body = JSON.stringify({ errors: [{ code: 34, message: "User not found." }] });
                 }
             } catch (e) {
                 console.error("OTD users/show.json", e);

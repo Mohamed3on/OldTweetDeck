@@ -10186,7 +10186,9 @@ document.body.addEventListener("click", function (e) {
                                 datasources: n,
                                 dropdownId: this.getDropdownId(),
                                 type: "search",
-                                limits: this.attr.limits,
+                                limits: Object.assign({}, this.attr.limits, {
+                                    users: /^@/.test(i.trim()) ? 6 : 3,
+                                }),
                             });
                     }),
                     (this.getDropdownId = function () {
@@ -19345,7 +19347,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<div class="js-typeahead-dropdown margin-t--6 scroll-v {{#styledScrollbar}}scroll-styled-v{{/styledScrollbar}}"> <div class="js-typeahead-recent-search-clear js-typeahead-item recent-search-clear is-actionable color-twitter-blue pull-right margin-r--12 margin-t--6 padding-t--2" data-search-type="recent-search-clear" data-search-query="recent-search-clear"> {{_i}}Clear all{{/i}} </div> <ul class="js-typeahead-recent-search-list is-hidden"></ul> <ul class="js-typeahead-saved-search-list is-hidden"></ul> <ul class="js-typeahead-topic-list is-hidden"></ul> <ul class="js-typeahead-user-list is-hidden"></ul> <ul class="js-typeahead-conversation-list is-hidden list-divider"></ul> <ul class="js-typeahead-lists-list is-hidden list-divider"></ul> </div>');
+                '<div class="js-typeahead-dropdown margin-t--6 scroll-v {{#styledScrollbar}}scroll-styled-v{{/styledScrollbar}}"> <div class="js-typeahead-recent-search-clear js-typeahead-item recent-search-clear is-actionable color-twitter-blue pull-right margin-r--12 margin-t--6 padding-t--2" data-search-type="recent-search-clear" data-search-query="recent-search-clear"> {{_i}}Clear all{{/i}} </div> <ul class="js-typeahead-recent-search-list is-hidden"></ul> <ul class="js-typeahead-user-list is-hidden"></ul> <ul class="js-typeahead-saved-search-list is-hidden"></ul> <ul class="js-typeahead-topic-list is-hidden"></ul> <ul class="js-typeahead-conversation-list is-hidden list-divider"></ul> <ul class="js-typeahead-lists-list is-hidden list-divider"></ul> </div>');
     },
     function (e, t, i) {
         "use strict";
@@ -19381,7 +19383,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '{{! NB: this template assumes data is in format provided by typeahead, not standard user object}} {{#users}} <li class="js-typeahead-item js-typeahead-user-item is-actionable list-item item-box" data-search-type="user" data-search-query="{{screen_name}}" data-screen-name="{{screen_name}}" data-user-name="{{name}}" data-user-id="{{id}}" data-profile-image-url="{{profile_image_url_https}} "> <div class="account-summary cf"> <div class="obj-left item-img-32"> <img class="js-avatar tweet-avatar avatar size32 pull-right" src="{{profile_image_url_https}}" width="32" height="32" /> </div> <div class="nbfc"> <div class="list-text link-complex inline-block max-width-p--100"> <b class="fullname block txt-ellipsis">{{{emojifiedName}}} {{#verified}}<i class="sprite sprite-verified-mini"></i>{{/verified}} </b> <span class="username block txt-ellipsis txt-mute">@{{screen_name}}</span> </div> </div> </div> </li> {{/users}} <li class="js-typeahead-item js-typeahead-user-item is-actionable list-item item-box" data-search-query="{{query}}" data-search-type="topic" data-search-scope="users"> Search all people for <strong>{{query}}</strong> </li>');
+                '{{! NB: this template assumes data is in format provided by typeahead, not standard user object}} {{#users}}<li class="js-typeahead-item js-typeahead-user-item is-actionable xlr-ta-person{{#isExact}} xlr-ta-exact{{/isExact}}" data-search-type="user" data-search-query="{{screen_name}}" data-screen-name="{{screen_name}}" data-user-name="{{name}}" data-user-id="{{id_str}}" data-profile-image-url="{{profile_image_url_https}}" data-verified="{{isVerified}}" data-following="{{following}}" data-blocked="{{is_blocked}}"><span class="xlr-ta-avatar"><img src="{{avatar}}" alt=""></span><span class="xlr-ta-names"><b class="xlr-ta-name"><span>{{{emojifiedName}}}</span>{{#isVerified}}<svg class="xlr-ta-verified" viewBox="0 0 24 24" aria-hidden="true"><path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/></svg>{{/isVerified}}</b><span class="xlr-ta-handle"><span>@{{screen_name}}</span>{{#followsYou}}<span class="xlr-ta-fy">Follows you</span>{{/followsYou}}</span></span><kbd class="xlr-ta-enter" title="Enter opens this profile"><svg class="" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7z"/></svg></kbd></li>{{/users}} {{#goto}}<li class="js-typeahead-item js-typeahead-user-item is-actionable xlr-ta-person xlr-ta-exact xlr-ta-goto" data-search-type="user" data-search-query="{{goto}}" data-screen-name="{{goto}}"><span class="xlr-ta-avatar"><svg class="" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.95c-5.52 0-10 4.48-10 10s4.48 10 10 10h5v-2h-5c-4.34 0-8-3.66-8-8s3.66-8 8-8 8 3.66 8 8v1.43c0 .79-.71 1.57-1.5 1.57s-1.5-.78-1.5-1.57v-1.43c0-2.76-2.24-5-5-5s-5 2.24-5 5 2.24 5 5 5c1.38 0 2.64-.56 3.54-1.47.65.89 1.77 1.47 2.96 1.47 1.97 0 3.5-1.6 3.5-3.57v-1.43c0-5.52-4.48-10-10-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg></span><span class="xlr-ta-names"><b class="xlr-ta-name"><span>@{{goto}}</span></b><span class="xlr-ta-handle"><span>Open this profile</span></span></span><kbd class="xlr-ta-enter" title="Enter opens this profile"><svg class="" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7z"/></svg></kbd></li>{{/goto}} <li class="js-typeahead-item js-typeahead-user-item is-actionable xlr-ta-more" data-search-query="{{query}}" data-search-type="topic" data-search-scope="users"><svg class="" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>People matching <strong>{{query}}</strong></span></li> {{#handle}}<li class="js-typeahead-item js-typeahead-user-item is-actionable xlr-ta-more" data-search-query="{{query}}" data-search-type="topic"><svg class="" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z"/></svg><span>Tweets mentioning <strong>{{query}}</strong></span></li>{{/handle}}');
     },
     function (e, t, i) {
         "use strict";
@@ -59890,21 +59892,30 @@ document.body.addEventListener("click", function (e) {
             }),
                 (this.renderUsers = function (e, t) {
                     this.$usersList.find(this.attr.usersItemSelector).remove();
-                    var i = t.suggestions.users || [];
-                    if (
-                        (i.forEach(function (e) {
-                            e.emojifiedName = s.default.cleanWithEmoji(e.name);
+                    // An @handle query marks its exact match (Enter opens it), or offers the handle
+                    // itself when X didn't suggest it.
+                    var m = (t.query || "").trim().match(/^@(\w{1,15})$/),
+                        h = m && m[1].toLowerCase(),
+                        i = (t.suggestions.users || []).map(function (e) {
+                            var c = e.social_context || {};
+                            return Object.assign({}, e, {
+                                emojifiedName: s.default.cleanWithEmoji(e.name),
+                                avatar: e.profile_image_url_https.replace(/_normal(\.\w+)$/, "_bigger$1"),
+                                isVerified: !!(e.verified || e.ext_is_blue_verified),
+                                following: !!c.following,
+                                followsYou: !!c.followed_by,
+                                isExact: !!h && e.screen_name.toLowerCase() === h,
+                            });
                         }),
-                        i.length)
-                    ) {
+                        g = h && !i.some(function (e) { return e.isExact; }) ? m[1] : null;
+                    if (i.length || (g && this.attr.usersTemplate === "typeahead/typeahead_users")) {
                         var r = n.default.render(this.attr.usersTemplate, {
                             users: i,
                             query: t.query,
+                            goto: g,
+                            handle: !!m,
                         });
-                        this.$usersList
-                            .toggleClass("has-results", i.length > 0)
-                            .toggleClass("is-hidden", 0 === i.length)
-                            .html(r);
+                        this.$usersList.addClass("has-results").removeClass("is-hidden").html(r);
                     } else this.clearUsers();
                 }),
                 (this.getAvatar = function (e) {
@@ -68866,7 +68877,10 @@ document.body.addEventListener("click", function (e) {
                               TD.controller.stats.searchboxPerformSearch(t.query)));
                 }),
                 (this.handleTypeaheadNoItemSelected = function () {
-                    this.searchData && this.performSearch(this.searchData);
+                    var m = this.searchData && /^@(\w{1,15})$/.exec(this.searchData.query.trim());
+                    m
+                        ? (this.hidePopover(), this.trigger("uiShowProfile", { id: m[1] }))
+                        : this.searchData && this.performSearch(this.searchData);
                 }),
                 (this.handleTypeaheadSubmitQuery = function (e, t) {
                     var i;

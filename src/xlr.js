@@ -1392,6 +1392,30 @@
   const fofListTags = (id) => [...(listStore.memberOf(id) || [])].map(l => listStore.name(l)).filter(Boolean)
     .map(n => `<span class="xlr-fof-tag">${escHtml(n)}</span>`).join('');
 
+  // Search box people rows (the bundle's typeahead_users) carry the same marks as these rows: the
+  // relationship badge on the avatar and your lists as tags. Added in the observer's microtask, so
+  // rows never paint without them.
+  const decoratePeople = (list) => {
+    const mutes = prefClient()?.mutes || {};
+    for (const li of list.querySelectorAll('.xlr-ta-person[data-user-id]:not(.xlr-ta-done)')) {
+      const id = li.dataset.userId;
+      li.classList.add('xlr-ta-done');
+      li.querySelector('.xlr-ta-avatar').insertAdjacentHTML('beforeend',
+        fofBadge({ b: li.dataset.blocked === 'true', m: !!mutes[id], f: li.dataset.following === 'true' }));
+      li.querySelector('.xlr-ta-handle').insertAdjacentHTML('beforeend', fofListTags(id));
+    }
+  };
+  const peopleObserver = new MutationObserver(() => {
+    const list = document.querySelector('.js-search-in-popover .js-typeahead-user-list');
+    if (list) decoratePeople(list);
+  });
+  function watchPeople() {
+    const list = document.querySelector('.js-search-in-popover .js-typeahead-user-list');
+    if (!list || list.dataset.xlrWatched) return;
+    list.dataset.xlrWatched = '1';
+    peopleObserver.observe(list, { childList: true });
+  }
+
   function renderFof(fof, status) {
     const scroll = fofDialog.querySelector('.xlr-fof-list')?.scrollTop;
     const hide = localStorage.getItem('xlrFofHideFollowing') === '1';
@@ -1498,6 +1522,7 @@
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     processMediaModal();
     injectFofNav();
+    watchPeople();
     tuckNav();
     syncListColumns();
     updateButtonStates();

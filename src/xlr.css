@@ -1105,3 +1105,66 @@ html .mdl-buttonbar button.otd-switch {
   &[aria-checked="false"] { color: rgb(139, 152, 165); }
   &:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 3px; border-radius: 4px; }
 }
+
+/* Search box people (the bundle's typeahead_users; xlr.js decoratePeople adds the avatar badge and
+   list tags). People lead the dropdown; the return keycap marks the row Enter opens: the exact
+   @handle match until the keyboard or pointer selects another. Selection is a navy tint rather
+   than TweetDeck's solid blue, so the rows' badges and tags stay readable on it. */
+html.dark .js-search-in-popover .js-typeahead-item.is-selected {
+  background: rgb(28, 70, 101);
+  color: #fff;
+}
+.js-search-in-popover .js-typeahead-user-list:not(.is-hidden):has(~ ul:not(.is-hidden) > li) {
+  margin-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* Scoped under the popover: TweetDeck's `html.dark li { padding: 0 }` outranks a lone class. */
+.js-search-in-popover {
+  .xlr-ta-person {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; cursor: pointer; line-height: 18px;
+  }
+  .xlr-ta-avatar {
+    position: relative; flex: none; display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    & img { width: 32px; height: 32px; border-radius: 50%; }
+    & .xlr-fof-badge { box-shadow: 0 0 0 2px rgb(28, 41, 56); }
+    .is-selected & .xlr-fof-badge { box-shadow: 0 0 0 2px rgb(28, 70, 101); }
+  }
+  .xlr-ta-goto .xlr-ta-avatar {
+    border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: rgb(136, 153, 166);
+    & svg { width: 18px; height: 18px; fill: currentColor; }
+  }
+  .xlr-ta-names { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .xlr-ta-name {
+    display: flex; align-items: center; gap: 3px; min-width: 0; font-weight: 700; color: #fff;
+    & > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  }
+  .xlr-ta-verified { flex: none; width: 15px; height: 15px; fill: rgb(29, 155, 240); }
+  .xlr-ta-handle {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px;
+    font-size: 13px; color: rgb(136, 153, 166);
+    .is-selected & { color: rgb(196, 207, 214); }
+    & > span:first-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  }
+  .xlr-ta-fy {
+    padding: 0 5px; border-radius: 4px; font-size: 11px; line-height: 16px;
+    color: rgb(196, 207, 214); background: rgba(255, 255, 255, 0.08);
+  }
+  .xlr-ta-enter {
+    visibility: hidden; flex: none; display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 20px; box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 5px; color: rgb(196, 207, 214);
+    & svg { width: 14px; height: 14px; fill: currentColor; }
+    .xlr-ta-person.is-selected &,
+    .js-typeahead-dropdown:not(:has(.is-selected)) .xlr-ta-exact & { visibility: visible; }
+  }
+  /* The quieter ways out: every matching person in the popover, or the old tweet search. */
+  .xlr-ta-more {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 12px; cursor: pointer; font-size: 13px; line-height: 18px; color: rgb(136, 153, 166);
+    & > svg { flex: none; width: 32px; height: 16px; fill: currentColor; }
+    & strong { color: #fff; font-weight: 600; }
+    &.is-selected { color: rgb(196, 207, 214); }
+  }
+  .xlr-ta-person + .xlr-ta-more { margin-top: 4px; padding-top: 9px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+}
