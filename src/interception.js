@@ -960,6 +960,33 @@ const proxyRoutes = [
             modules: tweets.map((t) => ({ status: { data: t } })),
         }),
     }),
+    // Typeahead (search box people/topic suggestions, compose @mentions): api.x.com 403s it,
+    // x.com/i/api answers, but only returns users/topics when result_type names them.
+    {
+        path: "/1.1/search/typeahead.json",
+        method: "GET",
+        beforeRequest: (xhr) => {
+            let url = new URL(xhr.modUrl);
+            url.searchParams.set("src", "search_box");
+            url.searchParams.set("result_type", "users,topics");
+            url.searchParams.set("include_ext_is_blue_verified", "1");
+            xhr.modUrl = `https://${location.hostname}/i/api${url.pathname}${url.search}`;
+        },
+        beforeSendHeaders: (xhr) => setApiHeaders(xhr),
+        // TweetDeck caches every suggested user and ranks matches by rounded_graph_weight, which
+        // X no longer sends. Stamp the latest answer's users so they outrank older cached ones,
+        // in X's order, with an exact handle match on top.
+        afterRequest: (xhr) => {
+            let data = parseResponse(xhr);
+            if (!data?.users) return xhr.responseText;
+            let q = (new URL(xhr.modUrl).searchParams.get("q") || "").replace(/^@/, "").toLowerCase();
+            let base = Date.now() * 100;
+            data.users.forEach((u, i) => {
+                u.rounded_graph_weight = base - i + (u.screen_name.toLowerCase() === q ? 50 : 0);
+            });
+            return data;
+        },
+    },
     // User search
     {
         path: "/1.1/users/search.json",
