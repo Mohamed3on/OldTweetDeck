@@ -312,32 +312,72 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .otd-unf .otd-unf-cancel:active { transform: scale(0.94); }
 .otd-unf-fail .otd-unf-fill { stroke: rgb(244, 33, 46); }
 
-/* Native profile rows share the 16px gutter of the xlr rows below. Untouched, the stats
-   labels sat at 17px (5px list pad + 12px cell pad) and "Followed by" at 10px
-   (`.padding-al`); the follow slot's 9px/16px pad seats a 34px pill level with the 52px
-   stat cells, 16px off the right edge. Native selectors are `html.dark .x` (0,2,1), hence three
-   classes. The social proof drops its fixed 500px width and lets its two floated
-   paragraphs flow as one inline run, so the space after "Followed by" survives.
-   The modal is shrink-to-fit (`.mdl.s-fluid { width: auto }`) and that fixed 500px was
-   the only thing holding it at the header's 520px — without it a long "Followed by"
-   line (or a wide chips row) stretches the popup past the header. Pin it. (0,4,0) beats
-   `html.dark .mdl.s-fluid` (0,3,1). */
+/* Profile popup, x.com's layout: the banner is a strip across the top instead of a backdrop
+   behind centred white text, the avatar overlaps its bottom-left edge with Follow at its right,
+   and name, bio and meta read left-aligned on the popup's own surface. The modal is
+   shrink-to-fit (`.mdl.s-fluid { width: auto }`), so it is pinned at 520px or a long line would
+   stretch it; (0,4,0) beats `html.dark .mdl.s-fluid` (0,3,1). Native selectors are
+   `html.dark .x` (0,2,1), hence the .prf scoping. The banner moves to ::before, which inherits
+   the inline background-image; the header's own copy is sized to nothing. */
 .mdl.s-fluid.s-profile.prf { width: 520px; }
-.prf .prf-actions .prf-stats { padding-left: 4px; }
-.prf .prf-actions .prf-follow-state { padding: 9px 16px 9px 10px !important; }
-/* Follow is an xlr pill now (see processProfile in xlr.js); the native eight-state group is hidden,
-   not removed (your own profile gets no pill, so native "Edit profile" stays). It follows the row's
-   own convention — outlined when you don't, filled when you do (like Muted / Blocked): "Follow" is
-   the outlined blue of Add to list, "Following" a solid blue fill, "Requested" (protected accounts)
-   the ghost pill. Hovering Following turns red, since a click unfollows. */
-.prf-follow-state:has(.xlr-prf-follow) .js-action-follow { display: none; }
+.prf .prf-header { position: relative; background-size: 0 0 !important; background-color: transparent !important; text-align: left !important; }
+.prf .prf-header::before {
+  content: '';
+  display: block;
+  height: 160px;
+  background-color: rgba(255, 255, 255, 0.06);
+  background-image: inherit;
+  background-size: cover;
+  background-position: center;
+}
+.prf .prf-header-inner-overlay { display: none; }
+.prf .prf-header > .width-p--85 { width: auto; margin: -44px 0 0; padding: 0 16px 14px !important; }
+.prf .prf-header .prf-img { display: block; width: max-content; margin-bottom: 8px; padding: 0; }
+.prf .prf-header .prf-img .avatar { width: 80px; height: 80px; border: 4px solid rgb(21, 32, 43); }
+.prf .prf-header .fullname { display: block; font-size: 20px; line-height: 1.25; color: rgb(231, 233, 234); text-shadow: none; }
+.prf .prf-header .username { margin: 0; font-size: 15px; color: rgb(139, 152, 165); text-shadow: none; }
+.prf .prf-header .prf-bio { margin: 10px 0 8px; padding: 0; font-size: 15px; line-height: 1.35; text-align: left; color: rgb(231, 233, 234); text-shadow: none; }
+.prf .prf-header .prf-bio ~ p { display: inline; margin: 0; font-size: 14px; color: rgb(139, 152, 165); text-shadow: none; }
+.prf .prf-header .location + p::before { content: '·'; margin: 0 8px; }
+/* Mute / Block / Retweets icon toggles and Follow sit in the header (processProfile), in the
+   space right of the overlapping avatar. */
+.prf .prf-header .xlr-prf-actions { position: absolute; top: 172px; right: 16px; padding: 0; }
+
+/* Stats as one inline line ("1,554 Following") instead of bordered cells; Listed is dropped. */
+.prf .prf-actions { border-top: none; }
+.prf .prf-actions .prf-meta { padding: 0 16px 12px; border: none; line-height: 1.35; }
+.prf .prf-actions .prf-stats { display: flex; gap: 18px; padding: 0; border: none; }
+.prf .prf-actions .prf-stats li { float: none; width: auto; padding: 0; border: none; }
+.prf .prf-actions .prf-stats li:nth-child(4) { display: none; }
+.prf .prf-actions .prf-stats a {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  font-size: 14px;
+  text-transform: none;
+  color: rgb(139, 152, 165);
+}
+.prf .prf-actions .prf-stats strong { font-size: 14px; font-weight: 700; color: rgb(231, 233, 234); }
+.prf .prf-actions .prf-stats a:hover span,
+.prf .prf-actions .prf-stats a:hover { text-decoration: underline; }
+/* Your own profile gets no Follow pill, so native "Edit profile" stays, right of the stats. */
+.prf .prf-actions .prf-follow-state { padding: 0 !important; }
+.prf:has(.xlr-prf-follow) .prf-actions .prf-follow-state,
+.prf .prf-actions .js-social-proof { display: none !important; }
+/* "Followed by A, B and N others you follow": the hovercard's row (renderKnown), at popup size. */
+.prf .xlr-prf-known { margin: 0; padding: 0 16px 12px; font-size: 13px; line-height: 1.35; text-wrap: pretty; }
+.prf .xlr-prf-known .xlr-hc-known-avatars img { width: 22px; height: 22px; border-color: rgb(21, 32, 43); }
+/* Follow follows the row's own convention — outlined when you don't, filled when you do (like
+   Muted / Blocked): "Follow" is the outlined blue of Add to list, "Following" a solid blue fill,
+   "Requested" (protected accounts) the ghost pill. Hovering Following turns red: a click unfollows. */
 .prf .xlr-prf-follow:not(.xlr-on) { color: rgb(29, 155, 240); border-color: rgba(29, 155, 240, 0.45); background: none; }
 .prf .xlr-prf-follow:not(.xlr-on):hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
 .prf .xlr-prf-follow.xlr-on { background: rgb(29, 155, 240); color: #fff; }
 .prf .xlr-prf-follow.xlr-on.xlr-requested { background: rgba(255, 255, 255, 0.1); color: rgb(231, 233, 234); }
 .prf .xlr-prf-follow.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
-.prf .prf-actions .social-proof-container { width: auto; padding: 12px 16px !important; }
-.prf .prf-actions .social-proof-container p { display: inline; float: none; }
 
 /* List membership in the profile popup: removable chips for lists the user is already in,
    plus an "Add to list" button that opens the shared list popover (see xlr.js). Chips and
@@ -347,14 +387,15 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 12px 16px 14px;
   line-height: normal;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 /* Only a user with no cached membership loads; the row holds its space hidden and fades in whole
    once the fetch lands, so the chips and Add to list arrive together instead of Add jumping aside. */
-.xlr-prf-lists.xlr-prf-loading { opacity: 0; }
+.xlr-prf-loading .xlr-prf-chip,
+.xlr-prf-loading .xlr-prf-add-btn { opacity: 0; }
 .xlr-prf-chips { display: contents; }
 
 /* TweetDeck's base `html.dark button` rule (specificity 0,1,2) forces white bg, blue
@@ -424,20 +465,18 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .xlr-prf-lists .xlr-prf-add-btn:hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
 .xlr-prf-lists .xlr-prf-add-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
-/* Consolidated actions row that replaces the launcher grid: a primary "View tweets"
-   button (proxies the hidden native Tweets launcher) plus Mute/Block toggles that fill
-   when active. Pill styles are scoped to the popup root (.prf → 0,2,0, beating TweetDeck's
-   html.dark button base at 0,1,2) so the Follow pill in the stats row shares them. */
+/* "View tweets" (proxies the hidden native Tweets launcher) ends the lists row; Mute/Block/
+   Retweets are icon toggles beside Follow that fill when active. Pill styles are scoped to the
+   popup root (.prf → 0,2,0, beating TweetDeck's html.dark button base at 0,1,2) so all share them. */
 .prf-actions .js-profile-columns { display: none; }
-/* The "…" actions menu is redundant now mute/block are surfaced below. Hidden, not
+/* The "…" actions menu is redundant now mute/block are surfaced in the header. Hidden, not
    removed — processProfile still reads the target's id from its data-user-id. */
 .prf-actions .js-user-actions-menu { display: none; }
 
 .xlr-prf-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px 14px;
+  gap: 6px;
   line-height: normal;
 }
 .prf .xlr-prf-view,
@@ -461,7 +500,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 .prf .xlr-prf-view {
-  flex: 1;
+  margin-left: auto;
   color: rgb(231, 233, 234);
   background: rgba(255, 255, 255, 0.1);
 }
@@ -471,20 +510,21 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .prf .xlr-prf-toggle.xlr-loading,
 .prf .xlr-prf-toggle.xlr-inflight { opacity: 0.5; pointer-events: none; }
 
-/* Mute/Block stay quiet (grey ghost) at rest — colour signals the active state only, so
-   the resting row is calm and the one standing accent is the blue Add to list above. */
+/* Mute/Block/Retweets stay quiet (grey ghost) at rest — colour signals the active state only,
+   so the resting row is calm and its one standing accent is Follow. Their state names live in
+   the title (makeToggle's icon mode). */
 .prf .xlr-prf-toggle { color: rgb(139, 152, 165); background: rgba(255, 255, 255, 0.06); }
 .prf .xlr-prf-toggle:hover { background: rgba(255, 255, 255, 0.12); color: rgb(231, 233, 234); }
 .prf .xlr-prf-mute.xlr-on,
 .prf .xlr-prf-mute.xlr-on:hover { background: rgb(255, 173, 31); color: #14171a; }
 .prf .xlr-prf-block.xlr-on,
 .prf .xlr-prf-block.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
-/* Retweets toggle is icon-only (the row has no room for a 4th text pill). When RTs are off the
-   pill fills slate and a diagonal strike crosses the icon — a "no retweets" glyph, so the state
+/* When RTs are off the Retweets pill fills slate and a diagonal strike crosses the icon — a "no retweets" glyph, so the state
    reads from the icon rather than colour (green would misread as "retweets on"). The strike only
    shows in the active state, where the solid slate background lets its halo carve a clean gap. */
-.prf .xlr-prf-rts { position: relative; padding: 0 12px; }
-.prf .xlr-prf-rts svg { width: 18px; height: 18px; }
+.prf .xlr-prf-mute, .prf .xlr-prf-block, .prf .xlr-prf-rts { width: 34px; padding: 0; }
+.prf .xlr-prf-mute svg, .prf .xlr-prf-block svg, .prf .xlr-prf-rts svg { width: 18px; height: 18px; }
+.prf .xlr-prf-rts { position: relative; }
 .prf .xlr-prf-rts.xlr-on,
 .prf .xlr-prf-rts.xlr-on:hover { background: rgb(83, 100, 113); color: #fff; }
 /* A search column's type-icon doubles as a "reset engagement filters" control (see

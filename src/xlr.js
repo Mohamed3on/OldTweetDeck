@@ -151,6 +151,7 @@
   const userSearchSvg = mkSvg('M10 4c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm.35 4.01C7.62 13.91 2 15.27 2 18v2h9.54c-.52-.58-.93-1.25-1.19-2H4c0-.64 3.13-2 6-2 .29 0 .58.02.88.04.4-.88 1.37-1.51 2.47-1.68-1.12-.23-2.25-.35-3-.35zm9.43 4.75c.31-.55.52-1.19.52-1.86 0-2.09-1.69-3.79-3.79-3.79S12.72 14.8 12.72 16.9s1.69 3.79 3.79 3.79c.68 0 1.31-.21 1.86-.52L21 22.53 22.53 21l-2.75-2.75zM16.5 18.9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z');
   const plusSvg = mkSvg('M11 11V4h2v7h7v2h-7v7h-2v-7H4v-2h7z');
   const birdSvg = mkSvg('M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z');
+  const blockSvg = mkSvg('M12 3.75c-4.55 0-8.25 3.69-8.25 8.25 0 1.92.66 3.68 1.75 5.08L17.09 5.5C15.68 4.4 13.92 3.75 12 3.75zm6.5 3.17L6.92 18.5c1.4 1.1 3.16 1.75 5.08 1.75 4.56 0 8.25-3.69 8.25-8.25 0-1.92-.65-3.68-1.75-5.08zM1.75 12C1.75 6.34 6.34 1.75 12 1.75S22.25 6.34 22.25 12 17.66 22.25 12 22.25 1.75 17.66 1.75 12z');
   const retweetSvg = mkSvg('M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V18H7.75c-2.347 0-4.25-1.9-4.25-4.25V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25c2.347 0 4.25 1.9 4.25 4.25v5.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L18 15.62V8.25c0-.97-.784-1.75-1.75-1.75z');
   const bumpSvg = mkSvg('M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z');
   const cutSvg = mkSvg('M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z');
@@ -503,7 +504,7 @@
     const place = (el) => cols ? actions.insertBefore(el, cols) : actions.appendChild(el);
     place(section);
 
-    // Actions row replacing the launcher grid (hidden via CSS): View tweets + Mute + Block.
+    // View tweets (replacing the launcher grid, hidden via CSS) ends the lists row.
     const viewBtn = document.createElement('button');
     viewBtn.className = 'xlr-prf-view';
     viewBtn.append(birdSvg.cloneNode(true), document.createTextNode('View tweets'));
@@ -512,11 +513,12 @@
       // Proxy the native Tweets launcher (still in the DOM) so TweetDeck opens the column.
       actions.querySelector('.lst-profile li[data-type="tweets"] a')?.click();
     };
+    section.append(viewBtn);
 
-    const mute = makeToggle('xlr-prf-mute', 'Mute', 'Muted', isMuted(username),
-      (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }));
+    const mute = makeToggle('xlr-prf-mute', 'Mute', 'Unmute', isMuted(username),
+      (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }), muteSvg.cloneNode(true));
     // Follow replaces TweetDeck's eight-state native group (hidden in xlr.css) with the same pill as
-    // Mute/Block, in the same spot right of the stats. Unfollowing is immediate — re-following is one
+    // Mute/Block, beside them right of the avatar. Unfollowing is immediate — re-following is one
     // click. Skipped on your own profile, where native shows "Edit profile" instead.
     const followState = actions.querySelector('.prf-follow-state');
     const selfName = (() => { try { return TD.storage.accountController.getPreferredAccount('twitter').getUsername().toLowerCase(); } catch { return null; } })();
@@ -540,22 +542,36 @@
       if (requested) follow.btn.textContent = 'Requested';
       follow.btn.hidden = !!rel.blocking;   // can't follow someone you block
     };
-    if (follow) { follow.btn.classList.add('xlr-loading'); followState.appendChild(follow.btn); }
+    if (follow) follow.btn.classList.add('xlr-loading');
+    const header = actions.closest('.prf').querySelector('.prf-header');
+    // An empty location would leave a stray "·" before "Joined".
+    const loc = header.querySelector('.location');
+    if (loc && !loc.textContent.trim()) loc.remove();
+
+    // Replaces TweetDeck's "Followed by A, B, C and more." with the hovercard's counted row.
+    const known = document.createElement('div');
+    known.className = 'xlr-hc-known xlr-prf-known';
+    actions.querySelector('.js-social-proof')?.before(known);
+    if (domId && follow) renderKnown(known, domId);
 
     // Blocking also drops the follow: the Follow pill hides while blocked and comes back on unblock.
-    const block = makeToggle('xlr-prf-block', 'Block', 'Blocked', false, (active) =>
+    const block = makeToggle('xlr-prf-block', 'Block', 'Unblock', false, (active) =>
       users.act(username, active ? 'unblock' : 'block')
-        .then((ok) => { if (ok) applyFollow({ following: false, blocking: !active }); return ok; }));
+        .then((ok) => { if (ok) applyFollow({ following: false, blocking: !active }); return ok; }), blockSvg.cloneNode(true));
     block.btn.classList.add('xlr-loading');
     // active = retweets hidden (want_retweets false); clicking passes the desired want_retweets.
     const rts = makeToggle('xlr-prf-rts', 'Turn off Retweets', 'Turn on Retweets', false,
       (active) => users.act(username, active ? 'showRetweets' : 'hideRetweets'), retweetSvg.cloneNode(true));
     rts.btn.classList.add('xlr-loading');
 
-    const row = document.createElement('div');
-    row.className = 'xlr-prf-actions';
-    row.append(viewBtn, mute.btn, block.btn, rts.btn);
-    place(row);
+    // Mute/Block/Retweets as icon toggles beside Follow, in the space right of the avatar.
+    // Not on your own profile, where native "Edit profile" stays below.
+    if (username.toLowerCase() !== selfName) {
+      const row = document.createElement('div');
+      row.className = 'xlr-prf-actions';
+      row.append(mute.btn, block.btn, rts.btn, ...(follow ? [follow.btn] : []));
+      header.appendChild(row);
+    }
 
     fetchMembership(username).finally(() => {
       section.classList.remove('xlr-prf-loading');
@@ -592,6 +608,20 @@
         .map(e => e.content?.itemContent?.user_results?.result).filter(Boolean)
         .map(r => ({ name: r.core?.name || r.legacy?.name, img: r.avatar?.image_url || r.legacy?.profile_image_url_https })),
     ).catch(() => { delete hcKnown[userId]; return []; });
+  // "Followed by A, B and N others you follow", led by up to three of their avatars.
+  const renderKnown = (known, userId) => knownFollowers(userId).then((followers) => {
+    if (!followers.length) return;
+    const n = followers.length - 2, more = followers.length >= 50 ? '+' : '';
+    const b = (t) => Object.assign(document.createElement('b'), { textContent: t });
+    const avatars = document.createElement('span');
+    avatars.className = 'xlr-hc-known-avatars';
+    avatars.append(...followers.slice(0, 3).map(k => Object.assign(document.createElement('img'), { src: k.img, alt: '' })));
+    const text = document.createElement('span');
+    text.append('Followed by ', b(followers[0].name));
+    if (followers.length === 2) text.append(' and ', b(followers[1].name));
+    if (n > 0) text.append(', ', b(followers[1].name), ` and ${n}${more} other${n === 1 && !more ? '' : 's'} you follow`);
+    known.append(avatars, text);
+  });
   const hcAvatar = (u) => u.profile_image_url_https.replace('_normal.', '_bigger.');
   const pinSvg = mkSvg('M12 7c-1.93 0-3.5 1.57-3.5 3.5S10.07 14 12 14s3.5-1.57 3.5-3.5S13.93 7 12 7zm0 5c-.827 0-1.5-.673-1.5-1.5S11.173 9 12 9s1.5.673 1.5 1.5S12.827 12 12 12zm0-10c-4.687 0-8.5 3.813-8.5 8.5 0 5.967 7.621 11.116 7.945 11.332l.555.37.555-.37c.324-.216 7.945-5.365 7.945-11.332C20.5 5.813 16.687 2 12 2zm0 17.77c-1.665-1.241-6.5-5.196-6.5-9.27C5.5 6.916 8.416 4 12 4s6.5 2.916 6.5 6.5c0 4.073-4.835 8.028-6.5 9.27z');
   const verifiedSvg = mkSvg('M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z');
@@ -639,21 +669,7 @@
     following.textContent = fmtCount(u.friends_count);
     followers.textContent = fmtCount(u.followers_count);
 
-    // "Followed by A, B and N others you follow", led by up to three of their avatars.
-    const known = hc.querySelector('.xlr-hc-known');
-    if (u.id_str !== users.me()) knownFollowers(u.id_str).then((followers) => {
-      if (!followers.length) return;
-      const n = followers.length - 2, more = followers.length >= 50 ? '+' : '';
-      const b = (t) => Object.assign(document.createElement('b'), { textContent: t });
-      const avatars = document.createElement('span');
-      avatars.className = 'xlr-hc-known-avatars';
-      avatars.append(...followers.slice(0, 3).map(k => Object.assign(document.createElement('img'), { src: k.img, alt: '' })));
-      const text = document.createElement('span');
-      text.append('Followed by ', b(followers[0].name));
-      if (followers.length === 2) text.append(' and ', b(followers[1].name));
-      if (n > 0) text.append(', ', b(followers[1].name), ` and ${n}${more} other${n === 1 && !more ? '' : 's'} you follow`);
-      known.append(avatars, text);
-    });
+    if (u.id_str !== users.me()) renderKnown(hc.querySelector('.xlr-hc-known'), u.id_str);
 
     // Follow pill, as in the profile popup: following an account re-reads the relationship so a
     // protected one lands on "Requested". Not shown on your own card or someone you block.
