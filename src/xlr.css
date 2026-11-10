@@ -411,9 +411,9 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
    the Add button share the 34px pill height of the actions row beneath them. */
 .xlr-prf-lists {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  box-sizing: border-box;  /* xlr.js glides its height from offsetHeight */
   padding: 12px 16px 14px;
   line-height: normal;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -423,6 +423,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .xlr-prf-loading .xlr-prf-chip,
 .xlr-prf-loading .xlr-prf-add-btn { opacity: 0; }
 .xlr-prf-chips { display: contents; }
+.xlr-prf-lists-main { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 
 /* TweetDeck's base `html.dark button` rule (specificity 0,1,2) forces white bg, blue
    border, inline-block and 14px padding — it outranks a bare `.xlr-prf-*` class (0,1,0),
@@ -529,7 +530,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s ease, transform 160ms var(--xlr-ease-out);
 }
 .prf .xlr-prf-view {
-  margin-left: auto;
+  flex-shrink: 0;
   color: rgb(231, 233, 234);
   background: rgba(255, 255, 255, 0.1);
 }

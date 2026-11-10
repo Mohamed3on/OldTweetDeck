@@ -487,15 +487,30 @@
     const addBtn = document.createElement('button');
     addBtn.className = 'xlr-prf-add-btn';
     addBtn.append(plusSvg.cloneNode(true), document.createTextNode('Add to list'));
-    section.append(chips, addBtn);
+    // Chips and Add to list wrap together on the left; View tweets holds the top-right corner.
+    const main = document.createElement('div');
+    main.className = 'xlr-prf-lists-main';
+    main.append(chips, addBtn);
+    section.append(main);
+
+    // A chip that wraps onto a new line would shove the centred popup in one frame; glide the row
+    // to its new height instead, as the Followed-by row does.
+    const glide = (mutate) => {
+      const h0 = section.offsetHeight;
+      mutate();
+      const h1 = section.offsetHeight;
+      if (h0 === h1 || !section.isConnected || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      section.animate({ height: [`${h0}px`, `${h1}px`], overflow: ['clip', 'clip'] },
+        { duration: 220, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+    };
 
     let first = true;
-    const renderChips = () => {
+    const renderChips = () => glide(() => {
       const ids = memberOf(username) || new Set();
       for (const chip of chips.children) {
         if (ids.has(chip.dataset.listId) || chip.classList.contains('xlr-hc-chip-leaving')) continue;
         chip.classList.add('xlr-hc-chip-leaving');
-        setTimeout(() => chip.remove(), 180);
+        setTimeout(() => glide(() => chip.remove()), 180);
       }
       for (const id of ids) {
         if (chips.querySelector(`[data-list-id="${id}"]:not(.xlr-hc-chip-leaving)`)) continue;
@@ -505,7 +520,7 @@
         chips.appendChild(chip);
       }
       first = false;
-    };
+    });
     renderChips();
     watchChips(username, section, renderChips);
 
