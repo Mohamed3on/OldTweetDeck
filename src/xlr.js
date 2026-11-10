@@ -489,7 +489,23 @@
     addBtn.append(plusSvg.cloneNode(true), document.createTextNode('Add to list'));
     section.append(chips, addBtn);
 
-    const renderChips = () => chips.replaceChildren(...[...memberOf(username) || []].map((id) => makeChip(id, username)));
+    let first = true;
+    const renderChips = () => {
+      const ids = memberOf(username) || new Set();
+      for (const chip of chips.children) {
+        if (ids.has(chip.dataset.listId) || chip.classList.contains('xlr-hc-chip-leaving')) continue;
+        chip.classList.add('xlr-hc-chip-leaving');
+        setTimeout(() => chip.remove(), 180);
+      }
+      for (const id of ids) {
+        if (chips.querySelector(`[data-list-id="${id}"]:not(.xlr-hc-chip-leaving)`)) continue;
+        const chip = makeChip(id, username);
+        chip.dataset.listId = id;
+        if (!first) chip.classList.add('xlr-hc-chip-new');
+        chips.appendChild(chip);
+      }
+      first = false;
+    };
     renderChips();
     watchChips(username, section, renderChips);
 
@@ -548,10 +564,18 @@
     const loc = header.querySelector('.location');
     if (loc && !loc.textContent.trim()) loc.remove();
 
-    // Replaces TweetDeck's "Followed by A, B, C and more." with the hovercard's counted row.
+    // Replaces TweetDeck's "Followed by A, B, C and more." with the hovercard's counted row. It arrives
+    // ~400ms after the popup, so it sits in a 0fr grid track that grows open (xlr.css) instead of
+    // shoving the centred popup in one frame.
     const known = document.createElement('div');
     known.className = 'xlr-hc-known xlr-prf-known';
-    actions.querySelector('.js-social-proof')?.before(known);
+    const knownClip = document.createElement('div');
+    knownClip.className = 'xlr-prf-known-clip';
+    knownClip.append(known);
+    const knownWrap = document.createElement('div');
+    knownWrap.className = 'xlr-prf-known-wrap';
+    knownWrap.append(knownClip);
+    actions.querySelector('.js-social-proof')?.before(knownWrap);
     if (domId && follow) renderKnown(known, domId);
 
     // Blocking also drops the follow: the Follow pill hides while blocked and comes back on unblock.

@@ -1,3 +1,6 @@
+/* The one UI ease-out (strong: fast start, long settle). Use it for every enter/exit and state change. */
+:root { --xlr-ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+
 /* Convert float action bar to flexbox */
 ul.tweet-actions:has(.xlr-user-search-btn),
 ul.tweet-detail-actions:has(.xlr-user-search-btn) {
@@ -148,7 +151,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   &:popover-open {
     opacity: 1;
     transform: none;
-    animation: xlr-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: xlr-dropdown-in 0.18s var(--xlr-ease-out);
   }
 
   &::-webkit-scrollbar { width: 4px; }
@@ -251,7 +254,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   max-width: min(90vw, 560px);
   opacity: 0;
   transform: translateY(14px) scale(0.96);
-  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.25s var(--xlr-ease-out), transform 0.25s var(--xlr-ease-out);
 }
 .otd-toast::before {
   content: '';
@@ -282,7 +285,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   white-space: nowrap;
   opacity: 0;
   transform: translateY(14px) scale(0.96);
-  transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.32s var(--xlr-ease-out), transform 0.32s var(--xlr-ease-out);
 }
 .otd-unf.otd-unf-in { opacity: 1; transform: translateY(0) scale(1); }
 .otd-unf.otd-unf-out {
@@ -320,6 +323,10 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
    `html.dark .x` (0,2,1), hence the .prf scoping. The banner moves to ::before, which inherits
    the inline background-image; the header's own copy is sized to nothing. */
 .mdl.s-fluid.s-profile.prf { width: 520px; }
+/* The profile swaps in for TweetDeck's loading box in one frame; a short fade-and-settle makes it read as arriving. */
+.mdl .s-profile.prf { animation: xlr-prf-in 200ms var(--xlr-ease-out); }
+@keyframes xlr-prf-in { from { opacity: 0; transform: scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .mdl .s-profile.prf { animation-name: xlr-hc-fade; } }
 .prf .prf-header { position: relative; background-size: 0 0 !important; background-color: transparent !important; text-align: left !important; }
 .prf .prf-header::before {
   content: '';
@@ -370,6 +377,26 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 /* "Followed by A, B and N others you follow": the hovercard's row (renderKnown), at popup size. */
 .prf .xlr-prf-known { margin: 0; padding: 0 16px 12px; font-size: 13px; line-height: 1.35; text-wrap: pretty; }
 .prf .xlr-prf-known .xlr-hc-known-avatars img { width: 22px; height: 22px; border-color: rgb(21, 32, 43); }
+/* The row grows open (0fr → 1fr) so the centred popup glides rather than jumps; avatars stagger in. */
+.prf .xlr-prf-known-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms var(--xlr-ease-out);
+}
+.prf .xlr-prf-known-wrap:has(.xlr-prf-known:not(:empty)) { grid-template-rows: 1fr; }
+.prf .xlr-prf-known-clip { min-height: 0; overflow: hidden; }
+.prf .xlr-prf-known { animation: none; }
+.prf .xlr-prf-known .xlr-hc-known-avatars img {
+  animation: xlr-prf-known-pop 180ms var(--xlr-ease-out) backwards;
+}
+.prf .xlr-prf-known .xlr-hc-known-avatars img:nth-child(2) { animation-delay: 40ms; }
+.prf .xlr-prf-known .xlr-hc-known-avatars img:nth-child(3) { animation-delay: 80ms; }
+.prf .xlr-prf-known > span:last-child { animation: xlr-hc-fade 200ms var(--xlr-ease-out) 80ms backwards; }
+@keyframes xlr-prf-known-pop { from { opacity: 0; transform: scale(0.9); } }
+@media (prefers-reduced-motion: reduce) {
+  .prf .xlr-prf-known-wrap { transition: none; }
+  .prf .xlr-prf-known .xlr-hc-known-avatars img { animation-name: xlr-hc-fade; }
+}
 /* Follow follows the row's own convention — outlined when you don't, filled when you do (like
    Muted / Blocked): "Follow" is the outlined blue of Add to list, "Following" a solid blue fill,
    "Requested" (protected accounts) the ghost pill. Hovering Following turns red: a click unfollows. */
@@ -390,10 +417,9 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   padding: 12px 16px 14px;
   line-height: normal;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-/* Only a user with no cached membership loads; the row holds its space hidden and fades in whole
-   once the fetch lands, so the chips and Add to list arrive together instead of Add jumping aside. */
+/* Only a user with no cached membership loads; the row holds its space while the chips and the Add
+   button stay hidden, and they fade in together once the fetch lands instead of Add jumping aside. */
 .xlr-prf-loading .xlr-prf-chip,
 .xlr-prf-loading .xlr-prf-add-btn { opacity: 0; }
 .xlr-prf-chips { display: contents; }
@@ -427,10 +453,13 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   color: rgb(231, 233, 234);
   background: rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, opacity 0.18s var(--xlr-ease-out), transform 0.18s var(--xlr-ease-out);
 }
 .xlr-prf-lists .xlr-prf-chip:hover { background: rgba(255, 255, 255, 0.14); }
 .xlr-prf-lists .xlr-prf-chip.xlr-inflight { opacity: 0.5; pointer-events: none; }
+/* As in the hover card: an added chip scales in, a removed one fades out before renderChips drops it. */
+@starting-style { .xlr-prf-lists .xlr-hc-chip-new { opacity: 0; transform: scale(0.95); } }
+.xlr-prf-lists .xlr-hc-chip-leaving { opacity: 0; transform: scale(0.95); pointer-events: none; }
 
 .xlr-prf-lists .xlr-prf-chip-x {
   display: inline-flex;
@@ -443,7 +472,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   font: 16px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: rgb(139, 152, 165);
   border-radius: 9999px;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color 0.15s, color 0.15s, transform 160ms var(--xlr-ease-out);
 }
 .xlr-prf-lists .xlr-prf-chip-x:hover {
   background: color-mix(in srgb, rgb(244, 33, 46) 20%, transparent);
@@ -460,7 +489,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   color: rgb(29, 155, 240);
   border: 1px solid rgba(29, 155, 240, 0.45);
   border-radius: 9999px;
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, opacity 0.2s var(--xlr-ease-out), transform 160ms var(--xlr-ease-out);
 }
 .xlr-prf-lists .xlr-prf-add-btn:hover { background: color-mix(in srgb, rgb(29, 155, 240) 12%, transparent); }
 .xlr-prf-lists .xlr-prf-add-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
@@ -497,7 +526,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   border-radius: 9999px;
   border: 1px solid transparent;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s ease, transform 160ms var(--xlr-ease-out);
 }
 .prf .xlr-prf-view {
   margin-left: auto;
@@ -509,6 +538,11 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 
 .prf .xlr-prf-toggle.xlr-loading,
 .prf .xlr-prf-toggle.xlr-inflight { opacity: 0.5; pointer-events: none; }
+/* Press feedback, as on the hover card's Follow pill. */
+.prf .xlr-prf-view:active,
+.prf .xlr-prf-toggle:active,
+.xlr-prf-lists .xlr-prf-add-btn:active { transform: scale(0.97); }
+.xlr-prf-lists .xlr-prf-chip-x:active { transform: scale(0.9); }
 
 /* Mute/Block/Retweets stay quiet (grey ghost) at rest — colour signals the active state only,
    so the resting row is calm and its one standing accent is Follow. Their state names live in
@@ -818,7 +852,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  &[open] { display: flex; flex-direction: column; animation: xlr-dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+  &[open] { display: flex; flex-direction: column; animation: xlr-dropdown-in 0.18s var(--xlr-ease-out); }
   &::backdrop { background: rgba(0, 0, 0, 0.12); }
 }
 .xlr-fof-head {
@@ -913,11 +947,11 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
     transform: none;
     visibility: visible;
     pointer-events: auto;
-    transition: opacity 0.16s cubic-bezier(0.23, 1, 0.32, 1), transform 0.16s cubic-bezier(0.23, 1, 0.32, 1), visibility 0s;
+    transition: opacity 0.16s var(--xlr-ease-out), transform 0.16s var(--xlr-ease-out), visibility 0s;
   }
   &.xlr-hc-instant { transition: none; }
 }
-@media (prefers-reduced-motion: reduce) { .xlr-hc, .xlr-hc .xlr-prf-chip { transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { .xlr-hc, .xlr-hc .xlr-prf-chip, .xlr-prf-lists .xlr-prf-chip { transform: none !important; } }
 
 /* x.com's hovercard layout: avatar and Follow share the top row, name and handle get the full
    width beneath, so a long name or the Follows you badge never squeezes the handle. The head link
@@ -1016,7 +1050,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   margin-top: 10px;
   font-size: 13px;
   color: rgb(139, 152, 165);
-  animation: xlr-hc-fade 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  animation: xlr-hc-fade 0.2s var(--xlr-ease-out);
   b { font-weight: 600; color: rgb(231, 233, 234); }
   &:empty { display: none; }
 }
@@ -1040,7 +1074,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 0.2s var(--xlr-ease-out);
 }
 .xlr-hc-lists.xlr-hc-loading { opacity: 0; }
 .xlr-hc .xlr-prf-chip {
@@ -1053,7 +1087,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   font-weight: 500;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
-  transition: background-color 0.15s, opacity 0.18s cubic-bezier(0.23, 1, 0.32, 1), transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: background-color 0.15s, opacity 0.18s var(--xlr-ease-out), transform 0.18s var(--xlr-ease-out);
   &:hover { background: rgba(255, 255, 255, 0.14); }
   &.xlr-inflight { opacity: 0.5; pointer-events: none; }
 }
@@ -1139,7 +1173,7 @@ html .mdl-buttonbar button.otd-switch {
     border: 2px solid transparent;
     background: radial-gradient(circle closest-side, #fff 99%, transparent) left / 16px 16px no-repeat, rgb(83, 100, 113);
     background-origin: content-box;
-    transition: background-color 0.15s, background-position 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: background-color 0.15s, background-position 0.2s var(--xlr-ease-out);
   }
   &[aria-checked="true"]::after { background-color: rgb(29, 155, 240); background-position: right; }
   &[aria-checked="false"] { color: rgb(139, 152, 165); }
