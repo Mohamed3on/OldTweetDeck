@@ -177,13 +177,23 @@
     if (input) setFilterInput(input, input.value.replace(FROM_TOKEN_RE, '').trim());
   };
 
+  // Marks the action done before X confirms; the returned undo puts the button back, titled with
+  // why, for when X refuses.
   const markDone = (btn, title, article) => {
+    const icon = btn.firstChild;
+    const undo = (why) => {
+      btn.classList.remove('xlr-done');
+      btn.replaceChildren(icon);
+      btn.title = why;
+      article.style.opacity = '';
+    };
     btn.classList.add('xlr-done');
     btn.replaceChildren(checkSvg.cloneNode(true));
     btn.title = title;
     article.style.transition = 'opacity .4s';
     article.style.opacity = '0.3';
     clearFromFilter(article);
+    return undo;
   };
 
   // Muted state mirrors TweetDeck's own client.mutes cache (keyed by user id) — the same
@@ -205,10 +215,8 @@
   const muteUser = async (username, { delist = true } = {}) => {
     if (!(await users.act(username, 'mute'))) return false;
     setClientMute(username, true);
-    if (delist) {
-      const ids = await fetchMembership(username).catch(() => new Set());
-      await Promise.all([...ids].map((listId) => setListMember(username, listId, false)));
-    }
+    // In the background: the mute is what the caller waits on, the list removals can take seconds.
+    if (delist) fetchMembership(username).then((ids) => { for (const listId of ids) setListMember(username, listId, false); }, () => {});
     return true;
   };
 
@@ -388,15 +396,8 @@
       removeBtn.onclick = async (e) => {
         e.preventDefault(); e.stopPropagation();
         if (removeBtn.classList.contains('xlr-done')) return;
-        const icon = removeBtn.firstChild;
-        markDone(removeBtn, `Removed @${username}`, article);
-        if (!(await setListMember(username, listId, false))) {
-          removeBtn.classList.remove('xlr-done');
-          removeBtn.replaceChildren(icon);
-          removeBtn.title = `Couldn’t remove @${username}. Try again`;
-          article.style.opacity = '';
-          return;
-        }
+        const undo = markDone(removeBtn, `Removed @${username}`, article);
+        if (!(await setListMember(username, listId, false))) return undo(`Couldn’t remove @${username}. Try again`);
         // Removing from the primary list resets every other search column, as its reset icon would.
         if (listSearchCols()[0]?.contains(col)) {
           for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
@@ -424,13 +425,15 @@
       muteBtn.title = muted ? `Unmute @${username}` : 'Mute & remove from lists';
     };
     syncMuteBtn();
-    muteBtn.onclick = withBusy(muteBtn, 'xlr-removing', async () => {
+    // Both ways show at once; a refusal puts the button back.
+    muteBtn.onclick = withBusy(muteBtn, 'xlr-busy', async () => {
       if (isMuted(username)) {
-        if (await unmuteUser(username)) syncMuteBtn();
-        return;
+        muteBtn.classList.remove('xlr-muted');
+        await unmuteUser(username);
+        return syncMuteBtn();
       }
-      if (!await muteUser(username)) return;
-      markDone(muteBtn, `Muted @${username}`, article);
+      const undo = markDone(muteBtn, `Muted @${username}`, article);
+      if (!await muteUser(username)) return undo(`Couldn’t mute @${username}. Try again`);
       offerUnfollow(username, () => { muteBtn.title = `Muted & unfollowed @${username}`; });
     });
     buttons.push(muteBtn);
