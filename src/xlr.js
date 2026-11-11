@@ -1474,7 +1474,7 @@
   function renderFof(fof, status) {
     const scroll = fofDialog.querySelector('.xlr-fof-list')?.scrollTop;
     const hide = localStorage.getItem('xlrFofHideFollowing') === '1';
-    const rows = (fof?.rows || []).filter(r => !(hide && r.f));
+    const rows = (fof?.rows || []).filter(r => !(hide && (r.f || fofListTags(r.id))));
     const unnamed = rows.filter(r => !r.n).length;
     fofDialog.innerHTML = `<div class="xlr-fof-head">
         <div>
@@ -1483,7 +1483,7 @@
             : `How many of the ${fof.total} people you follow follow each account · updated ${new Date(fof.ts).toLocaleString()}`}</div>
           ${!status && unnamed ? `<div class="xlr-fof-sub">${unnamed} names haven’t loaded yet. X limits name lookups per 15 minutes, so reopen this later to fill them in.</div>` : ''}
         </div>
-        <label class="xlr-fof-hide"><input type="checkbox" ${hide ? 'checked' : ''}> Hide accounts I follow</label>
+        <label class="xlr-fof-hide"><input type="checkbox" ${hide ? 'checked' : ''}> Hide accounts I follow or list</label>
         <button class="xlr-fof-refresh" ${status ? 'disabled' : ''}>Refresh</button>
       </div>
       <ol class="xlr-fof-list">${rows.map(r => `<li>
