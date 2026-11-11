@@ -1471,33 +1471,36 @@
     peopleObserver.observe(list, { childList: true });
   }
 
+  // The frame (title, switch, Refresh) is built once so the switch keeps focus and slides; each
+  // redraw only rewrites the status lines and the list, which also keeps the list's scroll.
+  fofDialog.innerHTML = `<div class="xlr-fof-head">
+      <div><div class="xlr-fof-title">Followed by your follows</div><div class="xlr-fof-status"></div></div>
+      <label class="xlr-fof-hide"><input type="checkbox" role="switch"> Hide accounts I follow or list</label>
+      <button class="xlr-fof-refresh">Refresh</button>
+    </div>
+    <ol class="xlr-fof-list"></ol>`;
+  fofDialog.querySelector('.xlr-fof-refresh').onclick = () => loadFof(true);
+
   function renderFof(fof, status) {
-    const scroll = fofDialog.querySelector('.xlr-fof-list')?.scrollTop;
     const hide = localStorage.getItem('xlrFofHideFollowing') === '1';
     const rows = (fof?.rows || []).filter(r => !(hide && (r.f || fofListTags(r.id))));
     const unnamed = rows.filter(r => !r.n).length;
-    fofDialog.innerHTML = `<div class="xlr-fof-head">
-        <div>
-          <div class="xlr-fof-title">Followed by your follows</div>
-          <div class="xlr-fof-sub">${status ? escHtml(status)
-            : `How many of the ${fof.total} people you follow follow each account · updated ${new Date(fof.ts).toLocaleString()}`}</div>
-          ${!status && unnamed ? `<div class="xlr-fof-sub">${unnamed} names haven’t loaded yet. X limits name lookups per 15 minutes, so reopen this later to fill them in.</div>` : ''}
-        </div>
-        <label class="xlr-fof-hide"><input type="checkbox" ${hide ? 'checked' : ''}> Hide accounts I follow or list</label>
-        <button class="xlr-fof-refresh" ${status ? 'disabled' : ''}>Refresh</button>
-      </div>
-      <ol class="xlr-fof-list">${rows.map(r => `<li>
+    fofDialog.querySelector('.xlr-fof-status').innerHTML = `<div class="xlr-fof-sub">${status ? escHtml(status)
+        : `How many of the ${fof.total} people you follow follow each account · updated ${new Date(fof.ts).toLocaleString()}`}</div>
+      ${!status && unnamed ? `<div class="xlr-fof-sub">${unnamed} names haven’t loaded yet. X limits name lookups per 15 minutes, so reopen this later to fill them in.</div>` : ''}`;
+    fofDialog.querySelector('.xlr-fof-refresh').disabled = !!status;
+    fofDialog.querySelector('.xlr-fof-list').innerHTML = rows.map(r => `<li>
         <span class="xlr-fof-count" title="Followed by ${r.c} of the ${fof.total} people you follow">${r.c}</span>
         ${r.n
           ? `<a href="https://twitter.com/${r.n}" rel="user" target="_blank"><span class="xlr-fof-avatar"><img src="${escHtml(r.img)}" alt="">${fofBadge(r)}</span><span class="xlr-fof-names"><b>${escHtml(r.name)}</b><span class="xlr-fof-handle"><span>@${r.n}</span>${fofListTags(r.id)}</span>${r.bio ? `<span class="xlr-fof-bio">${escHtml(r.bio)}</span>` : ''}</span></a>`
           : `<a href="https://x.com/i/user/${r.id}" target="_blank"><span class="xlr-fof-names"><b>Name not loaded</b><span>Open on X</span></span></a>`}
-      </li>`).join('')}</ol>`;
-    if (scroll) fofDialog.querySelector('.xlr-fof-list').scrollTop = scroll;
-    fofDialog.querySelector('.xlr-fof-hide input').onchange = (e) => {
-      localStorage.setItem('xlrFofHideFollowing', e.target.checked ? '1' : '0');
+      </li>`).join('');
+    const toggle = fofDialog.querySelector('.xlr-fof-hide input');
+    toggle.checked = hide;
+    toggle.onchange = () => {
+      localStorage.setItem('xlrFofHideFollowing', toggle.checked ? '1' : '0');
       renderFof(fof, status);
     };
-    fofDialog.querySelector('.xlr-fof-refresh').onclick = () => loadFof(true);
   }
 
   let fofLoading = null;

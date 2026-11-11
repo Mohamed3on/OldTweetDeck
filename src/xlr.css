@@ -863,7 +863,28 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 }
 .xlr-fof-title { font-size: 16px; font-weight: 700; }
 .xlr-fof-sub { color: rgb(139, 152, 165); font-size: 12px; margin-top: 2px; }
-.xlr-fof-hide { display: flex; align-items: center; gap: 6px; color: rgb(139, 152, 165); font-size: 13px; cursor: pointer; white-space: nowrap; }
+/* The hide filter as a switch: the native checkbox (keyboard + screen readers intact) drawn as a
+   track whose thumb slides; the label brightens while it's on. */
+.xlr-fof .xlr-fof-hide { /* outranks html.dark input[type="checkbox"] */
+  display: flex; align-items: center; gap: 8px; padding: 7px 2px; user-select: none;
+  color: rgb(139, 152, 165); font-size: 13px; cursor: pointer; white-space: nowrap;
+  transition: color 0.15s ease-out;
+  &:hover, &:has(:checked) { color: rgb(231, 233, 234); }
+  & input[type="checkbox"] {
+    appearance: none; position: relative; flex: none; width: 30px; height: 18px; margin: 0; padding: 0;
+    border-radius: 999px; background: rgb(56, 60, 65); cursor: pointer;
+    transition: background-color 0.2s var(--xlr-ease-out);
+    &::before {
+      content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+      background: rgb(231, 233, 234); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+      transition: translate 0.2s var(--xlr-ease-out);
+    }
+    &:checked { background: rgb(29, 155, 240); }
+    &:checked::before { translate: 12px 0; background: #fff; }
+    &:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 2px; }
+  }
+  &:hover input:not(:checked) { background: rgb(71, 76, 82); }
+}
 .xlr-fof-refresh {
   background: none; border: 1px solid rgb(56, 60, 65); border-radius: 999px;
   color: inherit; padding: 5px 14px; font: inherit; font-size: 13px; cursor: pointer;
