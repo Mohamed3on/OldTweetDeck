@@ -37,22 +37,15 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   transition: background-color 0.15s, color 0.15s, transform 0.15s;
   color: rgb(113, 118, 123);
 
-  &:active { transform: scale(0.92); }
-
   &.xlr-remove-btn {
     &:hover {
       background-color: color-mix(in srgb, rgb(244, 33, 46) 10%, transparent);
       color: rgb(244, 33, 46);
       transform: scale(1.1);
     }
-    &.xlr-removing {
-      opacity: 0.4;
-      pointer-events: none;
-      animation: xlr-pulse 0.8s ease-in-out infinite;
-    }
     &.xlr-done {
       color: rgb(0, 186, 124);
-      animation: xlr-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      svg { animation: xlr-icon-in 0.3s var(--xlr-ease-out); }
     }
   }
 
@@ -87,9 +80,12 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
     }
     &.xlr-done {
       color: rgb(0, 186, 124);
-      animation: xlr-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      svg { animation: xlr-icon-in 0.3s var(--xlr-ease-out); }
     }
   }
+
+  /* After the per-button hovers so a press beats their scale(1.1). */
+  &:active, &:hover:active { transform: scale(0.96); }
 
   /* Match native .tweet-action style */
   .tweet-actions &,
@@ -123,6 +119,9 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 @keyframes xlr-pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.7; }
+}
+@keyframes xlr-icon-in {
+  from { scale: 0.25; opacity: 0; filter: blur(4px); }
 }
 @keyframes xlr-pop {
   from { transform: scale(0.6); }

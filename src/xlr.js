@@ -384,9 +384,19 @@
 
     if (listId) {
       const removeBtn = mkBtn('xlr-remove-btn', 'Remove from list', removeSvg);
-      removeBtn.onclick = withBusy(removeBtn, 'xlr-removing', async () => {
-        if (!(await setListMember(username, listId, false))) return;
+      // Done at once; X takes a second or more to confirm, and puts the button back if it refuses.
+      removeBtn.onclick = async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (removeBtn.classList.contains('xlr-done')) return;
+        const icon = removeBtn.firstChild;
         markDone(removeBtn, `Removed @${username}`, article);
+        if (!(await setListMember(username, listId, false))) {
+          removeBtn.classList.remove('xlr-done');
+          removeBtn.replaceChildren(icon);
+          removeBtn.title = `Couldn’t remove @${username}. Try again`;
+          article.style.opacity = '';
+          return;
+        }
         // Removing from the primary list resets every other search column, as its reset icon would.
         if (listSearchCols()[0]?.contains(col)) {
           for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
@@ -394,7 +404,7 @@
           }
         }
         offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
-      });
+      };
       buttons.push(removeBtn);
     } else {
       const addBtn = mkBtn('xlr-add-btn', 'Add to list', addListSvg);

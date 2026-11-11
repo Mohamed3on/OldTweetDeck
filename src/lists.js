@@ -69,11 +69,14 @@ function createListStore({ request, storage, me, now = Date.now, sleep = (ms) =>
     }
 
     async function setMember(userId, listId, member) {
-        // Read a never-seen user first so their other memberships are known. The change always goes
-        // to X: the cache can be stale (lists edited on x.com), and a list column's author is in it.
-        if (!members[userId]) await membership(userId).catch(() => {});
-        const m = members[userId] ??= { ids: new Set(), ts: 0 };
-        const apply = (on) => { on ? m.ids.add(listId) : m.ids.delete(listId); saveMembers(); notify(userId); };
+        // Read a never-seen user alongside the change so their other memberships are known; that read
+        // can land before the change does, so the outcome is applied again once both are in. The
+        // change always goes to X: the cache can be stale (lists edited on x.com).
+        const read = members[userId] ? null : membership(userId).catch(() => {});
+        const apply = (on) => {
+            const m = members[userId] ??= { ids: new Set(), ts: 0 };
+            on ? m.ids.add(listId) : m.ids.delete(listId); saveMembers(); notify(userId);
+        };
         apply(member);
         let ok = false;
         // X answers HTTP 200 with an errors array both when it refuses and, sometimes, when it
@@ -88,7 +91,8 @@ function createListStore({ request, storage, me, now = Date.now, sleep = (ms) =>
             await sleep(ms);
             try { ok = (await ownerships(userId)).has(listId) === member; } catch {}
         }
-        if (!ok) apply(!member);
+        if (read) await read;
+        if (read || !ok) apply(ok ? member : !member);
         return ok;
     }
 

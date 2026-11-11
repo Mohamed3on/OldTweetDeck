@@ -81,6 +81,14 @@ describe("list store", () => {
     expect(x.lists.b.members).not.toContain("u1");
   });
 
+  test("a never-read user's read, run alongside the remove, can't undo it", async () => {
+    const { store, x } = setup();
+    await store.ready;
+    x.lagNext(1); // the membership read still sees u1 on "b"
+    expect(await store.remove("u1", "b")).toBe(true);
+    expect(store.memberOf("u1")!.has("b")).toBe(false);
+  });
+
   test("a refused change rolls back", async () => {
     const { store, x } = setup();
     await store.membership("u1");
