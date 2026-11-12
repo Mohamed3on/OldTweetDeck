@@ -339,6 +339,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 /* Mute / Block / Retweets icon toggles and Follow sit in the header (processProfile), in the
    space right of the overlapping avatar. */
 .prf .prf-header .xlr-prf-actions { position: absolute; top: 172px; right: 16px; padding: 0; }
+.prf .prf-header.xlr-prf-nobanner::before { height: 56px; background-image: none; }
+.prf .prf-header.xlr-prf-nobanner .xlr-prf-actions { top: 68px; }
 
 /* Stats as one inline line ("1,554 Following") instead of bordered cells; Listed is dropped. */
 .prf .prf-actions { border-top: none; }
