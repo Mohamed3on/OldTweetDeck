@@ -1244,12 +1244,8 @@
     if (!qid) return;
     const result = await fetchQuotedResult(qid);
     const legacy = result && OTD.parseTweet(result);
-    const authorId = legacy?.user?.id_str;
-    const c = prefClient();
-    // Only un-hide when the author is genuinely muted — leave deleted/blocked quotes as-is.
-    // X's own muting flag is authoritative; TweetDeck's mute list loads in pages and can
-    // still be partial when the first columns render.
-    if (!authorId || !(legacy.user.muting || (c && c.mutes[authorId]))) return;
+    // Only un-hide when X says the author is muted — leave deleted/blocked quotes as-is.
+    if (!legacy?.user?.muting) return;
     const placeholder = article.querySelector('.quoted-tweet-unavailable');
     if (!placeholder) return;
     try {
