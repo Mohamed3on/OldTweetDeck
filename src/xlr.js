@@ -1331,7 +1331,7 @@
   const processMediaModal = () => {
     const panel = document.querySelector('.med-fullpanel');
     if (!panel || panel.dataset.xlrMediaDone) return;
-    const media = panel.querySelector('.med-tray img, .med-tray video');
+    const media = panel.querySelector('.med-tray img, .med-tray video, .med-tray .otd-video-unavailable');
     const tweet = panel.querySelector('.med-tweet');
     if (!tweet) return;
     if (!(media && media.getBoundingClientRect().height)) {   // media not sized yet — retry on load

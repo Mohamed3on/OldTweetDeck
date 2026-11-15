@@ -18243,7 +18243,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<div class="position-rel"> {{#useNativePlayer}} <video class="js-media-native-video" controlslist="nodownload" preload="auto" class="br--4" width="{{width}}" height="{{height}}" src="{{videoUrl}}" controls></video> {{/useNativePlayer}} {{^useNativePlayer}} <iframe src="https://twitter.com/i/videos/{{#isDM}}dm{{/isDM}}{{^isDM}}tweet{{/isDM}}/{{chirpId}}?image_src={{imageSrc}}&amp;media_id={{mediaId}}&amp;video_url={{videoUrl}}&amp;content_type={{contentType}}&amp;owner_id={{ownerId}}&amp;auto_buffer=1&amp;autoplay={{autoplay}}" class="js-media-native-video {{#isPossiblySensitive}}is-invisible{{/isPossiblySensitive}}" height="{{height}}" width="{{width}}" frameborder="0" scrolling="no" allowfullscreen style="margin: 0px; padding: 0px; border: 0px;"> </iframe> {{/useNativePlayer}} {{> status/media_sensitive}} </div>');
+                '<div class="position-rel"> {{#unavailableText}} <div class="otd-video-unavailable br--4" style="width: {{width}}px; aspect-ratio: {{width}} / {{height}}; background-image: url({{imageSrc}})"><span>{{unavailableText}}</span></div> {{/unavailableText}} {{^unavailableText}} {{#useNativePlayer}} <video class="js-media-native-video br--4" controlslist="nodownload" preload="auto" width="{{width}}" height="{{height}}" src="{{videoUrl}}" poster="{{imageSrc}}" controls autoplay playsinline></video> {{/useNativePlayer}} {{^useNativePlayer}} <iframe src="https://twitter.com/i/videos/{{#isDM}}dm{{/isDM}}{{^isDM}}tweet{{/isDM}}/{{chirpId}}?image_src={{imageSrc}}&amp;media_id={{mediaId}}&amp;video_url={{videoUrl}}&amp;content_type={{contentType}}&amp;owner_id={{ownerId}}&amp;auto_buffer=1&amp;autoplay={{autoplay}}" class="js-media-native-video {{#isPossiblySensitive}}is-invisible{{/isPossiblySensitive}}" height="{{height}}" width="{{width}}" frameborder="0" scrolling="no" allowfullscreen style="margin: 0px; padding: 0px; border: 0px;"> </iframe> {{/useNativePlayer}} {{/unavailableText}} {{> status/media_sensitive}} </div>');
     },
     function (e, t, i) {
         "use strict";
@@ -40202,6 +40202,25 @@ document.body.addEventListener("click", function (e) {
                     })
                     .pop();
             }),
+            // The top mp4 is often 1080p at ~10 Mbps and slow to start. X's HLS playlist starts low and climbs to
+            // the same top rendition within seconds; Chrome plays it natively, so prefer it where supported.
+            (TD.services.TwitterMedia.prototype.getPlaybackUrl = function () {
+                var e = this.entity.video_info.variants.find(function (e) {
+                    return "application/x-mpegURL" === e.content_type;
+                });
+                return e && document.createElement("video").canPlayType(e.content_type)
+                    ? e.url
+                    : this.chooseVideoVariant().url;
+            }),
+            // X flags region-locked/withdrawn videos; every variant of those 403s, so say why instead of a dead player.
+            (TD.services.TwitterMedia.prototype.getUnavailableText = function () {
+                var e = this.entity.ext_media_availability;
+                return e && "Unavailable" === e.status
+                    ? "Geoblocked" === e.reason
+                        ? "This video isn’t available in your country"
+                        : "This video is unavailable"
+                    : "";
+            }),
             (TD.services.TwitterMedia.prototype.getContainerForPreviewSize = function (e) {
                 var t = TD.settings.getColumnWidth(),
                     i = TD.services.TwitterMedia.COLUMN_WIDTH_MEDIA_SIZE_MAP[t].stream[e];
@@ -40339,7 +40358,7 @@ document.body.addEventListener("click", function (e) {
                             {
                                 chirpId: e,
                                 imageSrc: this.entity.media_url_https,
-                                videoUrl: g.url,
+                                videoUrl: this.getPlaybackUrl(),
                                 contentType: g.content_type,
                                 isPossiblySensitive: t,
                                 mediaId: this.mediaId,
@@ -40347,6 +40366,7 @@ document.body.addEventListener("click", function (e) {
                                 width: p,
                                 height: p / f,
                                 useNativePlayer: TD.services.TwitterMedia.NativeVideoPlayerEnabled,
+                                unavailableText: this.getUnavailableText(),
                             },
                         ];
                     }
@@ -40453,7 +40473,7 @@ document.body.addEventListener("click", function (e) {
                         (t = {
                             chirpId: n.chirpId,
                             imageSrc: this.entity.media_url_https,
-                            videoUrl: i.url,
+                            videoUrl: this.getPlaybackUrl(),
                             contentType: i.content_type,
                             mediaId: this.mediaId,
                             autoplay: 1,
@@ -40461,6 +40481,7 @@ document.body.addEventListener("click", function (e) {
                             width: r,
                             isDM: n.isDM,
                             useNativePlayer: TD.services.TwitterMedia.NativeVideoPlayerEnabled,
+                            unavailableText: this.getUnavailableText(),
                         });
                 } else
                     "youtube" === this.service
