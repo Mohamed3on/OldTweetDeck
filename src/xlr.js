@@ -1612,7 +1612,10 @@
   window.addEventListener('resize', () => setTimeout(tuckNav, 400)); // after TweetDeck re-checks overflow
 
   let scanQueued = false;
-  const scan = () => {
+  // Clear the flag in finally: a throw mid-scan used to leave it set, so the observer never
+  // queued another scan and every header/tweet decoration silently stopped until a reload.
+  const scan = () => { try { scanBody(); } finally { scanQueued = false; } };
+  const scanBody = () => {
     document.querySelectorAll('article.stream-item').forEach((a) => { process(a); if (OTD) { recoverMutedQuote(a); injectNotes(a); } });
     document.querySelectorAll('.prf-actions').forEach(processProfile);
     document.querySelectorAll('.prf-bio').forEach(linkifyBio);
@@ -1625,7 +1628,6 @@
     tuckNav();
     syncListColumns();
     updateButtonStates();
-    scanQueued = false;
   };
 
   const observer = new MutationObserver(() => {
