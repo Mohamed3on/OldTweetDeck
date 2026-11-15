@@ -782,6 +782,18 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   height: auto !important;
   display: block;
 }
+/* Video: bundle.js renders it at a fixed 410px height, so a portrait clip came out a
+   thumbnail-sized strip. Fill the same caps as photos instead, keeping the aspect ratio
+   it exposes as --w/--h (an element box, unlike an <img>, has no natural size to shrink to). */
+.med-fullpanel .med-tray :is(video, .otd-video-unavailable) {
+  --cap-w: min(86vw, 1000px);
+  --cap-h: 62vh;
+  width: min(var(--cap-w), var(--cap-h) * var(--w) / var(--h)) !important;
+  height: auto !important;
+  aspect-ratio: var(--w) / var(--h);
+}
+.med-fullpanel .med-tray video { display: block; }
+.med-fullpanel.otd-media-wide .med-tray :is(video, .otd-video-unavailable) { --cap-w: min(56vw, 760px); --cap-h: 90vh; }
 /* Region-locked / withdrawn video (bundle.js getUnavailableText): dimmed poster + reason, not a dead player */
 .otd-video-unavailable {
   max-width: 100%;
