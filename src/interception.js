@@ -108,9 +108,11 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) clai
 if (searchLeader) claimSearch();
 // Coming back to a stale tab: let the next poll of every stream through immediately instead of
 // waiting out the interval (background polls were throttled or cancelled while you were away).
+// Search is left to its pacer: releasing every search column at once on return drained the
+// shared bucket in one go (429s); a column that's been idle past its floor still goes right away.
 document.addEventListener("visibilitychange", () => {
     if (document.hidden || Date.now() < rateCoolUntil) return;
-    for (const k in timings) timings[k] = 0;
+    for (const k in timings) if (!k.startsWith("search-")) timings[k] = 0;
 });
 
 // Rate-limit debug log (temporary). Every SearchTimeline request (the bucket that actually runs
