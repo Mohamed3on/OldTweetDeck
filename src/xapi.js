@@ -80,7 +80,9 @@ window.XApi = (() => {
     if (window.solveChallenge) {
       try { h['x-client-transaction-id'] = await solveChallenge(new URL(href).pathname, method); } catch {}
     }
-    return fetch(href, { method, headers: h, body: data, credentials: 'include' });
+    const res = await fetch(href, { method, headers: h, body: data, credentials: 'include' });
+    try { window.OTDlogRequest?.(href, method, res); } catch {}
+    return res;
   };
   // '/1.1/…' paths go to x.com's /i/api; full URLs (api.x.com) pass through.
   const api = (path) => path.startsWith('https://') ? path : `${location.origin}/i/api${path}`;

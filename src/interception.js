@@ -103,6 +103,84 @@ document.addEventListener("visibilitychange", () => {
     for (const k in timings) timings[k] = 0;
 });
 
+// Rate-limit debug log (temporary). Every X API request — TweetDeck's XHRs and XApi fetches — with
+// its status and x-rate-limit-* headers, tagged with this tab's id so concurrent OTD tabs (which
+// share one bucket) show up interleaved. Requests that drain a bucket (429, errors code 88,
+// remaining 0) also get an incident: column/budget snapshot + this tab's last 2 min of requests.
+// Merged into localStorage.OTDrateLog every 30s so tabs don't clobber each other. Console:
+// OTDrateDebug.summary() · .incidents() · .download() · .clear()
+const RATE_LOG_KEY = "OTDrateLog", RATE_LOG_MAX = 8000, RATE_INCIDENT_MAX = 200;
+const RATE_TAB = Math.random().toString(36).slice(2, 6);
+let ratePending = { reqs: [], incidents: [] }, rateRecent = [], rateSaveTimer = 0;
+const rateLogLoad = () => { try { return { reqs: [], incidents: [], hourly: {}, ...JSON.parse(localStorage[RATE_LOG_KEY]) }; } catch { return { reqs: [], incidents: [], hourly: {} }; } };
+function rateLogFlush() {
+    clearTimeout(rateSaveTimer); rateSaveTimer = 0;
+    if (!ratePending.reqs.length && !ratePending.incidents.length) return;
+    const log = rateLogLoad();
+    for (const e of ratePending.reqs) { // per-hour per-op counts outlive the trimmed request list
+        const h = (log.hourly[new Date(e.t).toISOString().slice(0, 13)] ??= {});
+        h[e.op] = (h[e.op] || 0) + 1;
+    }
+    log.reqs = log.reqs.concat(ratePending.reqs).slice(-RATE_LOG_MAX);
+    log.incidents = log.incidents.concat(ratePending.incidents).slice(-RATE_INCIDENT_MAX);
+    ratePending = { reqs: [], incidents: [] };
+    for (let i = 0; i < 3; i++) {
+        try { localStorage[RATE_LOG_KEY] = JSON.stringify(log); return; }
+        catch { log.reqs = log.reqs.slice(log.reqs.length >> 1); } // over quota → drop the oldest half
+    }
+}
+addEventListener("pagehide", rateLogFlush);
+function rateContext() {
+    const columns = [...document.querySelectorAll("section.column")].map((sec) => {
+        const m = tdColumn(sec.getAttribute("data-column"));
+        const type = m?.feedSubscriptions && Object.keys(m.feedSubscriptions)[0]?.split(":")[2];
+        const q = type === "search" ? normQuery(sec.querySelector(".column-title-edit-box")?.value) : undefined;
+        return { type, q, vf: m?.visibility?.visibleFraction, floor: q != null ? Math.round(searchFloor(q)) : undefined };
+    });
+    return { searchBudget: { ...searchBudget }, rateCoolUntil, refreshInterval, columns };
+}
+function logApiRequest(url, method, status, rl, src, storage = {}, text = "") {
+    let op;
+    try { const p = new URL(url).pathname; op = p.includes("/graphql/") ? p.split("/").pop() : p.replace(/^\/i\/api/, ""); } catch { op = String(url).slice(0, 80); }
+    const e = { t: Date.now(), tab: RATE_TAB, op, m: method, s: status, src,
+                vis: document.hidden ? "hidden" : document.hasFocus() ? "focus" : "blur" };
+    if (rl) Object.assign(e, { rem: rl.remaining, lim: rl.limit, reset: rl.reset });
+    if (storage.stream) Object.assign(e, { stream: storage.stream, poll: storage.poll, floor: storage.floor && Math.round(storage.floor) });
+    if (typeof text === "string" && text.includes('"code":88')) e.err88 = true;
+    ratePending.reqs.push(e);
+    rateRecent = rateRecent.filter((r) => e.t - r.t < 120000).concat(e);
+    if (status === 429 || e.err88 || rl?.remaining === 0) {
+        console.warn("[OTD rate]", op, e);
+        ratePending.incidents.push({ ...e, ctx: rateContext(), recent: rateRecent.slice(0, -1) });
+    }
+    rateSaveTimer ||= setTimeout(rateLogFlush, 30000);
+}
+window.OTDlogRequest = (url, method, res) => logApiRequest(url, method, res.status, XApi.rateLimit(res), "fetch");
+window.OTDrateDebug = {
+    log: () => (rateLogFlush(), rateLogLoad()),
+    // Per-op request counts, 429/88 counts and the lowest `remaining` seen, over the last `hours`.
+    summary(hours = 24) {
+        const since = Date.now() - hours * 3600000, rows = {};
+        for (const e of this.log().reqs) {
+            if (e.t < since) continue;
+            const r = (rows[e.op] ??= { count: 0, polls: 0, "429": 0, err88: 0, minRemaining: Infinity, limit: e.lim, tabs: new Set() });
+            r.count++; if (e.poll) r.polls++; if (e.s === 429) r["429"]++; if (e.err88) r.err88++;
+            if (e.rem != null) r.minRemaining = Math.min(r.minRemaining, e.rem);
+            r.tabs.add(e.tab);
+        }
+        for (const r of Object.values(rows)) r.tabs = r.tabs.size;
+        console.table(rows);
+    },
+    incidents: () => window.OTDrateDebug.log().incidents,
+    download() {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(this.log())], { type: "application/json" }));
+        a.download = `OTDrateLog-${new Date().toISOString().slice(0, 16)}.json`;
+        a.click();
+    },
+    clear: () => { ratePending = { reqs: [], incidents: [] }; delete localStorage[RATE_LOG_KEY]; },
+};
+
 let lastToastAt = 0;
 function showToast(message, { dedupeMs = 3000, type = "error" } = {}) {
     const now = Date.now();
@@ -518,7 +596,7 @@ function timelineRoute(spec) {
         // Polls (since_id) go out no faster than the route's floor; a throttled one is answered empty.
         openHandler: (xhr, method, url, ...rest) => {
             const key = xhr.storage.stream;
-            if (floor && xhr.storage.poll && Date.now() - (timings[key] ?? 0) < floor(xhr)) {
+            if (floor && xhr.storage.poll && Date.now() - (timings[key] ?? 0) < (xhr.storage.floor = floor(xhr))) {
                 xhr.storage.cancelled = true;
             } else {
                 xhr.open(spec.post ? "POST" : method, url, ...rest);
@@ -1679,6 +1757,9 @@ XMLHttpRequest = function () {
                 )
             ) {
                 if(localStorage.device_id) this.setRequestHeader('X-Client-UUID', localStorage.device_id);
+                this.addEventListener("loadend", () => {
+                    try { logApiRequest(this.responseURL || this.modUrl, method, this.status, XApi.rateLimit(this), "xhr", this.storage, this.status === 200 && this.responseType in { "": 1, text: 1 } ? this.responseText : ""); } catch (e) { console.error(e); }
+                });
                 if(Date.now() - OTD_INIT_TIME < 3000 && !window.solveChallenge) {
                     console.log('waiting for challenge');
                     let i = 0;
