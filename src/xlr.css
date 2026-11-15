@@ -774,26 +774,33 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   overflow: hidden;
   background: transparent !important;
 }
-.med-fullpanel .med-tray { margin: 0 auto; max-width: 100%; padding-bottom: 0 !important; }
+/* vertical-align + no margin-vm: the photo sat 8px below the card top and 12px above the caption
+   (TweetDeck's 8px margins plus the inline-block baseline gap); flush, like video */
+.med-fullpanel .med-tray { margin: 0 auto; max-width: 100%; padding-bottom: 0 !important; vertical-align: top; }
+.med-fullpanel .med-tray > .margin-vm { margin-block: 0 !important; }
+/* Media size caps, shared by photos and video. Stacked: 62vh leaves room for the caption; if it
+   still can't fit, xlr.js promotes to side-by-side, where the media gets the full height. */
+.med-fullpanel { --cap-w: min(86vw, 1000px); --cap-h: 62vh; }
+.med-fullpanel.otd-media-wide { --cap-w: min(56vw, 760px); --cap-h: 90vh; }
 .med-fullpanel .med-tray img {
-  max-width: min(86vw, 640px) !important;   /* stacked cap (overridden wider when side-by-side) */
-  max-height: 62vh !important;              /* leaves room for the caption; if it still can't fit, xlr.js promotes to side-by-side */
+  max-width: var(--cap-w) !important;
+  max-height: var(--cap-h) !important;
   width: auto !important;
   height: auto !important;
   display: block;
 }
 /* Video: bundle.js renders it at a fixed 410px height, so a portrait clip came out a
-   thumbnail-sized strip. Fill the same caps as photos instead, keeping the aspect ratio
-   it exposes as --w/--h (an element box, unlike an <img>, has no natural size to shrink to). */
-.med-fullpanel .med-tray :is(video, .otd-video-unavailable) {
-  --cap-w: min(86vw, 1000px);
-  --cap-h: 62vh;
+   thumbnail-sized strip. Fill the caps instead, keeping the aspect ratio it exposes as
+   --w/--h (an element box, unlike an <img>, has no natural size to shrink to). A photo still
+   loading borrows the same sizing (xlr.js processMediaModal sets --w/--h from its cached
+   thumbnail) so the card opens at its final size instead of caption-only, then jumping. */
+.med-fullpanel .med-tray :is(video, .otd-video-unavailable, img[data-xlr-ph="loading"]) {
   width: min(var(--cap-w), var(--cap-h) * var(--w) / var(--h)) !important;
   height: auto !important;
   aspect-ratio: var(--w) / var(--h);
+  border-radius: 0 !important;   /* flush to the card, whose own radius clips the outer corners */
 }
 .med-fullpanel .med-tray video { display: block; }
-.med-fullpanel.otd-media-wide .med-tray :is(video, .otd-video-unavailable) { --cap-w: min(56vw, 760px); --cap-h: 90vh; }
 /* Region-locked / withdrawn video (bundle.js getUnavailableText): dimmed poster + reason, not a dead player */
 .otd-video-unavailable {
   max-width: 100%;
@@ -816,9 +823,22 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 .med-fullpanel .med-flaglink,
 .med-fullpanel .js-media-flagged-nsfw { display: none !important; }
 .med-fullpanel > #media-gallery-tray { display: none !important; }
-.med-fullpanel .mdl-dismiss-media { z-index: 5 !important; }
+/* Close: a bare 70%-white glyph vanished over bright media and was a 24x32 target.
+   Give it a dark chip that reads over any photo, with a 40px hit area. */
+.med-fullpanel .mdl-dismiss-media {
+  z-index: 5 !important;
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: rgba(15, 20, 25, 0.6);
+  opacity: 1 !important;
+  transition: background-color 0.15s;
+  &::after { content: ""; position: absolute; inset: -2px; }
+  &:hover { background: rgba(15, 20, 25, 0.85); }
+  &:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 2px; }
+}
 
-/* TWEET (shared) — native auto-hiding scrollbar, so no bar sits on a short tweet.
+/* TWEET (shared) — thin themed scrollbar, only drawn when a long tweet overflows.
    Default (stacked) is a caption below the media: `width:0; min-width:100%` lets
    it wrap to the media width instead of stretching the card to its longest line. */
 .med-fullpanel > .med-tweet {
@@ -837,6 +857,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   background: transparent !important;
   border: none !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgb(56, 60, 65); border-radius: 4px; }
 }
 /* Empty trailing containers add a stray line-box that trips the scrollbar — hide them */
 .med-fullpanel .med-tweet .js-show-this-thread:empty,
@@ -845,7 +867,6 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
 /* SIDE-BY-SIDE — long tweet (xlr.js adds .otd-media-wide): media left, note-tweet
    scrolls in a right-hand rail. Both centred so a mid-length tweet stays balanced. */
 .med-fullpanel.otd-media-wide { flex-direction: row !important; } /* align-items:center inherited from the base */
-.med-fullpanel.otd-media-wide .med-tray img { max-width: min(56vw, 760px) !important; max-height: 90vh !important; }
 .med-fullpanel.otd-media-wide > .med-tweet {
   width: auto !important;
   min-width: 0 !important;

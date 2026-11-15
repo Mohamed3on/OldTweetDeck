@@ -1330,7 +1330,35 @@
   // Decided once per modal, once the media has a height (that's what squeezes the caption).
   const processMediaModal = () => {
     const panel = document.querySelector('.med-fullpanel');
-    if (!panel || panel.dataset.xlrMediaDone) return;
+    if (!panel) return;
+    // A large photo has no size for ~0.6s and then paints in progressively. Until it has loaded,
+    // size it from the column's already-cached thumbnail (same aspect; xlr.css sizes
+    // [data-xlr-ph="loading"]) and show that thumbnail under it, instead of a caption-only card
+    // that jumps open. Per photo, so gallery navigation gets it too.
+    const img = panel.querySelector('.med-tray img:not([data-xlr-ph])');
+    if (img) {
+      img.dataset.xlrPh = '';
+      const id = img.src.match(/\/media\/([\w-]+)/)?.[1];
+      const thumb = id && !img.complete && document.querySelector(`.js-media-image-link[style*="${id}"]`);
+      const url = thumb?.style.backgroundImage.slice(5, -2);
+      if (url) {
+        const t = new Image();
+        const hold = () => {
+          if (img.complete) return;
+          img.style.setProperty('--w', t.naturalWidth);
+          img.style.setProperty('--h', t.naturalHeight);
+          img.dataset.xlrPh = 'loading';
+        };
+        t.onload = hold;
+        t.src = url;
+        img.style.background = `url("${url}") center / 100% 100% no-repeat`;
+        img.addEventListener('load', () => {
+          img.style.removeProperty('background');
+          img.dataset.xlrPh = '';
+        }, { once: true });
+      }
+    }
+    if (panel.dataset.xlrMediaDone) return;
     const media = panel.querySelector('.med-tray img, .med-tray video, .med-tray .otd-video-unavailable');
     const tweet = panel.querySelector('.med-tweet');
     if (!tweet) return;
