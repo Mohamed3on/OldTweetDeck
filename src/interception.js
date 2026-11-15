@@ -96,6 +96,16 @@ function searchFloor(query) {
     const paced = msLeft * sumW / (remaining * SEARCH_SAFETY * w);
     return Math.max(pollFloor(), Math.min(paced, SEARCH_WINDOW));
 }
+// Every OTD tab shares that one bucket, and each paces as if it were alone — so forgotten tabs
+// drain it. Only the most recently focused tab polls search; focusing another hands it over.
+// A tab that loads in the background (session restore) starts paused until you focus it.
+const otdTabs = new BroadcastChannel("otd-search-leader");
+let searchLeader = !document.hidden;
+const claimSearch = () => { searchLeader = true; otdTabs.postMessage("claim"); };
+otdTabs.onmessage = (e) => { if (e.data === "claim") searchLeader = false; };
+addEventListener("focus", claimSearch);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) claimSearch(); });
+if (searchLeader) claimSearch();
 // Coming back to a stale tab: let the next poll of every stream through immediately instead of
 // waiting out the interval (background polls were throttled or cancelled while you were away).
 document.addEventListener("visibilitychange", () => {
@@ -138,7 +148,7 @@ function rateContext() {
         const q = type === "search" ? normQuery(sec.querySelector(".column-title-edit-box")?.value) : undefined;
         return { type, q, vf: m?.visibility?.visibleFraction, floor: q != null ? Math.round(searchFloor(q)) : undefined };
     });
-    return { searchBudget: { ...searchBudget }, rateCoolUntil, refreshInterval, columns };
+    return { searchBudget: { ...searchBudget }, rateCoolUntil, refreshInterval, searchLeader, columns };
 }
 function logApiRequest(url, method, status, rl, src, storage = {}, text = "") {
     let op;
@@ -1026,7 +1036,7 @@ const proxyRoutes = [
             xhr.storage.query = params.get("q").replace(/\s*\b(since_id|max_id):(\d+)/g, (_, op, id) => (params.set(op, id), "")).trim();
             return `search-${xhr.storage.query}`;
         },
-        floor: (xhr) => searchFloor(xhr.storage.query),
+        floor: (xhr) => searchLeader ? searchFloor(xhr.storage.query) : Infinity,
         request: (xhr, params) => {
             let variables = {
                 rawQuery: params.get("q"),
