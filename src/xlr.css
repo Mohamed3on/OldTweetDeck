@@ -801,7 +801,8 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   border-radius: 0 !important;   /* flush to the card, whose own radius clips the outer corners */
 }
 .med-fullpanel .med-tray video { display: block; }
-/* Region-locked / withdrawn video (bundle.js getUnavailableText): dimmed poster + reason, not a dead player */
+/* Region-locked / withdrawn video (bundle.js TwitterMedia unavailableText): the lightbox shows a dimmed
+   poster + reason instead of a dead player; column thumbnails swap the play button for the reason */
 .otd-video-unavailable {
   max-width: 100%;
   display: flex;
@@ -810,7 +811,17 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   background: #000 center / cover no-repeat;
   box-shadow: inset 0 0 0 100vmax rgba(0, 0, 0, 0.6);
 }
-.otd-video-unavailable span {
+.otd-video-unavailable-tag {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+:is(.otd-video-unavailable, .otd-video-unavailable-tag) span {
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(21, 24, 28, 0.85);
@@ -818,6 +829,7 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   font-size: 14px;
   font-weight: 500;
 }
+.otd-video-unavailable-tag span { padding: 5px 10px; font-size: 12px; text-align: center; }
 /* Drop the "View original" / "Flag media" chrome and the empty gallery tray */
 .med-fullpanel .med-origlink,
 .med-fullpanel .med-flaglink,

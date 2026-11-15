@@ -18259,7 +18259,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<div class="video-overlay icon-with-bg-round"> <i class="icon icon-bg-dot icon-twitter-blue-color"></i> <i class="icon icon-play-video"></i> </div>');
+                '{{#unavailableText}} <div class="otd-video-unavailable-tag"><span>{{unavailableText}}</span></div> {{/unavailableText}}{{^unavailableText}} <div class="video-overlay icon-with-bg-round"> <i class="icon icon-bg-dot icon-twitter-blue-color"></i> <i class="icon icon-play-video"></i> </div> {{/unavailableText}}');
     },
     function (e, t, i) {
         "use strict";
@@ -40212,14 +40212,17 @@ document.body.addEventListener("click", function (e) {
                     ? e.url
                     : this.chooseVideoVariant().url;
             }),
-            // X flags region-locked/withdrawn videos; every variant of those 403s, so say why instead of a dead player.
-            (TD.services.TwitterMedia.prototype.getUnavailableText = function () {
-                var e = this.entity.ext_media_availability;
-                return e && "Unavailable" === e.status
-                    ? "Geoblocked" === e.reason
-                        ? "This video isn’t available in your country"
-                        : "This video is unavailable"
-                    : "";
+            // X flags region-locked/withdrawn videos; every variant of those 403s, so say why instead of a
+            // play button and a dead player. A getter so templates with the media on their context see it.
+            Object.defineProperty(TD.services.TwitterMedia.prototype, "unavailableText", {
+                get: function () {
+                    var e = this.isVideo && this.entity && this.entity.ext_media_availability;
+                    return e && "Unavailable" === e.status
+                        ? "Geoblocked" === e.reason
+                            ? "Not available in your country"
+                            : "Video unavailable"
+                        : "";
+                },
             }),
             (TD.services.TwitterMedia.prototype.getContainerForPreviewSize = function (e) {
                 var t = TD.settings.getColumnWidth(),
@@ -40301,6 +40304,7 @@ document.body.addEventListener("click", function (e) {
                         altText: this.getAltText(),
                         imageSrc: this.thumb(),
                         isVideo: this.isVideo,
+                        unavailableText: this.unavailableText,
                         thumbSizeClass: TD.services.TwitterMedia.thumbSizeClasses[e],
                     }),
                     TD.ui.template.render("status/media_thumb", t)
@@ -40315,6 +40319,7 @@ document.body.addEventListener("click", function (e) {
                         url: this.url,
                         imageSrc: this.small(),
                         isVideo: this.isVideo,
+                        unavailableText: this.unavailableText,
                         thumbClass: TD.services.TwitterMedia.IMAGE_CLASS,
                     };
                 return TD.ui.template.render("status/media_image_container", i);
@@ -40366,7 +40371,7 @@ document.body.addEventListener("click", function (e) {
                                 width: p,
                                 height: p / f,
                                 useNativePlayer: TD.services.TwitterMedia.NativeVideoPlayerEnabled,
-                                unavailableText: this.getUnavailableText(),
+                                unavailableText: this.unavailableText,
                             },
                         ];
                     }
@@ -40382,6 +40387,7 @@ document.body.addEventListener("click", function (e) {
                                   url: this.url,
                                   imageSrc: this.small(),
                                   isVideo: this.isVideo,
+                                  unavailableText: this.unavailableText,
                                   withAutoplay: !0,
                                   thumbClass: TD.services.TwitterMedia.IMAGE_CLASS,
                                   hasTaggedUsers: this.hasTaggedUsers,
@@ -40481,7 +40487,7 @@ document.body.addEventListener("click", function (e) {
                             width: r,
                             isDM: n.isDM,
                             useNativePlayer: TD.services.TwitterMedia.NativeVideoPlayerEnabled,
-                            unavailableText: this.getUnavailableText(),
+                            unavailableText: this.unavailableText,
                         });
                 } else
                     "youtube" === this.service
