@@ -701,6 +701,36 @@
     return frag;
   }
 
+  // Follow pill and Mute icon toggle, for the hover card and the user view. Following an account
+  // re-reads the relationship so a protected one lands on "Requested"; Follow hides while blocked.
+  // Mute is the profile popup's icon toggle: grey at rest, amber while muted.
+  function followMute(username) {
+    const follow = makeToggle('xlr-hc-follow', 'Follow', 'Following', false, async (active) => {
+      if (active) return users.act(username, 'unfollow');
+      if (!(await users.act(username, 'follow'))) return false;
+      const rel = await users.relationship(username);
+      applyRel(rel.following || rel.following_requested ? rel : { following: true });
+      return false;   // applyRel already set the state
+    });
+    const applyRel = (rel) => {
+      const requested = !!rel.following_requested && !rel.following;
+      follow.set(!!rel.following || requested);
+      follow.btn.classList.toggle('xlr-requested', requested);
+      if (requested) follow.btn.textContent = 'Requested';
+      follow.btn.hidden = !!rel.blocking;
+    };
+    follow.btn.classList.add('xlr-loading');
+    const mute = makeToggle('xlr-hc-mute', 'Mute', 'Unmute', isMuted(username),
+      (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }), muteSvg.cloneNode(true));
+    const rel = users.relationship(username).then((r) => {
+      applyRel(r);
+      mute.set(!!r.muting);
+      follow.btn.classList.remove('xlr-loading');
+      return r;
+    });
+    return { follow, mute, rel };
+  }
+
   // link is what was hovered; ctx the in-column handle the card first opened from (the same link,
   // unless a bio mention swapped the card), where its clicks are replayed.
   function showHc(link, anchor, u, instant, ctx) {
@@ -725,35 +755,12 @@
 
     if (u.id_str !== users.me()) renderKnown(hc.querySelector('.xlr-hc-known'), u.id_str);
 
-    // Follow pill, as in the profile popup: following an account re-reads the relationship so a
-    // protected one lands on "Requested". Not shown on your own card or someone you block.
+    // Not shown on your own card.
     if (u.id_str !== users.me()) {
-      const follow = makeToggle('xlr-hc-follow', 'Follow', 'Following', false, async (active) => {
-        if (active) return users.act(username, 'unfollow');
-        if (!(await users.act(username, 'follow'))) return false;
-        const rel = await users.relationship(username);
-        applyRel(rel.following || rel.following_requested ? rel : { following: true });
-        return false;   // applyRel already set the state
-      });
-      const applyRel = (rel) => {
-        const requested = !!rel.following_requested && !rel.following;
-        follow.set(!!rel.following || requested);
-        follow.btn.classList.toggle('xlr-requested', requested);
-        if (requested) follow.btn.textContent = 'Requested';
-        follow.btn.hidden = !!rel.blocking;
-      };
-      follow.btn.classList.add('xlr-loading');
-      // Mute as the profile popup's icon toggle: grey at rest, amber while muted.
-      const mute = makeToggle('xlr-hc-mute', 'Mute', 'Unmute', isMuted(username),
-        (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }), muteSvg.cloneNode(true));
+      const { follow, mute, rel } = followMute(username);
       hc.querySelector('.xlr-hc-top').append(mute.btn, follow.btn);
       const fy = hc.querySelector('.xlr-hc-fy');
-      users.relationship(username).then((rel) => {
-        applyRel(rel);
-        mute.set(!!rel.muting);
-        fy.hidden = !rel.followed_by;
-        follow.btn.classList.remove('xlr-loading');
-      });
+      rel.then((r) => { fy.hidden = !r.followed_by; });
     }
 
     if (listStore.catalog()) {
@@ -1625,6 +1632,8 @@
     document.querySelectorAll('.prf-bio').forEach(linkifyBio);
     document.querySelectorAll('.js-column-header').forEach(processColumnHeader);
     syncKindToggles();
+    syncUserView();
+    fillPreview();
     document.querySelectorAll('button[onclick="exportState()"]').forEach(b => injectWeights(b.parentElement));
     processMediaModal();
     injectFofNav();
@@ -1686,13 +1695,45 @@
     genericTwitter.call(this, type, ...rest);
     this.column.otdKindToggles = true;
   };
-  // Opened for a given person (a profile's "Add column"), the picker has nothing left to pick:
-  // the modal drops it and is just that person's tweets (see xlr.css).
+  // Opened for a given person (a profile's "View tweets"), the picker has nothing left to pick:
+  // the modal drops it and is that person's view (syncUserView, xlr.css).
   const genericGo = TD.components.OpenTwitterGeneric.prototype.go;
   TD.components.OpenTwitterGeneric.prototype.go = function (type, path, params) {
-    if (params.screenName && this.type === TD.controller.columnManager.TWEETS) this.$node.addClass('otd-user-preview');
+    if (params.screenName && this.type === TD.controller.columnManager.TWEETS) {
+      this.$node.addClass('otd-user-preview').attr('data-otd-user', params.screenName);
+    }
     return genericGo.apply(this, arguments);
   };
+  // The user view's header is the person, not "Add a User column": avatar and name (a profile link)
+  // with Follow / Mute beside them; the bar above the tweets keeps only the Replies / Retweets switches.
+  function syncUserView() {
+    const view = document.querySelector('#open-modal .mdl-column-rhs.otd-user-preview');
+    const header = view?.closest('.mdl').querySelector('.mdl-header');
+    if (!header || header.querySelector('.otd-uv')) return;
+    const username = view.dataset.otdUser;
+    const title = header.querySelector('.mdl-header-title');
+    title.innerHTML = `<a class="otd-uv" rel="user"><img class="otd-uv-avatar" alt="">
+      <span class="otd-uv-names"><b class="xlr-hc-name"></b><span class="xlr-hc-sub"><span class="xlr-hc-handle"></span>
+      <span class="xlr-hc-fy" hidden>Follows you</span></span></span></a>`;
+    const head = title.querySelector('.otd-uv');
+    head.href = `https://twitter.com/${username}`;
+    head.querySelector('.xlr-hc-name').textContent = username;
+    head.querySelector('.xlr-hc-handle').textContent = '@' + username;
+    users.byHandle(username)?.then((u) => {
+      if (!u) return;
+      head.querySelector('.otd-uv-avatar').src = hcAvatar(u);
+      const name = head.querySelector('.xlr-hc-name');
+      name.textContent = u.name;
+      if (u.verified) name.appendChild(verifiedSvg.cloneNode(true));
+      if (u.id_str === users.me()) return;
+      const { follow, mute, rel } = followMute(username);
+      const actions = document.createElement('div');
+      actions.className = 'otd-uv-actions';
+      actions.append(mute.btn, follow.btn);
+      header.querySelector('.mdl-dismiss').before(actions);
+      rel.then((r) => { head.querySelector('.xlr-hc-fy').hidden = !r.followed_by; });
+    }, () => {});
+  }
   const previewColumn = () =>
     TD.controller.columnManager.get(document.querySelector('#open-modal .column-temp[data-column]')?.getAttribute('data-column'));
   // The button bar outlives the menus (Back leads to other column types), so mount and unmount.
@@ -1716,11 +1757,23 @@
         localStorage[HIDE_KEY] = JSON.stringify(hide);
         sync();
         const column = previewColumn();
-        column?.updateSearchFilter(withKinds(column.getSearchFilter(), hide));
+        if (!column) return;
+        column.otdPages = 0;   // fewer kinds shown may need more pages to fill the view again
+        column.updateSearchFilter(withKinds(column.getSearchFilter(), hide));
       };
       kinds.append(sw);
     }
     bar.querySelector('.js-add-column')?.before(kinds);
+  }
+  // X sends 20 posts a page and the switches filter them after they land, so someone who mostly
+  // retweets or replies can leave a tweet or two, and TweetDeck only pages on scroll. Page on until
+  // ten tweets show, at most 5 pages (100 posts) a view.
+  function fillPreview() {
+    const column = previewColumn();
+    if (!column?.otdKindToggles || column.state !== 'polling' || column.isFetchingOlderUpdates) return;
+    if (column.updateArray.length >= 10 || (column.otdPages ??= 0) >= 5) return;
+    column.otdPages++;
+    column.doInfiniteScroll();
   }
 
   observer.observe(document.body, { childList: true, subtree: true });
