@@ -691,6 +691,8 @@ const proxyRoutes = [
         // Reply threads carry other people's tweets; the profile column only shows the user's own.
         conversation: "profile-conversation-",
         keepThreaded: (tweet, xhr) => tweet.user.id_str === xhr.storage.user_id,
+        // Every tweet here is the owner's; opening a muted/blocked profile is asking to see it.
+        visible: () => true,
         // Slot the pinned tweet in where its date puts it, unless that's past the end of the page.
         finish: (tweets, xhr, page) => {
             let pinEntry = page.instructions.find((e) => e.type === "TimelinePinEntry");
