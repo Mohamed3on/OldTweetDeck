@@ -41,10 +41,10 @@
 
   // Like setFilterInput but coalesces the search: the value (and the parsed thresholds) update
   // instantly, while the actual uiInputSubmit re-query is debounced — so rapid bump/cut clicks
-  // apply immediately on screen but only hit Twitter search once, ~1.5s after the last click.
-  // A primary-list step is mirrored to every list column, so each uncoalesced click costs ~3 of
-  // the ~50/15min search requests. A column scrolled off screen keeps its new value but only
-  // re-queries once it scrolls into view, so the on-screen columns get the budget first.
+  // apply immediately on screen but only hit Twitter search once, ~300ms after the last click.
+  // A primary-list step is mirrored to every list column, so a column scrolled off screen keeps
+  // its new value but only re-queries once it scrolls into view — the ~50/15min search budget
+  // goes to the on-screen columns first.
   const submitTimers = new WeakMap(), pendingSubmits = new WeakMap();
   const submitWhenVisible = (input) => {
     const section = input.closest('section.column');
@@ -59,7 +59,7 @@
     pendingSubmits.set(section, io);
     io.observe(section);
   };
-  const setFilterDebounced = (input, newValue, delay = 1500) => {
+  const setFilterDebounced = (input, newValue, delay = 300) => {
     if (newValue === input.value) return;
     $(input).val(newValue);
     syncResetIcons();
