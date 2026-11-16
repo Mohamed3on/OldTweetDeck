@@ -1040,7 +1040,9 @@ const proxyRoutes = [
             xhr.storage.query = params.get("q").replace(/\s*\b(since_id|max_id):(\d+)/g, (_, op, id) => (params.set(op, id), "")).trim();
             return `search-${xhr.storage.query}`;
         },
-        floor: (xhr) => searchLeader ? searchFloor(xhr.storage.query) : Infinity,
+        // A hidden tab doesn't poll search: nobody's watching, so the shared bucket is saved for when
+        // you're back. Columns catch up on return, having idled past their floor.
+        floor: (xhr) => searchLeader && !document.hidden ? searchFloor(xhr.storage.query) : Infinity,
         request: (xhr, params) => {
             let variables = {
                 rawQuery: params.get("q"),

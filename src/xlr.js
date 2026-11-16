@@ -41,14 +41,30 @@
 
   // Like setFilterInput but coalesces the search: the value (and the parsed thresholds) update
   // instantly, while the actual uiInputSubmit re-query is debounced — so rapid bump/cut clicks
-  // apply immediately on screen but only hit Twitter search once, ~300ms after the last click.
-  const submitTimers = new WeakMap();
-  const setFilterDebounced = (input, newValue, delay = 300) => {
+  // apply immediately on screen but only hit Twitter search once, ~1.5s after the last click.
+  // A primary-list step is mirrored to every list column, so each uncoalesced click costs ~3 of
+  // the ~50/15min search requests. A column scrolled off screen keeps its new value but only
+  // re-queries once it scrolls into view, so the on-screen columns get the budget first.
+  const submitTimers = new WeakMap(), pendingSubmits = new WeakMap();
+  const submitWhenVisible = (input) => {
+    const section = input.closest('section.column');
+    if (!section) return $(input).trigger('uiInputSubmit');
+    pendingSubmits.get(section)?.disconnect();
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      pendingSubmits.delete(section);
+      $(section.querySelector(EDIT_BOX) || input).trigger('uiInputSubmit');
+    }, { threshold: 0.1 });
+    pendingSubmits.set(section, io);
+    io.observe(section);
+  };
+  const setFilterDebounced = (input, newValue, delay = 1500) => {
     if (newValue === input.value) return;
     $(input).val(newValue);
     syncResetIcons();
     clearTimeout(submitTimers.get(input));
-    submitTimers.set(input, setTimeout(() => $(input).trigger('uiInputSubmit'), delay));
+    submitTimers.set(input, setTimeout(() => submitWhenVisible(input), delay));
   };
 
   // Parse a search query's engagement thresholds into numbers (absent → 0). Covers all three
@@ -401,7 +417,7 @@
         // Removing from the primary list resets every other search column, as its reset icon would.
         if (listSearchCols()[0]?.contains(col)) {
           for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
-            if (!col.contains(input)) setFilterInput(input, resetTarget(input.value));
+            if (!col.contains(input)) setFilterDebounced(input, resetTarget(input.value));
           }
         }
         offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
