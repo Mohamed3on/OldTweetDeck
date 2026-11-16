@@ -44,7 +44,9 @@
   // apply immediately on screen but only hit Twitter search once, ~300ms after the last click.
   // A primary-list step is mirrored to every list column, so a column scrolled off screen keeps
   // its new value but only re-queries once it scrolls into view — the ~50/15min search budget
-  // goes to the on-screen columns first.
+  // goes to the on-screen columns first. Those mirrored/reset columns also wait longer
+  // (BROADCAST_DELAY), so a quick run of steps on the column you're clicking re-queries them once.
+  const BROADCAST_DELAY = 1500;
   const submitTimers = new WeakMap(), pendingSubmits = new WeakMap();
   const submitWhenVisible = (input) => {
     const section = input.closest('section.column');
@@ -417,7 +419,7 @@
         // Removing from the primary list resets every other search column, as its reset icon would.
         if (listSearchCols()[0]?.contains(col)) {
           for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
-            if (!col.contains(input)) setFilterDebounced(input, resetTarget(input.value));
+            if (!col.contains(input)) setFilterDebounced(input, resetTarget(input.value), BROADCAST_DELAY);
           }
         }
         offerUnfollow(username, () => { removeBtn.title = `Removed & unfollowed @${username}`; });
@@ -1194,7 +1196,7 @@
       if (document.activeElement === input) continue; // don't clobber an active edit
       const cur = engOf(input.value);
       if (cur.fav !== P.fav || cur.rt !== P.rt || cur.reply !== P.reply)
-        setFilterDebounced(input, applyEngagement(input.value, P));
+        setFilterDebounced(input, applyEngagement(input.value, P), BROADCAST_DELAY);
     }
   }
 
