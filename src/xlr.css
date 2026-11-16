@@ -1034,14 +1034,15 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
    is display: contents so its avatar and names sit in this grid while staying one click target. */
 .xlr-hc-top {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
-  row-gap: 8px;
+  gap: 8px 6px;
 }
 .xlr-hc-head { display: contents; color: inherit !important; text-decoration: none !important; }
 .xlr-hc-avatar { width: 48px; height: 48px; border-radius: 9999px; background: rgba(255, 255, 255, 0.08); }
 .xlr-hc-names { grid-row: 2; grid-column: 1 / -1; display: flex; flex-direction: column; min-width: 0; }
-.xlr-hc .xlr-hc-follow { grid-row: 1; grid-column: 2; }
+.xlr-hc .xlr-hc-mute { grid-row: 1; grid-column: 2; }
+.xlr-hc .xlr-hc-follow { grid-row: 1; grid-column: 3; }
 .xlr-hc-name {
   display: flex;
   align-items: center;
@@ -1091,6 +1092,31 @@ ul.tweet-detail-actions:has(.xlr-user-search-btn) > li {
   &.xlr-on:hover { background: rgb(244, 33, 46); color: #fff; }
   &.xlr-loading, &.xlr-inflight { opacity: 0.5; pointer-events: none; }
   &[hidden] { display: none; }
+}
+/* Mute: the profile popup's icon toggle at card size — grey ghost at rest, amber while muted. */
+.xlr-hc .xlr-hc-mute {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: rgb(139, 152, 165);
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 9999px;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, opacity 0.15s, transform 0.12s ease-out;
+  svg { width: 16px; height: 16px; }
+  &:hover { background: rgba(255, 255, 255, 0.12); color: rgb(231, 233, 234); }
+  &:active { transform: scale(0.96); }
+  &.xlr-on, &.xlr-on:hover { background: rgb(255, 173, 31); color: #14171a; }
+  &.xlr-inflight { opacity: 0.5; pointer-events: none; }
 }
 
 .xlr-hc-bio {

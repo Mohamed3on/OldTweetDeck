@@ -743,10 +743,14 @@
         follow.btn.hidden = !!rel.blocking;
       };
       follow.btn.classList.add('xlr-loading');
-      hc.querySelector('.xlr-hc-top').appendChild(follow.btn);
+      // Mute as the profile popup's icon toggle: grey at rest, amber while muted.
+      const mute = makeToggle('xlr-hc-mute', 'Mute', 'Unmute', isMuted(username),
+        (active) => active ? unmuteUser(username) : muteUser(username, { delist: false }), muteSvg.cloneNode(true));
+      hc.querySelector('.xlr-hc-top').append(mute.btn, follow.btn);
       const fy = hc.querySelector('.xlr-hc-fy');
       users.relationship(username).then((rel) => {
         applyRel(rel);
+        mute.set(!!rel.muting);
         fy.hidden = !rel.followed_by;
         follow.btn.classList.remove('xlr-loading');
       });
