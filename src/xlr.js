@@ -13,9 +13,16 @@
     const id = await users.idFor(username);
     return id ? listStore.membership(id) : new Set();
   };
+  // `listId:user` pairs removed this session. Their tweets are hidden in that list's columns at
+  // once, since a re-search right after the removal still returns them for a while.
+  const delisted = new Set();
   const setListMember = async (username, listId, member) => {
+    const key = `${listId}:${username.toLowerCase()}`;
+    member ? delisted.delete(key) : delisted.add(key);
     const id = await users.idFor(username);
-    return !!id && (member ? listStore.add(id, listId) : listStore.remove(id, listId));
+    const ok = !!id && await (member ? listStore.add(id, listId) : listStore.remove(id, listId));
+    if (!ok && !member) delisted.delete(key);
+    return ok;
   };
   // Every live view of a user's chips (tweet popover, profile popup, hover card), so a change
   // made in any one redraws the others.
@@ -210,6 +217,7 @@
     btn.title = title;
     article.style.transition = 'opacity .4s';
     article.style.opacity = '0.3';
+    clearFromFilter(article);
     return undo;
   };
 
@@ -353,7 +361,7 @@
 
     const col = article.closest('.column-panel');
     const listId = getListId(col);
-    if (listId && article.querySelector('.tweet-context .icon-retweet-filled')) {
+    if (listId && (delisted.has(`${listId}:${username.toLowerCase()}`) || article.querySelector('.tweet-context .icon-retweet-filled'))) {
       article.style.display = 'none';
       return;
     }
@@ -415,8 +423,6 @@
         if (removeBtn.classList.contains('xlr-done')) return;
         const undo = markDone(removeBtn, `Removed @${username}`, article);
         if (!(await setListMember(username, listId, false))) return undo(`Couldn’t remove @${username}. Try again`);
-        // Re-search only once X confirms, or the list query still returns them.
-        clearFromFilter(article);
         // Removing from the primary list resets every other search column, as its reset icon would.
         if (listSearchCols()[0]?.contains(col)) {
           for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
@@ -453,7 +459,6 @@
       }
       const undo = markDone(muteBtn, `Muted @${username}`, article);
       if (!await muteUser(username)) return undo(`Couldn’t mute @${username}. Try again`);
-      clearFromFilter(article);
       offerUnfollow(username, () => { muteBtn.title = `Muted & unfollowed @${username}`; });
     });
     buttons.push(muteBtn);
