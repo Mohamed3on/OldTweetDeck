@@ -210,7 +210,6 @@
     btn.title = title;
     article.style.transition = 'opacity .4s';
     article.style.opacity = '0.3';
-    clearFromFilter(article);
     return undo;
   };
 
@@ -416,6 +415,8 @@
         if (removeBtn.classList.contains('xlr-done')) return;
         const undo = markDone(removeBtn, `Removed @${username}`, article);
         if (!(await setListMember(username, listId, false))) return undo(`Couldn’t remove @${username}. Try again`);
+        // Re-search only once X confirms, or the list query still returns them.
+        clearFromFilter(article);
         // Removing from the primary list resets every other search column, as its reset icon would.
         if (listSearchCols()[0]?.contains(col)) {
           for (const input of document.querySelectorAll(`section.column:has(.column-type-icon.icon-search) ${EDIT_BOX}`)) {
@@ -452,6 +453,7 @@
       }
       const undo = markDone(muteBtn, `Muted @${username}`, article);
       if (!await muteUser(username)) return undo(`Couldn’t mute @${username}. Try again`);
+      clearFromFilter(article);
       offerUnfollow(username, () => { muteBtn.title = `Muted & unfollowed @${username}`; });
     });
     buttons.push(muteBtn);
