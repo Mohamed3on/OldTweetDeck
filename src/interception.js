@@ -113,6 +113,13 @@ if (searchLeader) claimSearch();
 document.addEventListener("visibilitychange", () => {
     if (document.hidden || Date.now() < rateCoolUntil) return;
     for (const k in timings) if (!k.startsWith("search-")) timings[k] = 0;
+    // …and fire every feed's poll on the scheduler's next 1s tick instead of waiting out
+    // TweetDeck's own timer (minutes for search, which was hinted slow while hidden).
+    try {
+        const { feedScheduler, scheduler } = window.TD.controller;
+        for (const acct of Object.values(feedScheduler._taskIndex))
+            for (const t of Object.values(acct)) if (scheduler._tasks[t.taskId]) scheduler._tasks[t.taskId].cycleStartTime = 0;
+    } catch {}
 });
 
 // Rate-limit debug log (temporary). Every SearchTimeline request (the bucket that actually runs
