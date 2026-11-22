@@ -37,6 +37,10 @@ const searchPollHint = (query) => Math.max(6, Math.round((query != null ? search
 // (TweetDeck not ready, native list/user columns we can't key, an unknown feed) isn't gated.
 const tdColumn = (key) => { try { return window.TD?.controller?.columnManager?.get(key) ?? null; } catch { return null; } };
 const normQuery = (s) => (s || "").replace(/\p{Cf}/gu, "").trim().replace(/\s+/g, " ");
+// The query a search column is actually polling: its feed's term. The edit box can run ahead of it
+// (xlr.js sets an off-screen column's new filter there but only re-queries on scroll-in), and an
+// unmatched query fails open to the fast floor.
+const colQuery = (sec, m) => { let t; try { t = m.getFeeds()[0].getMetadata().term; } catch {} return normQuery(t ?? sec.querySelector(".column-title-edit-box")?.value); };
 function columnFraction(type, acct, query) {
     let best = null;
     for (const sec of document.querySelectorAll("section.column")) {
@@ -46,7 +50,7 @@ function columnFraction(type, acct, query) {
         const parts = sub.split(":"); // twitter:<acct>:<type>:<hash>
         if (parts[2] !== type) continue;
         if (acct && parts[1] !== String(acct)) continue;
-        if (type === "search" && normQuery(sec.querySelector(".column-title-edit-box")?.value) !== normQuery(query)) continue;
+        if (type === "search" && colQuery(sec, m) !== normQuery(query)) continue;
         const vf = m.visibility ? m.visibility.visibleFraction : 1;
         best = best === null ? vf : Math.max(best, vf);
     }
@@ -80,7 +84,7 @@ function searchFloor(query) {
         const m = tdColumn(sec.getAttribute("data-column"));
         const sub = m && m.feedSubscriptions && Object.keys(m.feedSubscriptions)[0];
         if (!sub || sub.split(":")[2] !== "search") continue;
-        cols.push({ q: normQuery(sec.querySelector(".column-title-edit-box")?.value),
+        cols.push({ q: colQuery(sec, m),
                     vf: m.visibility ? m.visibility.visibleFraction : 1 });
     }
     const idx = cols.findIndex((c) => c.q === target);
@@ -154,7 +158,7 @@ function rateContext() {
     const columns = [...document.querySelectorAll("section.column")].map((sec) => {
         const m = tdColumn(sec.getAttribute("data-column"));
         const type = m?.feedSubscriptions && Object.keys(m.feedSubscriptions)[0]?.split(":")[2];
-        const q = type === "search" ? normQuery(sec.querySelector(".column-title-edit-box")?.value) : undefined;
+        const q = type === "search" ? colQuery(sec, m) : undefined;
         return { type, q, vf: m?.visibility?.visibleFraction, floor: q != null ? Math.round(searchFloor(q)) : undefined };
     });
     return { searchBudget: { ...searchBudget }, rateCoolUntil, refreshInterval, searchLeader, columns };
