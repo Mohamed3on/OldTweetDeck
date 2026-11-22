@@ -100,6 +100,33 @@ function searchFloor(query) {
     const paced = msLeft * sumW / (remaining * SEARCH_SAFETY * w);
     return Math.max(pollFloor(), Math.min(paced, SEARCH_WINDOW));
 }
+// A search column scrolled off screen skips its first load and loads once it scrolls into view:
+// a reload otherwise fires every column at once (7+ of the ~50/15min bucket). Answered empty
+// meanwhile; scrolling in kicks the search task so it loads on the scheduler's next tick.
+const deferredCols = new WeakSet();
+function deferOffscreen(query) {
+    const target = normQuery(query);
+    const sec = [...document.querySelectorAll("section.column")].find((c) => colQuery(c, tdColumn(c.getAttribute("data-column"))) === target);
+    const vis = sec && tdColumn(sec.getAttribute("data-column"))?.visibility;
+    if (!vis || vis.visibleFraction >= 0.1) return false;
+    if (!deferredCols.has(sec)) {
+        deferredCols.add(sec);
+        const io = new IntersectionObserver(([e]) => {
+            if (!e.isIntersecting) return;
+            io.disconnect();
+            deferredCols.delete(sec);
+            try {
+                const { feedScheduler, scheduler } = window.TD.controller;
+                for (const acct of Object.values(feedScheduler._taskIndex)) {
+                    const task = acct.search && scheduler._tasks[acct.search.taskId];
+                    if (task) task.cycleStartTime = 0;
+                }
+            } catch {}
+        }, { threshold: 0.1 });
+        io.observe(sec);
+    }
+    return true;
+}
 // Every OTD tab shares that one bucket, and each paces as if it were alone — so forgotten tabs
 // drain it. Only the most recently focused tab polls search; focusing another hands it over.
 // A tab that loads in the background (session restore) starts paused until you focus it.
@@ -602,7 +629,7 @@ const notMuted = (t) => !t.user?.muting && !t.user?.blocking;
 //   stream(params, xhr) → stream key (may stash route state on xhr.storage)
 //   request(xhr, params, cursor) → sets modUrl (and storage.body when post: true)
 //   timeline(data) → the page's { instructions, responseObjects }
-// Optional: floor(xhr) poll gate, conversation prefix + keepThreaded(tweet, xhr), items(entries,
+// Optional: floor(xhr) poll gate, defer(xhr) to answer a first load empty, conversation prefix + keepThreaded(tweet, xhr), items(entries,
 // data) for non-GraphQL pages, visible filter, sort: false, perTweet: false, finish(items, xhr,
 // page), wrap(items, bottomCursor, xhr) response shape. Other keys pass through onto the route.
 function timelineRoute(spec) {
@@ -616,6 +643,7 @@ function timelineRoute(spec) {
                 const params = new URL(xhr.modUrl).searchParams;
                 xhr.storage.stream = stream(params, xhr);
                 xhr.storage.poll = params.has("since_id");
+                xhr.storage.first = !xhr.storage.poll && !params.has("max_id");
                 request(xhr, params, cursorFor(xhr.storage.stream, params, perTweet));
             } catch (e) {
                 console.error(e);
@@ -625,6 +653,8 @@ function timelineRoute(spec) {
         openHandler: (xhr, method, url, ...rest) => {
             const key = xhr.storage.stream;
             if (floor && xhr.storage.poll && Date.now() - (timings[key] ?? 0) < (xhr.storage.floor = floor(xhr))) {
+                xhr.storage.cancelled = true;
+            } else if (xhr.storage.first && spec.defer?.(xhr)) {
                 xhr.storage.cancelled = true;
             } else {
                 xhr.open(spec.post ? "POST" : method, url, ...rest);
@@ -1054,6 +1084,7 @@ const proxyRoutes = [
         // A hidden tab doesn't poll search: nobody's watching, so the shared bucket is saved for when
         // you're back. Columns catch up on return, having idled past their floor.
         floor: (xhr) => searchLeader && !document.hidden ? searchFloor(xhr.storage.query) : Infinity,
+        defer: (xhr) => deferOffscreen(xhr.storage.query),
         request: (xhr, params) => {
             let variables = {
                 rawQuery: params.get("q"),
